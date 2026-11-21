@@ -470,23 +470,23 @@ const App = () => {
   const clearDoneFromQueue = () => setBatchQueue(prev => prev.filter(item => item.status !== 'done'));
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans pb-20">
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+    <div className="min-h-screen bg-nx-bg text-nx-text font-sans pb-20">
+      <header className="bg-nx-card/85 backdrop-blur border-b border-nx-line sticky top-0 z-30 shadow-lg shadow-black/30">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src="/logo.png" alt="Social Sound" className="w-11 h-11 object-contain" />
+            <img src="/logo.png" alt="Social Sound" className="w-11 h-11 object-contain bg-nx-card rounded-xl p-0.5" />
             <div>
-              <h1 className="font-black text-xl tracking-tight text-slate-800">SOCIAL <span className="text-red-600">SOUND</span></h1>
-              <p className="text-[9px] uppercase tracking-widest text-slate-400 font-bold">Automação de Voiceover & Comandos</p>
+              <h1 className="font-black text-xl tracking-tight text-nx-text">SOCIAL <span className="bg-gradient-to-r from-nx-purple-soft via-nx-purple to-nx-blue bg-clip-text text-transparent">SOUND</span></h1>
+              <p className="text-[9px] uppercase tracking-widest text-nx-muted font-bold">Automação de Voiceover & Comandos</p>
             </div>
           </div>
           <div className="hidden sm:flex items-center gap-4">
              {enableSplit && (
-                 <div className="bg-amber-50 text-amber-700 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-tighter flex items-center gap-1">
+                 <div className="bg-amber-500/10 text-amber-300 border border-amber-500/20 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-tighter flex items-center gap-1">
                     <SplitSquareHorizontal size={12}/> Divisão Ativa ({charLimit}c)
                  </div>
              )}
-            <div className="bg-emerald-50 text-emerald-600 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-tighter">
+            <div className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-tighter">
               Download Automático
             </div>
           </div>
@@ -498,33 +498,33 @@ const App = () => {
         {/* Lado Esquerdo */}
         <section className="lg:col-span-7 space-y-6">
           
-          <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 p-6">
+          <div className="bg-nx-card rounded-3xl shadow-xl shadow-black/40 border border-nx-line p-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-4">
-              <div className="flex items-center gap-2 text-slate-600 font-semibold">
-                <Type size={18} className="text-red-500" />
+              <div className="flex items-center gap-2 text-nx-text font-semibold">
+                <Type size={18} className="text-nx-purple-soft" />
                 <span>Entrada de Texto & Personalização</span>
               </div>
               
               <div className="flex flex-wrap items-center gap-3">
-                  <div className="flex items-center bg-slate-50 p-1.5 rounded-xl border border-slate-200">
-                      <label className="flex items-center gap-2 text-xs font-bold text-slate-600 cursor-pointer px-2">
+                  <div className="flex items-center bg-nx-bg p-1.5 rounded-xl border border-nx-line">
+                      <label className="flex items-center gap-2 text-xs font-bold text-nx-text cursor-pointer px-2">
                           <input 
                               type="checkbox" 
                               checked={enableSplit}
                               onChange={(e) => setEnableSplit(e.target.checked)}
-                              className="w-4 h-4 rounded text-red-600 focus:ring-red-500 border-slate-300"
+                              className="w-4 h-4 rounded accent-nx-purple"
                           />
                           Dividir
                       </label>
                       {enableSplit && (
-                          <div className="flex items-center border-l border-slate-300 pl-2 ml-1">
+                          <div className="flex items-center border-l border-nx-line pl-2 ml-1">
                               <input 
                                   type="number"
                                   min="50"
                                   max="5000"
                                   value={charLimit}
                                   onChange={(e) => setCharLimit(parseInt(e.target.value) || 500)}
-                                  className="w-16 bg-white border border-slate-200 rounded px-2 py-1 text-xs text-center outline-none focus:border-red-400"
+                                  className="w-16 bg-nx-card border border-nx-line rounded px-2 py-1 text-xs text-center outline-none focus:border-nx-purple/60"
                                   title="Limite de Caracteres"
                               />
                           </div>
@@ -533,7 +533,7 @@ const App = () => {
 
                   <button 
                     onClick={() => fileInputRef.current.click()}
-                    className="flex items-center gap-2 text-xs font-bold bg-red-50 text-red-600 hover:bg-red-100 px-4 py-2 rounded-xl transition-colors shadow-sm"
+                    className="flex items-center gap-2 text-xs font-bold bg-nx-purple/10 text-nx-purple-soft hover:bg-nx-purple/20 px-4 py-2 rounded-xl transition-colors shadow-sm"
                   >
                     <Upload size={14} />
                     TXT / SRT
@@ -543,8 +543,8 @@ const App = () => {
             </div>
 
             {/* Barra de Comandos de Voz */}
-            <div className="mb-4 bg-slate-50 border border-slate-200 rounded-xl p-3">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+            <div className="mb-4 bg-nx-bg border border-nx-line rounded-xl p-3">
+              <p className="text-[10px] font-bold text-nx-muted uppercase tracking-wider mb-2 flex items-center gap-1">
                 <Command size={12}/> Inserir Direções de Atuação
               </p>
               <div className="flex flex-wrap gap-2">
@@ -552,7 +552,7 @@ const App = () => {
                   <button
                     key={idx}
                     onClick={() => insertCommand(cmd.tag)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 text-slate-600 text-[11px] font-semibold rounded-lg hover:border-red-300 hover:text-red-600 transition-colors shadow-sm"
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-nx-card border border-nx-line text-nx-text text-[11px] font-semibold rounded-lg hover:border-nx-purple/50 hover:text-nx-purple-soft transition-colors shadow-sm"
                     title={`Insere a tag ${cmd.tag} no texto`}
                   >
                     {cmd.icon} {cmd.label}
@@ -563,13 +563,13 @@ const App = () => {
             
             <textarea
               ref={textareaRef}
-              className="w-full h-40 p-5 rounded-2xl border-2 border-slate-50 bg-slate-50 focus:bg-white focus:ring-4 focus:ring-red-50 focus:border-red-200 transition-all outline-none resize-none text-base leading-relaxed text-slate-700"
+              className="w-full h-40 p-5 rounded-2xl border-2 border-nx-line bg-nx-bg focus:ring-4 focus:ring-nx-purple/20 focus:border-nx-purple/60 transition-all outline-none resize-none text-base leading-relaxed text-nx-text placeholder:text-nx-muted/60"
               placeholder="Digite o texto aqui. Use os botões acima para inserir pausas. O tom e o estilo extra ficam no painel ao lado."
               value={text}
               onChange={(e) => setText(e.target.value)}
             />
 
-            {error && <div className="mt-3 text-sm text-red-600 bg-red-50 p-3 rounded-lg border border-red-100">{error}</div>}
+            {error && <div className="mt-3 text-sm text-red-300 bg-red-500/10 p-3 rounded-lg border border-red-500/30">{error}</div>}
 
             <div className="mt-4">
               <button 
@@ -577,8 +577,8 @@ const App = () => {
                 disabled={isGenerating || text.length === 0}
                 className={`w-full flex items-center justify-center gap-3 py-4 rounded-2xl font-black transition-all transform active:scale-[0.98] shadow-lg ${
                   isGenerating || text.length === 0
-                  ? 'bg-slate-200 text-slate-400 cursor-not-allowed' 
-                  : 'bg-slate-900 text-white hover:bg-slate-800'
+                  ? 'bg-white/5 text-nx-muted/60 cursor-not-allowed shadow-none' 
+                  : 'bg-gradient-to-r from-nx-purple to-nx-blue text-white hover:brightness-110 shadow-nx-purple/30'
                 }`}
               >
                 {isGenerating && !batchQueue.some(q => q.status === 'processing') ? (
@@ -592,55 +592,55 @@ const App = () => {
 
           {/* Fila */}
           {batchQueue.length > 0 && (
-            <div className="bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden">
-              <div className="p-4 sm:p-6 bg-slate-50 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-2 font-bold text-slate-700">
-                  <Files size={20} className="text-red-500" />
+            <div className="bg-nx-card rounded-3xl shadow-xl shadow-black/40 border border-nx-line overflow-hidden">
+              <div className="p-4 sm:p-6 bg-nx-bg border-b border-nx-line flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-2 font-bold text-nx-text">
+                  <Files size={20} className="text-nx-purple-soft" />
                   <span>Fila de Geração ({batchQueue.filter(q => q.status !== 'done').length} pendentes)</span>
                 </div>
                 <div className="flex gap-2">
                     {makeSrt && (
-                      <button onClick={downloadCombinedSrt} className="px-4 py-2 text-xs font-bold text-red-600 bg-white border border-red-200 rounded-xl hover:bg-red-50 transition-colors" title="Um único SRT para todos os itens concluídos, na ordem da fila">
+                      <button onClick={downloadCombinedSrt} className="px-4 py-2 text-xs font-bold text-nx-purple-soft bg-transparent border border-nx-purple/40 rounded-xl hover:bg-nx-purple/10 transition-colors" title="Um único SRT para todos os itens concluídos, na ordem da fila">
                         SRT ÚNICO
                       </button>
                     )}
-                    <button onClick={clearDoneFromQueue} className="px-4 py-2 text-xs font-bold text-slate-500 bg-white border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors">
+                    <button onClick={clearDoneFromQueue} className="px-4 py-2 text-xs font-bold text-nx-muted bg-transparent border border-nx-line rounded-xl hover:bg-white/5 hover:text-nx-text transition-colors">
                         LIMPAR
                     </button>
                     <button 
                       onClick={processBatch}
                       disabled={isGenerating || batchQueue.every(q => q.status === 'done')}
-                      className="bg-red-600 text-white px-6 py-2 rounded-xl text-sm font-black hover:bg-red-700 transition-all shadow-md flex items-center gap-2 disabled:opacity-50"
+                      className="bg-nx-purple text-white px-6 py-2 rounded-xl text-sm font-black hover:bg-nx-purple-dark transition-all shadow-md shadow-nx-purple/30 flex items-center gap-2 disabled:opacity-50"
                     >
                     {isGenerating && batchQueue.some(q => q.status === 'processing') ? <Loader2 className="animate-spin" size={16} /> : <Zap size={16} fill="currentColor" />}
                     INICIAR TUDO
                     </button>
                 </div>
               </div>
-              <div className="max-h-96 overflow-y-auto p-4 space-y-2 custom-scrollbar bg-slate-50/50">
+              <div className="max-h-96 overflow-y-auto p-4 space-y-2 custom-scrollbar bg-nx-bg/50">
                 {batchQueue.map((item) => (
-                  <div key={item.id} className="flex items-center justify-between p-4 bg-white border border-slate-200 rounded-2xl shadow-sm">
+                  <div key={item.id} className="flex items-center justify-between p-4 bg-nx-card border border-nx-line rounded-2xl shadow-sm">
                     <div className="flex items-center gap-3 w-2/3">
-                      <FileText size={20} className={item.status === 'done' ? "text-emerald-400" : item.status === 'processing' ? "text-amber-500" : "text-slate-400"} />
+                      <FileText size={20} className={item.status === 'done' ? "text-emerald-400" : item.status === 'processing' ? "text-amber-400" : "text-nx-muted"} />
                       <div className="w-full">
-                        <p className="text-sm font-bold text-slate-700 truncate w-full" title={item.name}>{item.name}</p>
+                        <p className="text-sm font-bold text-nx-text truncate w-full" title={item.name}>{item.name}</p>
                         <div className="flex items-center gap-2 mt-1">
-                            <span className="text-[10px] text-slate-400 uppercase font-bold tracking-tight">
+                            <span className="text-[10px] text-nx-muted uppercase font-bold tracking-tight">
                               {item.status === 'pending' && 'Aguardando'}
                               {item.status === 'processing' && 'Gerando...'}
                               {item.status === 'done' && 'Concluído'}
                               {item.status === 'error' && 'Falha'}
                             </span>
-                            <span className="text-[9px] bg-slate-100 text-slate-500 px-1.5 rounded">{item.content.length} chars</span>
+                            <span className="text-[9px] bg-white/5 text-nx-muted px-1.5 rounded">{item.content.length} chars</span>
                         </div>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      {item.status === 'processing' && <Loader2 className="animate-spin text-amber-500" size={18} />}
-                      {item.status === 'done' && <CheckCircle className="text-emerald-500" size={18} />}
-                      {item.status === 'error' && <AlertCircle className="text-red-500" size={18} />}
+                      {item.status === 'processing' && <Loader2 className="animate-spin text-amber-400" size={18} />}
+                      {item.status === 'done' && <CheckCircle className="text-emerald-400" size={18} />}
+                      {item.status === 'error' && <AlertCircle className="text-red-400" size={18} />}
                       {item.status !== 'processing' && (
-                        <button onClick={() => removeFromQueue(item.id)} className="p-2 text-slate-300 hover:text-red-500 bg-slate-50 hover:bg-red-50 rounded-lg transition-colors">
+                        <button onClick={() => removeFromQueue(item.id)} className="p-2 text-nx-muted/60 hover:text-red-400 bg-white/5 hover:bg-red-500/10 rounded-lg transition-colors">
                           <Trash2 size={16} />
                         </button>
                       )}
@@ -653,24 +653,24 @@ const App = () => {
 
           {/* Player Resultante */}
           {audioUrl && !enableSplit && (
-            <div className="bg-white rounded-3xl shadow-2xl border-2 border-emerald-100 p-6 animate-in zoom-in-95 duration-300">
-              <div className="flex items-center gap-2 text-emerald-600 font-bold mb-4 text-sm uppercase tracking-wider">
+            <div className="bg-nx-card rounded-3xl shadow-2xl shadow-black/40 border-2 border-emerald-500/25 p-6 animate-in zoom-in-95 duration-300">
+              <div className="flex items-center gap-2 text-emerald-400 font-bold mb-4 text-sm uppercase tracking-wider">
                 <CheckCircle size={18} /> Narração Pronta
               </div>
               <div className="flex flex-col sm:flex-row items-center gap-4">
-                <div className="flex-1 w-full bg-slate-50 p-2 rounded-2xl">
+                <div className="flex-1 w-full bg-nx-bg p-2 rounded-2xl">
                   <audio controls src={audioUrl} className="w-full h-10" />
                 </div>
                 <button 
                   onClick={() => triggerDownload(audioUrl, `narracao-${selectedVoice.label || selectedVoice.id}.wav`)}
-                  className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 bg-slate-900 text-white rounded-2xl font-bold hover:bg-slate-800 transition-all shrink-0 shadow-lg"
+                  className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 bg-nx-blue text-white rounded-2xl font-bold hover:bg-nx-blue-dark transition-all shrink-0 shadow-lg"
                 >
                   <Download size={18} /> BAIXAR
                 </button>
                 {makeSrt && SEGMENTS.get(audioUrl) && (
                   <button
                     onClick={() => downloadSrt(buildSrt(SEGMENTS.get(audioUrl).cues), `narracao-${selectedVoice.label || selectedVoice.id}.srt`)}
-                    className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 bg-red-600 text-white rounded-2xl font-bold hover:bg-red-700 transition-all shrink-0 shadow-lg"
+                    className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 bg-nx-purple text-white rounded-2xl font-bold hover:bg-nx-purple-dark transition-all shrink-0 shadow-lg"
                   >
                     <Download size={18} /> BAIXAR SRT
                   </button>
@@ -684,37 +684,37 @@ const App = () => {
         <aside className="lg:col-span-5 space-y-6">
           
           {/* Estilos Globais */}
-          <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-6">
-            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-              <Settings size={14} className="text-red-500" /> Diretriz de Tom Global
+          <div className="bg-nx-card rounded-3xl shadow-sm border border-nx-line p-6">
+            <h3 className="text-xs font-black text-nx-muted uppercase tracking-widest mb-4 flex items-center gap-2">
+              <Settings size={14} className="text-nx-purple-soft" /> Diretriz de Tom Global
             </h3>
-            <p className="text-xs text-slate-500 mb-3">Isto define o contexto e a personalidade base da narração.</p>
+            <p className="text-xs text-nx-muted mb-3">Isto define o contexto e a personalidade base da narração.</p>
             <input
               type="text"
               placeholder="Estilo extra opcional (ex.: slightly faster, cheerful)"
               value={extraStyle}
               onChange={(e) => setExtraStyle(e.target.value)}
-              className="w-full mb-4 px-3 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-xs outline-none focus:ring-2 focus:ring-red-100"
+              className="w-full mb-4 px-3 py-2.5 bg-nx-bg border border-nx-line rounded-xl text-xs outline-none focus:ring-2 focus:ring-nx-purple/30"
             />
-            <div className="mb-4 p-3 bg-slate-50 border border-slate-100 rounded-xl space-y-2">
-              <div className="flex items-center gap-2 text-xs text-slate-500">
+            <div className="mb-4 p-3 bg-nx-bg border border-nx-line rounded-xl space-y-2">
+              <div className="flex items-center gap-2 text-xs text-nx-muted">
                 <span>Pausa entre parágrafos (segundos)</span>
                 <input
                   type="number" min={0} max={5} step={0.1} value={paraPause}
                   onChange={(e) => setParaPause(Math.max(0, Number(e.target.value) || 0))}
-                  className="w-16 px-2 py-1 bg-white border border-slate-200 rounded-lg text-xs outline-none"
+                  className="w-16 px-2 py-1 bg-nx-card border border-nx-line rounded-lg text-xs outline-none"
                 />
               </div>
-              <label className="flex items-center gap-2 text-xs font-bold text-slate-600 cursor-pointer">
-                <input type="checkbox" checked={makeSrt} onChange={(e) => setMakeSrt(e.target.checked)} /> Gerar legenda SRT junto com o áudio
+              <label className="flex items-center gap-2 text-xs font-bold text-nx-text cursor-pointer">
+                <input type="checkbox" className="accent-nx-purple" checked={makeSrt} onChange={(e) => setMakeSrt(e.target.checked)} /> Gerar legenda SRT junto com o áudio
               </label>
               {makeSrt && (
-                <div className="flex items-center gap-2 text-xs text-slate-500">
+                <div className="flex items-center gap-2 text-xs text-nx-muted">
                   <span>Máx. de caracteres por legenda</span>
                   <input
                     type="number" min={15} max={120} value={srtChars}
                     onChange={(e) => setSrtChars(Number(e.target.value) || 42)}
-                    className="w-16 px-2 py-1 bg-white border border-slate-200 rounded-lg text-xs outline-none"
+                    className="w-16 px-2 py-1 bg-nx-card border border-nx-line rounded-lg text-xs outline-none"
                   />
                 </div>
               )}
@@ -726,8 +726,8 @@ const App = () => {
                   onClick={() => setCurrentTone(t)}
                   className={`flex flex-col items-center justify-center gap-1.5 p-3 rounded-2xl border-2 transition-all ${
                     currentTone.id === t.id 
-                    ? 'border-red-500 bg-red-50 text-red-700 shadow-sm' 
-                    : 'border-slate-50 bg-slate-50 text-slate-500 hover:border-slate-200'
+                    ? 'border-nx-purple bg-nx-purple/15 text-nx-text shadow-sm shadow-nx-purple/20' 
+                    : 'border-transparent bg-nx-bg text-nx-muted hover:border-nx-line hover:text-nx-text'
                   }`}
                 >
                   {t.icon}
@@ -738,21 +738,21 @@ const App = () => {
           </div>
 
           {/* Clonar minha voz */}
-          <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-6 space-y-3">
-            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-              <Mic size={14} className="text-red-500" /> Clonar minha voz
+          <div className="bg-nx-card rounded-3xl shadow-sm border border-nx-line p-6 space-y-3">
+            <h3 className="text-xs font-black text-nx-muted uppercase tracking-widest flex items-center gap-2">
+              <Mic size={14} className="text-nx-purple-soft" /> Clonar minha voz
             </h3>
-            <p className="text-xs text-slate-500">Use apenas a sua própria voz, ou a de alguém que autorizou. Envie um áudio limpo de 10 a 30 segundos, só com a fala. WAV ou MP3.</p>
+            <p className="text-xs text-nx-muted">Use apenas a sua própria voz, ou a de alguém que autorizou. Envie um áudio limpo de 10 a 30 segundos, só com a fala. WAV ou MP3.</p>
             <input
               type="text"
               placeholder="Nome da voz"
               value={voiceName}
               onChange={(e) => setVoiceName(e.target.value)}
-              className="w-full px-3 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm outline-none focus:ring-2 focus:ring-red-100"
+              className="w-full px-3 py-2.5 bg-nx-bg border border-nx-line rounded-xl text-sm outline-none focus:ring-2 focus:ring-nx-purple/30"
             />
             <button
               onClick={() => refInputRef.current.click()}
-              className="w-full flex items-center justify-center gap-2 text-xs font-bold bg-red-50 text-red-600 hover:bg-red-100 px-4 py-3 rounded-xl transition-colors"
+              className="w-full flex items-center justify-center gap-2 text-xs font-bold bg-nx-purple/10 text-nx-purple-soft hover:bg-nx-purple/20 px-4 py-3 rounded-xl transition-colors"
             >
               <Upload size={14} /> {refFile ? refFile.name : "Escolher meu áudio"}
             </button>
@@ -762,31 +762,31 @@ const App = () => {
               value={voiceTranscript}
               onChange={(e) => setVoiceTranscript(e.target.value)}
               rows={3}
-              className="w-full px-3 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-xs outline-none focus:ring-2 focus:ring-red-100 resize-none"
+              className="w-full px-3 py-2.5 bg-nx-bg border border-nx-line rounded-xl text-xs outline-none focus:ring-2 focus:ring-nx-purple/30 resize-none"
             />
             <button
               onClick={handleVoiceUpload}
               disabled={uploadingVoice}
-              className="w-full bg-slate-900 text-white py-3 rounded-xl text-sm font-black hover:bg-slate-800 transition-all disabled:opacity-50"
+              className="w-full bg-nx-blue text-white py-3 rounded-xl text-sm font-black hover:bg-nx-blue-dark transition-all disabled:opacity-50"
             >
               {uploadingVoice ? "ENVIANDO..." : "SALVAR MINHA VOZ"}
             </button>
-            <p className="text-[11px] text-slate-400">Com transcrição a clonagem é máxima, mas o campo de estilo/tom é ignorado nessa voz. Sem transcrição, o tom e o estilo funcionam.</p>
+            <p className="text-[11px] text-nx-muted">Com transcrição a clonagem é máxima, mas o campo de estilo/tom é ignorado nessa voz. Sem transcrição, o tom e o estilo funcionam.</p>
           </div>
 
           {/* Vozes */}
-          <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-6 flex flex-col h-[520px]">
+          <div className="bg-nx-card rounded-3xl shadow-sm border border-nx-line p-6 flex flex-col h-[520px]">
             <div className="mb-4">
-              <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Vozes (padrão e a sua)</h3>
+              <h3 className="text-xs font-black text-nx-muted uppercase tracking-widest mb-3">Vozes (padrão e a sua)</h3>
               <div className="relative">
                 <input 
                   type="text" 
                   placeholder="Buscar voz..."
-                  className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm outline-none focus:ring-2 focus:ring-red-100 transition-all"
+                  className="w-full pl-9 pr-4 py-2.5 bg-nx-bg border border-nx-line rounded-xl text-sm outline-none focus:ring-2 focus:ring-nx-purple/30 transition-all"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
-                <Settings size={16} className="absolute left-3 top-3 text-slate-300" />
+                <Settings size={16} className="absolute left-3 top-3 text-nx-muted/60" />
               </div>
             </div>
 
@@ -797,38 +797,38 @@ const App = () => {
                   onClick={() => setSelectedVoice(voice)}
                   className={`w-full flex flex-col p-3 rounded-xl border-2 transition-all cursor-pointer ${
                     selectedVoice.id === voice.id 
-                    ? 'border-red-500 bg-white shadow-md' 
-                    : 'border-transparent bg-slate-50 hover:bg-slate-100'
+                    ? 'border-nx-purple bg-nx-purple/10 shadow-md shadow-nx-purple/20' 
+                    : 'border-transparent bg-nx-bg hover:bg-white/5'
                   }`}
                 >
                   <div className="flex items-center justify-between w-full">
                     <div className="flex items-center gap-3">
                       <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm ${
-                        selectedVoice.id === voice.id ? 'bg-red-600 text-white' : 'bg-slate-200 text-slate-500'
+                        selectedVoice.id === voice.id ? 'bg-gradient-to-br from-nx-purple to-nx-blue text-white' : 'bg-white/10 text-nx-muted'
                       }`}>
                         {(voice.label || voice.id)[0]}
                       </div>
                       <div className="text-left">
-                        <p className="font-bold text-sm text-slate-700 flex items-center gap-2">
+                        <p className="font-bold text-sm text-nx-text flex items-center gap-2">
                           {voice.label || voice.id}
-                          {voice.badge && <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 text-[8px] rounded-md uppercase tracking-wider">{voice.badge}</span>}
+                          {voice.badge && <span className="px-1.5 py-0.5 bg-nx-blue/15 text-blue-300 text-[8px] rounded-md uppercase tracking-wider">{voice.badge}</span>}
                         </p>
-                        <p className="text-[10px] text-slate-400 font-medium">{voice.type}</p>
+                        <p className="text-[10px] text-nx-muted font-medium">{voice.type}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
                       <div className={`px-2.5 py-1 rounded-md text-[9px] font-bold uppercase tracking-wider ${
-                        voice.gender === 'Fem' ? 'bg-pink-50 text-pink-600' : 'bg-blue-50 text-blue-600'
+                        voice.gender === 'Fem' ? 'bg-nx-purple/15 text-nx-purple-soft' : 'bg-nx-blue/15 text-blue-300'
                       }`}>
                         {voice.gender}
                       </div>
                       {voice.mine && (
-                        <button onClick={(e) => deleteVoice(e, voice)} className="p-1.5 rounded-full bg-slate-100 text-slate-300 hover:text-red-500" title="Remover esta voz">
+                        <button onClick={(e) => deleteVoice(e, voice)} className="p-1.5 rounded-full bg-white/5 text-nx-muted/60 hover:text-red-400" title="Remover esta voz">
                           <Trash2 size={14} />
                         </button>
                       )}
                       {voice.preset && (
-                        <button onClick={(e) => regeneratePreset(e, voice)} className="px-2 py-1 rounded-full bg-slate-100 text-slate-400 hover:text-red-500 text-xs font-bold" title="Gerar outra versão desta voz (o resultado varia a cada vez)">
+                        <button onClick={(e) => regeneratePreset(e, voice)} className="px-2 py-1 rounded-full bg-white/5 text-nx-muted hover:text-nx-purple-soft text-xs font-bold" title="Gerar outra versão desta voz (o resultado varia a cada vez)">
                           {regenId === voice.id ? "..." : "↻"}
                         </button>
                       )}
@@ -836,8 +836,8 @@ const App = () => {
                         onClick={(e) => togglePreview(e, voice.id)}
                         className={`p-1.5 rounded-full transition-all ${
                           previewState.id === voice.id 
-                            ? 'bg-red-100 text-red-600 shadow-sm' 
-                            : 'bg-slate-100 text-slate-400 hover:bg-slate-200 hover:text-red-500'
+                            ? 'bg-nx-purple/20 text-nx-purple-soft shadow-sm' 
+                            : 'bg-white/5 text-nx-muted hover:bg-white/10 hover:text-nx-purple-soft'
                         }`}
                         title="Ouvir amostra de voz"
                       >
@@ -855,7 +855,7 @@ const App = () => {
               ))}
               
               {filteredVoices.length === 0 && (
-                  <div className="text-center text-slate-400 text-sm mt-10">
+                  <div className="text-center text-nx-muted text-sm mt-10">
                       Nenhuma voz encontrada.
                   </div>
               )}
@@ -867,8 +867,8 @@ const App = () => {
       <style dangerouslySetInnerHTML={{ __html: `
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(148,163,184,.25); border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #7C3AED; }
       `}} />
     </div>
   );

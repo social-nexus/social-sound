@@ -7,27 +7,28 @@
 <link rel="icon" href="/favicon.ico" sizes="any">
 <link rel="icon" type="image/png" href="/favicon.png">
 <style>
-  :root { --bar:#0f172a; --ink:#e2e8f0; --muted:#94a3b8; --accent:#dc2626; --bg:#f8fafc; }
+  :root { color-scheme: dark; --bar:#111827; --ink:#F8FAFC; --muted:#94A3B8; --accent:#7C3AED; --accent2:#2563EB; --bg:#080D1D; --line:rgba(148,163,184,.16); }
   * { box-sizing: border-box; }
   html, body { height: 100%; margin: 0; background: var(--bg); font-family: system-ui, "Segoe UI", Roboto, sans-serif; }
   body { display: flex; flex-direction: column; }
-  header { display: flex; align-items: center; gap: 22px; height: 44px; padding: 0 14px; background: var(--bar); flex-shrink: 0; }
+  header { display: flex; align-items: center; gap: 22px; height: 44px; padding: 0 14px; background: var(--bar); flex-shrink: 0; border-bottom: 1px solid var(--line); }
   .brand { font-weight: 900; letter-spacing: -.02em; font-size: 15px; color: #fff; white-space: nowrap; }
-  .brand span { color: var(--accent); }
+  .brand span { background: linear-gradient(90deg, #8B5CF6, var(--accent2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
   .brand .logo { height: 32px; width: 32px; vertical-align: middle; margin-right: 8px; background: #fff; border-radius: 8px; padding: 2px; }
   nav { display: flex; gap: 4px; height: 100%; align-items: flex-end; }
   nav button { appearance: none; border: 0; background: transparent; color: var(--muted); font: 600 13px system-ui, sans-serif;
     padding: 0 16px; height: 34px; border-radius: 8px 8px 0 0; cursor: pointer; }
   nav button:hover { color: #fff; }
-  nav button.on { background: var(--bg); color: #0f172a; }
+  nav button.on { background: var(--bg); color: var(--ink); box-shadow: inset 0 2px 0 var(--accent); }
   .hint { margin-left: auto; color: var(--muted); font-size: 11px; }
   main { flex: 1; position: relative; min-height: 0; }
   .panel { position: absolute; inset: 0; display: none; }
   .panel.on { display: block; }
   iframe { width: 100%; height: 100%; border: 0; background: var(--bg); }
-  .msg { max-width: 520px; margin: 12vh auto; padding: 24px; text-align: center; color: #334155; line-height: 1.5; }
-  .msg h2 { margin: 0 0 8px; font-size: 18px; }
+  .msg { max-width: 520px; margin: 12vh auto; padding: 24px; text-align: center; color: var(--muted); line-height: 1.5; }
+  .msg h2 { margin: 0 0 8px; font-size: 18px; color: var(--ink); }
   .msg button { margin-top: 12px; padding: 9px 18px; border: 0; border-radius: 10px; background: var(--accent); color: #fff; font-weight: 700; cursor: pointer; }
+  .msg button:hover { background: #6D28D9; }
 </style>
 </head>
 <body>

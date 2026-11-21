@@ -6,7 +6,7 @@
 <title>Diálogo</title>
 <link rel="icon" href="/favicon.ico" sizes="any">
 <style>
-  :root { --bg:#f8fafc; --card:#fff; --line:#e2e8f0; --ink:#1e293b; --muted:#64748b; --accent:#dc2626; }
+  :root { color-scheme: dark; accent-color: #7C3AED; --bg:#080D1D; --card:#111827; --line:rgba(148,163,184,.16); --ink:#F8FAFC; --muted:#94A3B8; --accent:#7C3AED; --accent2:#2563EB; --accent-soft:#A78BFA; }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--ink); font-family: system-ui, "Segoe UI", Roboto, sans-serif; }
   .wrap { max-width: 1280px; margin: 0 auto; padding: 20px; }
@@ -17,9 +17,9 @@
   .card { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 18px; margin-bottom: 18px; }
   .card:last-child { margin-bottom: 0; }
   label.t { display: block; font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
-  textarea { width: 100%; min-height: 250px; resize: vertical; border: 1px solid var(--line); border-radius: 12px; padding: 12px; font: 15px/1.6 system-ui, sans-serif; color: var(--ink); background: #f8fafc; outline: none; }
-  textarea:focus { border-color: var(--accent); }
-  #srt { min-height: 240px; font: 13px/1.5 ui-monospace, Consolas, monospace; background: #fff; }
+  textarea { width: 100%; min-height: 250px; resize: vertical; border: 1px solid var(--line); border-radius: 12px; padding: 12px; font: 15px/1.6 system-ui, sans-serif; color: var(--ink); background: var(--bg); outline: none; }
+  textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(124,58,237,.25); }
+  #srt { min-height: 240px; font: 13px/1.5 ui-monospace, Consolas, monospace; background: var(--bg); }
   .dica { font-size: 12px; color: var(--muted); margin-top: 6px; }
   .voz { display: grid; grid-template-columns: 1fr; gap: 6px; padding: 10px 0; border-top: 1px solid var(--line); font-size: 13px; }
   .voz:first-of-type { border-top: 0; padding-top: 0; }
@@ -27,20 +27,22 @@
   .voz .nome small { font-weight: 400; color: var(--muted); }
   .voz .linha { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
   .voz.off { opacity: .55; }
-  select, input[type=number] { border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; font-size: 13px; background: #fff; max-width: 100%; }
+  select, input[type=number] { border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; font-size: 13px; background: var(--bg); color: var(--ink); max-width: 100%; }
   input[type=number] { width: 70px; }
   .opts { display: grid; gap: 10px; font-size: 13px; }
   .opts .l { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
   .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 14px; }
-  button.b { border: 0; border-radius: 12px; padding: 11px 18px; font-weight: 800; font-size: 14px; cursor: pointer; background: #e2e8f0; color: #334155; }
+  button.b { border: 0; border-radius: 12px; padding: 11px 18px; font-weight: 800; font-size: 14px; cursor: pointer; background: rgba(148,163,184,.12); color: var(--ink); }
+  button.b:hover:not(:disabled) { background: rgba(148,163,184,.2); }
   button.b.p { background: var(--accent); color: #fff; }
+  button.b.p:hover:not(:disabled) { background: #6D28D9; }
   button.b:disabled { opacity: .5; cursor: default; }
-  button.link { background: none; border: 0; padding: 0; color: var(--accent); font-weight: 700; font-size: 12px; text-decoration: underline; cursor: pointer; }
+  button.link { background: none; border: 0; padding: 0; color: var(--accent-soft); font-weight: 700; font-size: 12px; text-decoration: underline; cursor: pointer; }
   a.b { text-decoration: none; display: inline-block; }
-  .prog { display: none; padding: 12px; border: 1px solid #fecaca; background: #fef2f2; border-radius: 12px; font-size: 13px; margin-bottom: 12px; }
-  .barra { height: 8px; background: #fee2e2; border-radius: 6px; margin-top: 8px; overflow: hidden; }
-  .barra i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .4s; }
-  .erro { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; border-radius: 10px; padding: 8px 12px; font-size: 12px; margin-bottom: 10px; }
+  .prog { display: none; padding: 12px; border: 1px solid rgba(124,58,237,.35); background: rgba(124,58,237,.10); border-radius: 12px; font-size: 13px; margin-bottom: 12px; }
+  .barra { height: 8px; background: rgba(148,163,184,.15); border-radius: 6px; margin-top: 8px; overflow: hidden; }
+  .barra i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--accent), var(--accent2)); transition: width .4s; }
+  .erro { background: rgba(239,68,68,.10); border: 1px solid rgba(239,68,68,.30); color: #FCA5A5; border-radius: 10px; padding: 8px 12px; font-size: 12px; margin-bottom: 10px; }
   audio { width: 100%; margin: 6px 0 12px; }
   #info { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
 </style>

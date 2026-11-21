@@ -1,1 +1,31 @@
 @import "tailwindcss";
+
+/* Paleta oficial — Social Nexus */
+@theme {
+  --color-nx-bg: #080D1D;          /* Fundo principal */
+  --color-nx-card: #111827;        /* Fundo dos cards */
+  --color-nx-purple: #7C3AED;      /* Roxo principal */
+  --color-nx-blue: #2563EB;        /* Azul elétrico */
+  --color-nx-text: #F8FAFC;        /* Texto principal */
+  --color-nx-muted: #94A3B8;       /* Texto secundário */
+
+  /* Derivados (só para legibilidade no fundo escuro) */
+  --color-nx-purple-soft: #A78BFA; /* roxo claro para textos pequenos sobre o escuro */
+  --color-nx-purple-dark: #6D28D9; /* hover dos botões roxos */
+  --color-nx-blue-dark: #1D4ED8;   /* hover dos botões azuis */
+  --color-nx-line: rgb(148 163 184 / 0.16); /* bordas sutis */
+}
+
+:root {
+  color-scheme: dark; /* deixa controles nativos (player, números, scroll) escuros */
+}
+
+html, body {
+  background: var(--color-nx-bg);
+  color: var(--color-nx-text);
+}
+
+::selection {
+  background: rgb(124 58 237 / 0.45);
+  color: #fff;
+}
