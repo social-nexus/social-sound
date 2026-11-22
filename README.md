@@ -5,7 +5,7 @@ Ferramenta **local** para Windows, Linux e macOS que junta, em uma janela só:
 - **Roteiro**: prepara o texto para a narração (acentos, números, abreviações e pausas de respiração);
 - **Narração**: gera voz com clonagem de voz (VoxCPM2);
 - **Diálogo**: narração com várias vozes, uma por personagem;
-- **Legendas**: gera o `.srt` a partir de um áudio pronto e do roteiro;
+- **Legendas**: gera o `.srt` (normal ou palavra por palavra) ou a lista de timestamps a partir de um áudio pronto e do roteiro;
 - **Edição de vídeo**: abre o seu [AutoEditor MS](https://github.com/pedroibd/autoeditor-ms) dentro da mesma janela.
 
 Tudo roda no seu computador. A internet só é usada na instalação, para baixar os modelos.
@@ -91,6 +91,11 @@ Esqueceu de baixar o SRT? Suba o áudio pronto, cole o roteiro e a legenda sai s
 
 - **Modo Rápido** (padrão, nada para baixar): usa as pausas do próprio áudio. Em trechos longos sem pausa, a legenda pode variar 1 a 2 s.
 - **Modo Preciso**: o Whisper ouve o áudio e casa com o roteiro (melhor sincronia, mais lento). O `instalar.bat` baixa o modelo `base` (cerca de 150 MB).
+
+Formatos:
+- **Legenda normal** (`.srt`): frases quebradas pelo máximo de caracteres.
+- **Palavra por palavra** (`.srt`): 1, 2 ou 3 palavras por vez, estilo Shorts/Reels. Nunca junta palavras de frases diferentes. Fica mais exata no modo Preciso.
+- **Timestamps** (`.txt`): uma linha por frase com o momento em que ela começa, ex.: `[00:04] Beleza, hoje o treino é esperar.`
 
 ### Edição de vídeo
 Só carrega quando você abre a aba pela primeira vez. A narração baixada vai para a pasta Downloads; para usar no editor, arraste o áudio (e o `.srt`) para dentro da aba. Seus projetos do editor continuam aparecendo se você usar o mesmo navegador (Edge).

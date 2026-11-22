@@ -1,5 +1,7 @@
 """Social Sound - legenda SRT a partir de um áudio pronto e do texto do roteiro.
 
+Formatos: frases (SRT normal), palavras (SRT com 1, 2 ou 3 palavras por vez) e timestamps ([mm:ss] frase, em .txt).
+
 Dois modos:
   rapido  : usa só as pausas do próprio áudio (sem baixar nada). Bom para as narrações geradas aqui.
   whisper : o Whisper (faster-whisper, na CPU) ouve o áudio e o roteiro é casado com o que ele ouviu.
@@ -301,7 +303,74 @@ def alinhar_com_palavras(cues, palavras_ouvidas):
         if inicios[ci] is None:
             inicios[ci] = ini[i]
         fins[ci] = max(fins[ci], fim[i])
-    return inicios, fins, {"confianca": casadas / len(script), "palavras_casadas": casadas, "palavras": len(script)}
+    tempos = [(ini[i], fim[i]) for i in range(len(script))]
+    return inicios, fins, {"confianca": casadas / len(script), "palavras_casadas": casadas, "palavras": len(script),
+                           "tempos_palavras": tempos}
+
+
+
+# ====================================================================== tempo de cada palavra
+def _pontuacao(w: str):
+    """'frase' se a palavra fecha uma frase, 'virgula' se fecha um trecho, senão None."""
+    w = w.rstrip("\"'”’»)]")
+    if not w:
+        return None
+    return "frase" if w[-1] in ".!?…" else "virgula" if w[-1] in ",;:" else None
+
+
+def palavras_com_tempo(cues, inicios, fins, blocos=None, tempos_whisper=None):
+    """Lista [{texto, ini, fim}] com o tempo de cada palavra do roteiro.
+    Com Whisper usa o tempo ouvido; no modo rápido reparte o tempo de fala de cada legenda pelo tamanho das palavras,
+    pulando as pausas do áudio."""
+    out = []
+    if tempos_whisper is not None:
+        k = 0
+        for c in cues:
+            for w in c["texto"].split():
+                if _norm(w) and k < len(tempos_whisper):
+                    a, b = tempos_whisper[k]
+                    k += 1
+                    out.append({"texto": w, "ini": float(a), "fim": float(b)})
+                elif out:                      # símbolo solto (—, …): gruda na palavra anterior
+                    out[-1]["texto"] += " " + w
+        return out
+    for c, t0, t1 in zip(cues, inicios, fins):
+        ws = c["texto"].split()
+        pesos = [max(1, sum(ch.isalnum() for ch in w)) for w in ws]
+        total = sum(pesos)
+        lin = Linha(blocos, t0, t1) if blocos else None
+        acum = 0
+        for w, p in zip(ws, pesos):
+            if lin and lin.total > 0:
+                a, b = lin.real(lin.total * acum / total), lin.real(lin.total * (acum + p) / total)
+            else:
+                a, b = t0 + (t1 - t0) * acum / total, t0 + (t1 - t0) * (acum + p) / total
+            out.append({"texto": w, "ini": float(a), "fim": float(b)})
+            acum += p
+    return out
+
+
+def agrupar_palavras(palavras, por_vez=1):
+    """Junta de 1 a 3 palavras por legenda, sem atravessar o fim de uma frase ou uma vírgula."""
+    grupos, cur = [], []
+    for p in palavras:
+        cur.append(p)
+        if len(cur) >= por_vez or _pontuacao(p["texto"]):
+            grupos.append(cur)
+            cur = []
+    if cur:
+        grupos.append(cur)
+    return [{"texto": " ".join(p["texto"] for p in g), "ini": g[0]["ini"], "fim": g[-1]["fim"]} for g in grupos]
+
+
+def tempo_curto(t: float) -> str:
+    s = int(max(t, 0.0))
+    return f"{s // 3600}:{s % 3600 // 60:02d}:{s % 60:02d}" if s >= 3600 else f"{s // 60:02d}:{s % 60:02d}"
+
+
+def montar_timestamps(cues, inicios):
+    """[mm:ss] Frase — uma linha por frase do roteiro."""
+    return "\n".join(f"[{tempo_curto(t)}] {c['texto']}" for c, t in zip(cues, inicios)) + "\n"
 
 
 # ====================================================================== SRT
@@ -352,10 +421,11 @@ def ouvir_palavras(caminho: str, modelo: str):
     return [(w.word, w.start, w.end) for s in segs for w in (s.words or [])]
 
 
-def _trabalho(jid, caminho, roteiro, modo, max_chars, modelo):
+def _trabalho(jid, caminho, roteiro, modo, max_chars, modelo, formato="frases", por_vez=1):
     job = JOBS[jid]
     try:
-        cues = preparar_cues(roteiro, max_chars)
+        # timestamps: uma linha por frase inteira; nos outros formatos, legendas do tamanho escolhido
+        cues = preparar_cues(roteiro, 100000 if formato == "timestamps" else max_chars)
         if not cues:
             raise ValueError("O roteiro está vazio.")
         x, sr = sf.read(caminho, dtype="float32", always_2d=False)
@@ -374,13 +444,23 @@ def _trabalho(jid, caminho, roteiro, modo, max_chars, modelo):
                 avisos.append(f"Só {info['confianca']:.0%} das palavras casaram com o áudio; confira o roteiro e a legenda.")
         else:
             job["msg"] = "Analisando as pausas do áudio..."
-            ini, fim, info = alinhar_rapido(cues, blocos_de_fala(x, sr))
+            blocos = blocos_de_fala(x, sr)
+            ini, fim, info = alinhar_rapido(cues, blocos)
             if info["confianca"] < 0.7 or not info["pausas_ancoradas"]:
                 avisos.append("O áudio e o texto não combinam muito bem nas pausas, então a sincronia pode variar. "
                               "Se ficar fora de lugar, tente o modo com Whisper.")
-        srt = montar_srt(cues, ini, fim, duracao)
-        job.update(status="pronto", srt=srt, avisos=avisos,
-                   info={"duracao": round(duracao, 1), "legendas": len(cues), "modo": modo,
+        if formato == "timestamps":
+            texto, qtd, ext = montar_timestamps(cues, ini), len(cues), "txt"
+        elif formato == "palavras":
+            palavras = palavras_com_tempo(cues, ini, fim, blocos=None if modo == "whisper" else blocos,
+                                          tempos_whisper=info.get("tempos_palavras"))
+            grupos = agrupar_palavras(palavras, por_vez)
+            texto = montar_srt(grupos, [g["ini"] for g in grupos], [g["fim"] for g in grupos], duracao)
+            qtd, ext = len(grupos), "srt"
+        else:
+            texto, qtd, ext = montar_srt(cues, ini, fim, duracao), len(cues), "srt"
+        job.update(status="pronto", srt=texto, ext=ext, avisos=avisos,
+                   info={"duracao": round(duracao, 1), "legendas": qtd, "modo": modo, "formato": formato,
                          "confianca": round(float(info["confianca"]), 3)})
     except Exception as e:  # noqa: BLE001
         job.update(status="erro", msg=f"{type(e).__name__}: {e}"[:400])
@@ -398,7 +478,10 @@ def rota_status():
 
 @router.post("/api/legenda/gerar")
 async def rota_gerar(audio: UploadFile = File(...), roteiro: str = Form(...), modo: str = Form("rapido"),
-                     max_chars: int = Form(42), modelo: str = Form("base")):
+                     max_chars: int = Form(42), modelo: str = Form("base"),
+                     formato: str = Form("frases"), palavras_por_vez: int = Form(1)):
+    if formato not in ("frases", "palavras", "timestamps"):
+        raise HTTPException(400, "Formato inválido.")
     if modo not in ("rapido", "whisper"):
         raise HTTPException(400, "Modo inválido.")
     if modelo not in ("base", "small"):
@@ -408,7 +491,8 @@ async def rota_gerar(audio: UploadFile = File(...), roteiro: str = Form(...), mo
     caminho.write_bytes(await audio.read())
     jid = uuid.uuid4().hex[:8]
     JOBS[jid] = {"status": "rodando", "msg": "Começando...", "t": time.time()}
-    threading.Thread(target=_trabalho, args=(jid, str(caminho), roteiro, modo, max(15, min(max_chars, 120)), modelo),
+    threading.Thread(target=_trabalho, args=(jid, str(caminho), roteiro, modo, max(15, min(max_chars, 120)), modelo,
+                                                    formato, max(1, min(palavras_por_vez, 3))),
                      daemon=True).start()
     return {"job": jid}
 

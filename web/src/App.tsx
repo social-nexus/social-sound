@@ -472,15 +472,15 @@ const App = () => {
   return (
     <div className="min-h-screen bg-nx-bg text-nx-text font-sans pb-20">
       <header className="bg-nx-card/85 backdrop-blur border-b border-nx-line sticky top-0 z-30 shadow-lg shadow-black/30">
-        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <img src="/logo.png" alt="Social Sound" className="w-11 h-11 object-contain bg-nx-card rounded-xl p-0.5" />
+        <div className="max-w-7xl mx-auto px-4 md:px-8 py-2.5 md:py-0 md:min-h-[76px] flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5">
+            <img src="/icone.png?v=2" alt="" className="w-11 h-11 object-contain shrink-0" />
             <div>
-              <h1 className="font-black text-xl tracking-tight text-nx-text">SOCIAL <span className="bg-gradient-to-r from-nx-purple-soft via-nx-purple to-nx-blue bg-clip-text text-transparent">SOUND</span></h1>
-              <p className="text-[9px] uppercase tracking-widest text-nx-muted font-bold">Automação de Voiceover & Comandos</p>
+              <h1 className="text-[22px] leading-[1.2] font-black tracking-[-0.02em] text-nx-text mb-0.5">Narração e clonagem de voz</h1>
+              <p className="text-sm text-nx-muted">Escreva ou carregue um TXT/SRT, escolha a voz e o tom e gere o áudio já com a legenda.</p>
             </div>
           </div>
-          <div className="hidden sm:flex items-center gap-4">
+          <div className="hidden sm:flex items-center gap-4 shrink-0">
              {enableSplit && (
                  <div className="bg-amber-500/10 text-amber-300 border border-amber-500/20 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-tighter flex items-center gap-1">
                     <SplitSquareHorizontal size={12}/> Divisão Ativa ({charLimit}c)

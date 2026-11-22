@@ -4,14 +4,22 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Legendas</title>
-<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" href="/favicon.ico?v=2" sizes="any">
+<link rel="icon" type="image/png" href="/favicon.png?v=2">
 <style>
   :root { color-scheme: dark; accent-color: #7C3AED; --bg:#080D1D; --card:#111827; --line:rgba(148,163,184,.16); --ink:#F8FAFC; --muted:#94A3B8; --accent:#7C3AED; --accent2:#2563EB; --accent-soft:#A78BFA; }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--ink); font-family: system-ui, "Segoe UI", Roboto, sans-serif; }
-  .wrap { max-width: 1280px; margin: 0 auto; padding: 20px; }
-  h1 { margin: 0 0 4px; font-size: 22px; font-weight: 900; letter-spacing: -.02em; }
-  .sub { margin: 0 0 18px; color: var(--muted); font-size: 14px; }
+  .wrap { max-width: 1280px; margin: 0 auto; padding: 32px; }
+  @media (max-width: 767px) { .wrap { padding: 16px; } }
+
+  /* Cabeçalho padrão das abas (igual em Roteiro, Narração, Diálogo e Legendas) */
+  .topo { position: sticky; top: 0; z-index: 30; background: rgba(17,24,39,.85); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); box-shadow: 0 10px 15px -3px rgba(0,0,0,.3); }
+  .topo-in { max-width: 1280px; margin: 0 auto; padding: 0 32px; min-height: 76px; display: flex; align-items: center; gap: 14px; }
+  .topo img { width: 44px; height: 44px; object-fit: contain; flex-shrink: 0; }
+  .topo h1 { margin: 0 0 2px; line-height: 1.2; font-size: 22px; font-weight: 900; letter-spacing: -.02em; color: var(--ink); }
+  .topo .sub { margin: 0; line-height: 20px; color: var(--muted); font-size: 14px; }
+  @media (max-width: 767px) { .topo-in { padding: 10px 16px; } }
   .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; }
   @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
   .card { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 18px; }
@@ -41,9 +49,14 @@
 </style>
 </head>
 <body>
+<header class="topo"><div class="topo-in">
+  <img src="/icone.png?v=2" alt="">
+  <div>
+    <h1>Legendas e timestamps</h1>
+    <p class="sub">Suba o áudio pronto e cole o roteiro: gere a legenda normal, a legenda palavra por palavra ou a lista de timestamps, sem refazer a narração.</p>
+  </div>
+</div></header>
 <div class="wrap">
-  <h1>Legendas (SRT)</h1>
-  <p class="sub">Esqueceu de baixar a legenda? Suba o áudio pronto e cole o roteiro: a legenda é gerada aqui, sem refazer a narração.</p>
   <div class="grid">
     <section class="card">
       <label class="t">Áudio pronto</label>
@@ -56,6 +69,19 @@
 
       <div class="opts">
         <div class="l">
+          <b>Formato</b>
+          <select id="formato">
+            <option value="frases">Legenda normal (.srt, frases)</option>
+            <option value="palavras">Legenda palavra por palavra (.srt)</option>
+            <option value="timestamps">Timestamps [00:00] Frase (.txt)</option>
+          </select>
+        </div>
+        <div class="l" id="blocoPalavras" style="display:none">
+          <b>Palavras por vez</b>
+          <select id="porVez"><option value="1">1 palavra</option><option value="2">2 palavras</option><option value="3">3 palavras</option></select>
+          <span class="dica">Nunca junta palavras de frases diferentes.</span>
+        </div>
+        <div class="l">
           <b>Modo</b>
           <select id="modo">
             <option value="rapido">Rápido: usa as pausas do áudio (nada para baixar)</option>
@@ -67,7 +93,8 @@
           <select id="modelo"><option value="base">base (cerca de 150 MB)</option><option value="small">small (cerca de 480 MB, mais exato)</option></select>
           <span class="dica" id="estadoWhisper"></span>
         </div>
-        <div class="l"><b>Máx. de caracteres por legenda</b><input type="number" id="maxc" value="42" min="15" max="120"></div>
+        <div class="l" id="blocoMaxc"><b>Máx. de caracteres por legenda</b><input type="number" id="maxc" value="42" min="15" max="120"></div>
+        <div class="dica" id="dicaFormato" style="display:none"></div>
         <div class="dica" id="dicaModo">Rápido: costuma acertar bem quando a voz tem velocidade regular e pausas entre as frases. Se a legenda sair fora de lugar em algum trecho, use o modo Preciso.</div>
       </div>
 
@@ -79,7 +106,7 @@
       <div class="prog" id="prog"></div>
       <div id="erros"></div>
       <div id="info"></div>
-      <textarea id="srt" readonly placeholder="A legenda aparece aqui."></textarea>
+      <textarea id="srt" readonly placeholder="O resultado aparece aqui."></textarea>
       <div class="row" style="margin-top:12px">
         <button class="b p" id="baixar" disabled>Baixar .srt</button>
         <button class="b" id="copiar" disabled>Copiar</button>
@@ -90,7 +117,7 @@
 
 <script>
   var $ = function (id) { return document.getElementById(id); };
-  var arquivo = null, nomeBase = "legenda", whisperOk = false, inicio = 0, timer = null;
+  var arquivo = null, nomeBase = "legenda", whisperOk = false, inicio = 0, timer = null, extensao = "srt";
 
   function encodeWav(pcm, rate) {
     var buf = new ArrayBuffer(44 + pcm.length * 2), v = new DataView(buf);
@@ -116,13 +143,25 @@
   }
 
   function mostrarErro(msg) { $("erros").innerHTML = ""; var e = document.createElement("div"); e.className = "erro"; e.textContent = msg; $("erros").appendChild(e); }
-  function parar() { clearInterval(timer); $("prog").style.display = "none"; $("gerar").disabled = false; $("gerar").textContent = "Gerar legenda"; }
+  function parar() { clearInterval(timer); $("prog").style.display = "none"; $("gerar").disabled = false; $("gerar").textContent = $("formato").value === "timestamps" ? "Gerar timestamps" : "Gerar legenda"; }
   function mmss(s) { return String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0"); }
 
   $("escolher").onclick = function () { $("arq").click(); };
   $("arq").onchange = function () {
     arquivo = $("arq").files[0] || null;
     if (arquivo) { $("nomeArq").textContent = arquivo.name; nomeBase = arquivo.name.replace(/\.[^.]+$/, "") || "legenda"; }
+  };
+  var DICAS_FORMATO = {
+    palavras: "Ideal para Shorts e Reels. Para palavra por palavra, o modo Preciso (Whisper) acerta melhor o tempo de cada palavra.",
+    timestamps: "Uma linha por frase, com o minuto e o segundo em que ela começa. Ex.: [00:04] Beleza, hoje o treino é esperar."
+  };
+  $("formato").onchange = function () {
+    var f = $("formato").value;
+    $("blocoPalavras").style.display = f === "palavras" ? "flex" : "none";
+    $("blocoMaxc").style.display = f === "frases" ? "flex" : "none";
+    $("dicaFormato").style.display = DICAS_FORMATO[f] ? "block" : "none";
+    $("dicaFormato").textContent = DICAS_FORMATO[f] || "";
+    $("gerar").textContent = f === "timestamps" ? "Gerar timestamps" : "Gerar legenda";
   };
   $("modo").onchange = function () {
     var w = $("modo").value === "whisper";
@@ -144,6 +183,7 @@
       var fd = new FormData();
       fd.append("audio", wav.blob, "audio.wav"); fd.append("roteiro", $("roteiro").value); fd.append("modo", $("modo").value);
       fd.append("max_chars", $("maxc").value || "42"); fd.append("modelo", $("modelo").value);
+      fd.append("formato", $("formato").value); fd.append("palavras_por_vez", $("porVez").value);
       var r = await fetch("/api/legenda/gerar", { method: "POST", body: fd });
       if (!r.ok) throw new Error(await r.text());
       var jid = (await r.json()).job;
@@ -161,7 +201,10 @@
   function mostrar(s) {
     $("srt").value = s.srt;
     var i = s.info;
-    $("info").textContent = i.legendas + " legendas • áudio de " + mmss(Math.round(i.duracao)) + " • modo " + (i.modo === "whisper" ? "preciso" : "rápido") +
+    extensao = s.ext || "srt";
+    $("baixar").textContent = "Baixar ." + extensao;
+    var rotulo = i.formato === "timestamps" ? " frases" : i.formato === "palavras" ? " legendas palavra por palavra" : " legendas";
+    $("info").textContent = i.legendas + rotulo + " • áudio de " + mmss(Math.round(i.duracao)) + " • modo " + (i.modo === "whisper" ? "preciso" : "rápido") +
       " • " + (i.modo === "whisper" ? Math.round(i.confianca * 100) + "% das palavras casaram" : "qualidade do encaixe " + Math.round(i.confianca * 100) + "%");
     s.avisos.forEach(function (a) { var x = document.createElement("div"); x.className = "aviso"; x.textContent = a; $("erros").appendChild(x); });
     $("baixar").disabled = $("copiar").disabled = false;
@@ -171,7 +214,7 @@
   $("baixar").onclick = function () {
     var a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([$("srt").value], { type: "text/plain;charset=utf-8" }));
-    a.download = nomeBase + ".srt"; document.body.appendChild(a); a.click(); a.remove();
+    a.download = nomeBase + (extensao === "txt" ? "-timestamps.txt" : ".srt"); document.body.appendChild(a); a.click(); a.remove();
   };
   $("copiar").onclick = async function () {
     try { await navigator.clipboard.writeText($("srt").value); }
