@@ -406,6 +406,7 @@ const App = () => {
         else { URL.revokeObjectURL(url); SEGMENTS.delete(url); }
       }
       if (requestId === previewRequestRef.current) {
+        if (previewAudioRef.current) previewAudioRef.current.src = "";
         console.error("Erro no preview da voz:", err);
         setPreviewState({ id: null, status: "idle" });
       }
