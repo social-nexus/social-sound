@@ -131,6 +131,19 @@ def test_global_social_nexus_models_directory_uses_llm_subfolder(monkeypatch, tm
     assert ia_local.models_dir() == root / "LLM"
 
 
+def test_tts_engine_catalog_separates_commercial_and_noncommercial_weights():
+    from tts_engine_catalog import ENGINES
+    by_id = {engine["id"]: engine for engine in ENGINES}
+    assert by_id["voxcpm2"]["commercial_use"] is True
+    assert by_id["supertonic3"]["weights_license"] == "OpenRAIL-M"
+    assert by_id["omnivoice"]["commercial_use"] is False
+    assert by_id["omnivoice"]["weights_license"] == "CC-BY-NC"
+    assert by_id["f5tts"]["commercial_use"] is False
+    assert by_id["f5tts"]["weights_license"] == "CC-BY-NC-4.0"
+    assert by_id["voxcpm2"]["installed"] is True
+    assert all(not by_id[name]["installed"] for name in ("supertonic3", "omnivoice", "f5tts"))
+
+
 def test_local_model_catalog_includes_qwen_and_license_flag_for_gemma():
     qwen = ia_local.MODEL_CATALOG["qwen3-4b-q4km"]
     gemma = ia_local.MODEL_CATALOG["gemma3-4b-it-q4km"]
