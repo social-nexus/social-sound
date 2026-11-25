@@ -427,6 +427,11 @@ def test_local_security_middleware_covers_voice_mutation_routes():
     server_source = (Path(__file__).resolve().parents[1] / "server" / "server.py").read_text(encoding="utf-8")
     protected_paths = ("/api/ai", "/api/narration", "/api/dialogo", "/api/legenda", "/api/roteiro", "/voices", "/presets", "/tts")
     assert all(f'"{path}"' in server_source for path in protected_paths)
+    # Static UI and audio routes also require an allowed Host to block DNS rebinding.
+    assert 'if scope.get("type") != "http":' in server_source
+    assert "protected_path = scope.get(\"path\", \"\").startswith(" in server_source
+    assert "if host not in AI_LOCAL_HOSTS" in server_source
+    assert server_source.index("if host not in AI_LOCAL_HOSTS") < server_source.index("if not protected_path or")
 
 
 def test_voice_upload_has_size_limit_atomic_publish_and_rollback():
