@@ -393,7 +393,8 @@ from narration_api import create_narration_router  # noqa: E402
 
 narration_router = create_narration_router(
     lock=_lock, run=run, synth=synth, ensure_preset=ensure_preset,
-    preset_by_id=preset_by_id, find_mine=find_mine,
+    preset_by_id=preset_by_id, find_mine=find_mine, parse_text=parse_text,
+    split_sentences=split_sentences, tighten=tighten,
     data_dir=SOCIAL_SOUND_DATA_ROOT, output_dir=SAIDAS / "narracoes",
 )
 app.include_router(narration_router)
