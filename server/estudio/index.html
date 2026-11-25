@@ -1,120 +1,28 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Social Sound</title>
-<link rel="icon" href="/favicon.ico?v=2" sizes="any">
-<link rel="icon" type="image/png" href="/favicon.png?v=2">
-<link rel="apple-touch-icon" href="/favicon.png?v=2">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Social Sound</title><link rel="icon" href="/favicon.ico?v=2" sizes="any"><link rel="icon" type="image/png" href="/favicon.png?v=2"><link rel="apple-touch-icon" href="/favicon.png?v=2">
 <style>
-  :root { color-scheme: dark; --bar:#111827; --ink:#F8FAFC; --muted:#94A3B8; --accent:#7C3AED; --accent2:#2563EB; --bg:#080D1D; --line:rgba(148,163,184,.16); }
-  * { box-sizing: border-box; }
-  html, body { height: 100%; margin: 0; background: var(--bg); font-family: system-ui, "Segoe UI", Roboto, sans-serif; }
-  body { display: flex; flex-direction: column; }
-  header { display: flex; align-items: center; gap: 22px; height: 44px; padding: 0 14px; background: var(--bar); flex-shrink: 0; border-bottom: 1px solid var(--line); }
-  .brand { font-weight: 900; letter-spacing: -.02em; font-size: 15px; color: #fff; white-space: nowrap; }
-  .brand span { background: linear-gradient(90deg, #8B5CF6, var(--accent2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
-  .brand { display: flex; align-items: center; height: 100%; }
-  .brand .logo { height: 30px; width: auto; display: block; }
-  nav { display: flex; gap: 4px; height: 100%; align-items: flex-end; }
-  nav button { appearance: none; border: 0; background: transparent; color: var(--muted); font: 600 13px system-ui, sans-serif;
-    padding: 0 16px; height: 34px; border-radius: 8px 8px 0 0; cursor: pointer; }
-  nav button:hover { color: #fff; }
-  nav button.on { background: var(--bg); color: var(--ink); box-shadow: inset 0 2px 0 var(--accent); }
-  .hint { margin-left: auto; color: var(--muted); font-size: 11px; }
-  main { flex: 1; position: relative; min-height: 0; }
-  .panel { position: absolute; inset: 0; display: none; }
-  .panel.on { display: block; }
-  iframe { width: 100%; height: 100%; border: 0; background: var(--bg); }
-  .msg { max-width: 520px; margin: 12vh auto; padding: 24px; text-align: center; color: var(--muted); line-height: 1.5; }
-  .msg h2 { margin: 0 0 8px; font-size: 18px; color: var(--ink); }
-  .msg button { margin-top: 12px; padding: 9px 18px; border: 0; border-radius: 10px; background: var(--accent); color: #fff; font-weight: 700; cursor: pointer; }
-  .msg button:hover { background: #6D28D9; }
-</style>
-</head>
+:root{color-scheme:dark;--bar:#111827;--ink:#F8FAFC;--muted:#94A3B8;--accent:#7C3AED;--bg:#080D1D;--line:rgba(148,163,184,.16)}*{box-sizing:border-box}html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,"Segoe UI",Roboto,sans-serif}body{display:flex;min-height:0}.sidebar{width:244px;flex:0 0 244px;display:flex;flex-direction:column;background:var(--bar);border-right:1px solid var(--line);padding:16px 12px;gap:16px}.brand{display:flex;align-items:center;gap:10px;padding:4px 10px 12px;border-bottom:1px solid var(--line)}.brand img{width:36px;height:36px;object-fit:contain}.brand strong{font-size:17px;letter-spacing:-.02em;font-weight:900}.brand strong span{color:#A78BFA}.nav-label{padding:2px 10px;color:var(--muted);font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}nav{display:flex;flex-direction:column;gap:4px}nav button{width:100%;appearance:none;display:flex;align-items:center;gap:11px;border:1px solid transparent;border-radius:10px;padding:11px 12px;background:transparent;color:var(--muted);font:600 13px system-ui,sans-serif;text-align:left;cursor:pointer;transition:background .15s,color .15s,border .15s}nav button svg{width:18px;height:18px;flex:0 0 18px}nav button:hover{background:rgba(255,255,255,.045);color:var(--ink)}nav button.on{background:rgba(124,58,237,.14);color:var(--ink);border-color:rgba(124,58,237,.28);box-shadow:inset 3px 0 0 var(--accent)}.side-foot{margin-top:auto;padding:10px;color:var(--muted);font-size:11px;line-height:1.5}main{flex:1;min-width:0;position:relative}.panel{position:absolute;inset:0;display:none}.panel.on{display:block}iframe{width:100%;height:100%;border:0;background:var(--bg)}.msg{max-width:620px;margin:12vh auto;padding:24px;text-align:center;color:var(--muted);line-height:1.6}.msg h2{margin:0 0 8px;font-size:20px;color:var(--ink)}.msg button{margin-top:12px;padding:9px 18px;border:0;border-radius:10px;background:var(--accent);color:#fff;font-weight:700;cursor:pointer}.msg button:hover{background:#6D28D9}@media(max-width:720px){body{flex-direction:column}.sidebar{width:auto;flex:0 0 auto;padding:8px;gap:6px;border-right:0;border-bottom:1px solid var(--line)}.brand{padding:3px 8px 8px}nav{flex-direction:row;overflow-x:auto;gap:3px}nav button{width:auto;white-space:nowrap;padding:9px 10px;font-size:12px}nav button.on{box-shadow:inset 0 -3px 0 var(--accent)}.nav-label,.side-foot{display:none}main{min-height:0;flex:1}}
+</style></head>
 <body>
-<header>
-  <div class="brand"><img src="/logo.png?v=2" alt="Social Sound" class="logo"></div>
-  <nav>
-    <button id="t-roteiro" onclick="show('roteiro')">Roteiro</button>
-    <button id="t-narracao" onclick="show('narracao')">Narração</button>
-    <button id="t-dialogo" onclick="show('dialogo')">Diálogo</button>
-    <button id="t-legenda" onclick="show('legenda')">Legendas</button>
-    <button id="t-editor" onclick="show('editor')">Edição de vídeo</button>
-  </nav>
-  <div class="hint">Ctrl+1 Roteiro &nbsp;•&nbsp; Ctrl+2 Narração &nbsp;•&nbsp; Ctrl+3 Diálogo &nbsp;•&nbsp; Ctrl+4 Legendas &nbsp;•&nbsp; Ctrl+5 Edição de vídeo</div>
-</header>
-<main>
-  <div class="panel" id="p-roteiro"></div>
-  <div class="panel" id="p-narracao"></div>
-  <div class="panel" id="p-dialogo"></div>
-  <div class="panel" id="p-legenda"></div>
-  <div class="panel" id="p-editor"></div>
-</main>
+<aside class="sidebar"><div class="brand"><img src="/logo.png?v=2" alt="Social Sound"><strong>SOCIAL <span>SOUND</span></strong></div><div class="nav-label">Produção</div>
+<nav aria-label="Navegação principal">
+<button id="t-roteiro" onclick="show('roteiro')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h8"/></svg>Roteiro / Humanização</button>
+<button id="t-narracao" onclick="show('narracao')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 17v5M8 22h8"/></svg>Narração</button>
+<button id="t-dialogo" onclick="show('dialogo')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5H5l-2 2v-5.5A8.5 8.5 0 1 1 21 11.5Z"/><path d="M8 10h8M8 14h5"/></svg>Diálogo</button>
+<button id="t-legenda" onclick="show('legenda')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M7 10h4M7 14h2M14 10h3M14 14h3"/></svg>Legendas</button>
+<button id="t-ia-roteiros" onclick="show('ia-roteiros')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/><circle cx="12" cy="12" r="5"/></svg>IA — Roteiros e Narração</button>
+<button id="t-ia-prompts" onclick="show('ia-prompts')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>IA — Prompts Visuais</button>
+</nav><div class="side-foot">Social Sound · ferramentas locais de criação de conteúdo</div></aside>
+<main><div class="panel" id="p-roteiro"></div><div class="panel" id="p-narracao"></div><div class="panel" id="p-dialogo"></div><div class="panel" id="p-legenda"></div><div class="panel" id="p-ia-roteiros"></div><div class="panel" id="p-ia-prompts"></div></main>
 <script>
-  // Cada aba é uma ferramenta com o próprio servidor. A tela só carrega quando a aba é aberta pela primeira vez.
-  var TABS = {
-    roteiro: { url: "/roteiro/", check: false, offline: "" },
-    dialogo: { url: "/dialogo/", check: false, offline: "" },
-    legenda: { url: "/legenda/", check: false, offline: "" },
-    narracao: { url: "/", check: false, offline: "" },
-    editor: { url: "http://localhost:4000/", check: true,
-      offline: "O editor de vídeo não está ligado. Se acabou de abrir o programa, espere alguns segundos e tente de novo. " +
-               "Se continuar assim, confira o caminho no arquivo config.bat." }
-  };
-  var loaded = {};
-
-  async function load(name) {
-    var t = TABS[name], panel = document.getElementById("p-" + name);
-    if (t.check) {
-      try { await fetch(t.url, { mode: "no-cors" }); }
-      catch (e) {
-        panel.innerHTML = '<div class="msg"><h2>Editor de vídeo desligado</h2><p>' + t.offline +
-          '</p><button onclick="load(\'' + name + '\')">Tentar de novo</button></div>';
-        loaded[name] = false;
-        return;
-      }
-    }
-    var f = document.createElement("iframe");
-    f.src = t.url;
-    f.allow = "autoplay; fullscreen; clipboard-write";
-    f.setAttribute("allowfullscreen", "");
-    panel.replaceChildren(f);
-    loaded[name] = true;
-  }
-
-  function show(name) {
-    Object.keys(TABS).forEach(function (n) {
-      document.getElementById("p-" + n).classList.toggle("on", n === name);
-      document.getElementById("t-" + n).classList.toggle("on", n === name);
-    });
-    try { localStorage.setItem("aba", name); } catch (e) {}
-    if (!loaded[name]) load(name);
-  }
-
-  document.addEventListener("keydown", function (e) {
-    if (e.ctrlKey && e.key === "1") { e.preventDefault(); show("roteiro"); }
-    if (e.ctrlKey && e.key === "2") { e.preventDefault(); show("narracao"); }
-    if (e.ctrlKey && e.key === "3") { e.preventDefault(); show("dialogo"); }
-    if (e.ctrlKey && e.key === "4") { e.preventDefault(); show("legenda"); }
-    if (e.ctrlKey && e.key === "5") { e.preventDefault(); show("editor"); }
-  });
-
-  // "Enviar para a Narração" (aba Roteiro): o texto fica guardado no navegador e a Narração avisada
-  window.addEventListener("message", function (e) {
-    if (e.origin !== location.origin || !e.data || e.data.tipo !== "ir-para-narracao") return;
-    var jaCarregada = !!loaded["narracao"];
-    show("narracao");
-    if (jaCarregada) {
-      var f = document.querySelector("#p-narracao iframe");
-      if (f && f.contentWindow) f.contentWindow.postMessage({ tipo: "texto-pendente" }, location.origin);
-    }
-  });
-
-  var last = "roteiro";
-  try { last = localStorage.getItem("aba") || last; } catch (e) {}
-  show(TABS[last] ? last : "narracao");
-</script>
-</body>
-</html>
+var TABS={roteiro:{url:"/roteiro/"},narracao:{url:"/"},dialogo:{url:"/dialogo/"},legenda:{url:"/legenda/"},"ia-roteiros":{url:"/ia-roteiros/",offline:"A área de IA para roteiros está sendo construída."},"ia-prompts":{url:"/ia-prompts/",offline:"A área de IA para prompts visuais está sendo construída."}};
+var loaded={};
+function load(name){var t=TABS[name],panel=document.getElementById("p-"+name);if(t.offline){panel.innerHTML='<div class="msg"><h2>Em desenvolvimento</h2><p>'+t.offline+'</p></div>';loaded[name]=true;return;}var f=document.createElement("iframe");f.src=t.url;f.allow="autoplay; fullscreen; clipboard-write";f.setAttribute("allowfullscreen","");panel.replaceChildren(f);loaded[name]=true;}
+function show(name){Object.keys(TABS).forEach(function(n){document.getElementById("p-"+n).classList.toggle("on",n===name);document.getElementById("t-"+n).classList.toggle("on",n===name);});try{localStorage.setItem("aba",name);}catch(e){}if(!loaded[name])load(name);}
+document.addEventListener("keydown",function(e){if(!e.ctrlKey)return;var keys={"1":"roteiro","2":"narracao","3":"dialogo","4":"legenda","5":"ia-roteiros","6":"ia-prompts"};if(keys[e.key]){e.preventDefault();show(keys[e.key]);}});
+window.addEventListener("message",function(e){if(e.origin!==location.origin||!e.data||e.data.tipo!=="ir-para-narracao")return;var loadedNarration=!!loaded.narracao;show("narracao");if(loadedNarration){var f=document.querySelector("#p-narracao iframe");if(f&&f.contentWindow)f.contentWindow.postMessage({tipo:"texto-pendente"},location.origin);}});
+var last="roteiro";try{last=localStorage.getItem("aba")||last;}catch(e){}show(TABS[last]?last:"roteiro");
+</script></body></html>
