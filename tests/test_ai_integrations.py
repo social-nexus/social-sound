@@ -461,6 +461,15 @@ def test_local_security_middleware_covers_voice_mutation_routes():
     assert server_source.index("if host not in AI_LOCAL_HOSTS") < server_source.index("if not protected_path or")
 
 
+def test_tts_engines_share_inference_lock():
+    server_source = (Path(__file__).resolve().parents[1] / "server" / "server.py").read_text(encoding="utf-8")
+    narration_source = (Path(__file__).resolve().parents[1] / "server" / "narration_api.py").read_text(encoding="utf-8")
+    assert "ENGINE_INFERENCE_LOCK = threading.Lock()" in server_source
+    assert "with ENGINE_INFERENCE_LOCK, _lock:" in server_source
+    assert "inference_lock=ENGINE_INFERENCE_LOCK" in server_source
+    assert "inference_guard = inference_lock or threading.Lock()" in narration_source
+
+
 def test_voice_upload_has_size_limit_atomic_publish_and_rollback():
     server_source = (Path(__file__).resolve().parents[1] / "server" / "server.py").read_text(encoding="utf-8")
     assert "sys, threading, uuid" in server_source
