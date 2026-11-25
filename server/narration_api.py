@@ -152,6 +152,20 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
     def list_jobs():
         return {"jobs": [public_job(job) for job in db.list_jobs()]}
 
+    @router.get("/queue/status")
+    def queue_status():
+        return {"paused": db.is_paused(), "pause_behavior": "after_current_job"}
+
+    @router.post("/queue/pause")
+    def pause_queue():
+        db.set_paused(True)
+        return {"paused": True, "message": "A fila pausa depois que a narração atual terminar."}
+
+    @router.post("/queue/resume")
+    def resume_queue():
+        db.set_paused(False)
+        return {"paused": False}
+
     @router.post("/jobs")
     def enqueue(payload: EnqueueRequest):
         parts = split_for_duration(payload.text, payload.target_seconds, payload.chars_per_minute)
@@ -185,6 +199,26 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
             candidate["audio_url"] = f"/saidas/narracoes/{job_id}/{Path(candidate['audio_path']).name}"
             items.append(candidate)
         return {"candidates": items}
+
+    @router.delete("/jobs/{job_id}")
+    def remove_job(job_id: str):
+        if not db.remove_queued(job_id):
+            raise HTTPException(409, "Só é possível remover narrações que ainda estão na fila.")
+        return {"ok": True}
+
+    @router.post("/jobs/{job_id}/move-up")
+    def move_job_up(job_id: str):
+        try:
+            return public_job(db.move(job_id, "up"))
+        except ValueError as exc:
+            raise HTTPException(409, str(exc)) from exc
+
+    @router.post("/jobs/{job_id}/move-down")
+    def move_job_down(job_id: str):
+        try:
+            return public_job(db.move(job_id, "down"))
+        except ValueError as exc:
+            raise HTTPException(409, str(exc)) from exc
 
     @router.post("/jobs/{job_id}/requeue")
     def requeue(job_id: str):
