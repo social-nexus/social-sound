@@ -3,7 +3,13 @@
 set -u
 AQUI="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$AQUI/_comum.sh"
+. "$AQUI/config.sh"
 export HF_HUB_DISABLE_SYMLINKS_WARNING=1
+if [ -n "${SOCIAL_NEXUS_MODELS_DIR:-}" ] && [ ! -d "$SOCIAL_NEXUS_MODELS_DIR" ]; then
+  echo "ERRO: a biblioteca compartilhada de modelos nao esta disponivel: $SOCIAL_NEXUS_MODELS_DIR"
+  echo "Conecte a unidade configurada ou ajuste SOCIAL_NEXUS_MODELS_DIR."
+  exit 1
+fi
 
 echo "=================================================="
 echo " Social Sound - instalacao completa"
