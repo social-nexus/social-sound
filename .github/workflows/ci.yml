@@ -21,4 +21,4 @@ jobs:
       - name: Test AI modules
         run: pytest -q tests
       - name: Check JavaScript syntax
-        run: node --check server/ai_web/app.js
+        run: node --check server/ai_web/app.js && node --check server/narracoes/app.js
