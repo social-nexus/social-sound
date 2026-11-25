@@ -206,3 +206,34 @@ def test_f5tts_job_reuses_one_worker_and_preserves_completed_parts_on_retry(tmp_
     assert len(calls[1]["parts"]) == len(failed["parts"]) - 1
     assert first_audio.read_bytes() == first_bytes
     assert all(part["status"] == "completed" for part in finished["parts"])
+
+
+def test_omnivoice_catalog_uses_explicit_huggingface_hub_cache(tmp_path, monkeypatch):
+    runtime = tmp_path / "omni-runtime"
+    python = runtime / "Scripts" / "python.exe"
+    python.parent.mkdir(parents=True)
+    python.write_bytes(b"fake python")
+    (runtime / "Lib" / "site-packages" / "omnivoice").mkdir(parents=True)
+    cache = tmp_path / "custom-hf-cache"
+    (cache / "models--k2-fsa--OmniVoice" / "snapshots" / "model").mkdir(parents=True)
+    (cache / "models--bosonai--higgs-audio-v2-tokenizer" / "snapshots" / "tokenizer").mkdir(parents=True)
+    monkeypatch.setenv("SOCIAL_SOUND_OMNIVOICE_PYTHON", str(python))
+    monkeypatch.setenv("HF_HOME", str(tmp_path / "different-hf-home"))
+    monkeypatch.setenv("HF_HUB_CACHE", str(cache))
+
+    app = FastAPI()
+    app.include_router(create_narration_router(
+        lock=threading.Lock(),
+        run=lambda fn: fn(SimpleNamespace(tts_model=SimpleNamespace(sample_rate=24000))),
+        synth=lambda *args, **kwargs: np.zeros(2400, dtype=np.float32),
+        ensure_preset=lambda *args: tmp_path / "preset.wav",
+        preset_by_id=lambda pid: {"id": pid},
+        find_mine=lambda name: None,
+        parse_text=lambda text: [("text", text)],
+        split_sentences=lambda text: [text],
+        tighten=lambda wav, sample_rate: wav,
+        data_dir=tmp_path / "data",
+        output_dir=tmp_path / "audio",
+    ))
+    engines = {item["id"]: item for item in TestClient(app).get("/api/narration/engines").json()["engines"]}
+    assert engines["omnivoice"]["installed"] is True
