@@ -1,6 +1,6 @@
 const API="/api/narration";
 const $=id=>document.getElementById(id);
-let jobs=[];let queuePaused=false;
+let jobs=[];let queuePaused=false;let voicesData=null;
 const esc=value=>String(value??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
 const statusLabel=s=>({queued:"Na fila",processing:"Em andamento",completed:"Concluída",failed:"Falhou",interrupted:"Interrompida"}[s]||s);
 async function request(url,options={}){const res=await fetch(url,options);if(!res.ok){let msg="Erro "+res.status;try{const d=await res.json();msg=d.detail||msg}catch{}throw new Error(msg)}return res.json()}
