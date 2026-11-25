@@ -1,3 +1,4 @@
+import asyncio
 import os
 import sys
 import tempfile
@@ -105,10 +106,12 @@ def test_local_model_catalog_includes_qwen_and_license_flag_for_gemma():
     assert gemma["requires_license_acceptance"] is True
 
 
-async def test_generic_cloud_generation_works_without_local_runtime(monkeypatch):
-    monkeypatch.setattr(ia_local, "generate_with_provider", AsyncMock(return_value="Roteiro teste"))
-    payload = {"provider": "openai", "provider_model": "gpt-4.1-mini", "system_prompt": "Escreva.", "prompt": "Crie um texto."}
-    result = await ia_local.generate_text(payload, local_request())
-    assert result["provider"] == "openai"
-    assert result["text"] == "Roteiro teste"
-    ia_local.generate_with_provider.assert_awaited_once()
+def test_generic_cloud_generation_works_without_local_runtime(monkeypatch):
+    async def run_test():
+        monkeypatch.setattr(ia_local, "generate_with_provider", AsyncMock(return_value="Roteiro teste"))
+        payload = {"provider": "openai", "provider_model": "gpt-4.1-mini", "system_prompt": "Escreva.", "prompt": "Crie um texto."}
+        result = await ia_local.generate_text(payload, local_request())
+        assert result["provider"] == "openai"
+        assert result["text"] == "Roteiro teste"
+        ia_local.generate_with_provider.assert_awaited_once()
+    asyncio.run(run_test())
