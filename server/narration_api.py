@@ -116,9 +116,12 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
 
     def omnivoice_ready() -> bool:
         python = omnivoice_python()
-        hf_home = Path(os.environ.get("HF_HOME", Path.home() / ".cache" / "huggingface"))
-        model_cache = hf_home / "hub" / "models--k2-fsa--OmniVoice" / "snapshots"
-        tokenizer_cache = hf_home / "hub" / "models--bosonai--higgs-audio-v2-tokenizer" / "snapshots"
+        hf_cache = Path(os.environ.get(
+            "HF_HUB_CACHE",
+            Path(os.environ.get("HF_HOME", Path.home() / ".cache" / "huggingface")) / "hub",
+        ))
+        model_cache = hf_cache / "models--k2-fsa--OmniVoice" / "snapshots"
+        tokenizer_cache = hf_cache / "models--bosonai--higgs-audio-v2-tokenizer" / "snapshots"
         runtime_root = python.parent.parent
         package_dir = runtime_root / ("Lib/site-packages/omnivoice" if os.name == "nt" else "lib/python3.11/site-packages/omnivoice")
         return (python.is_file() and package_dir.is_dir() and model_cache.is_dir()
