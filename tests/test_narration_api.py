@@ -143,7 +143,6 @@ def test_voxcpm_queue_generates_parts_and_requires_candidate_approval(tmp_path, 
     second_candidate = client.post(f"/api/narration/jobs/{job_id}/parts/1/regenerate")
     assert second_candidate.status_code == 200
     second_id = second_candidate.json()["candidate_id"]
-    candidate_path = Path(client.get(f"/api/narration/jobs/{job_id}/candidates").json()["candidates"][0]["audio_url"].split("/")[-1])
     import pathlib
     original_unlink = pathlib.Path.unlink
     def fail_candidate_cleanup(self, *args, **kwargs):
