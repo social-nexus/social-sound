@@ -61,6 +61,14 @@ Se algum download falhar, rode o `instalar.bat` de novo: o que já foi baixado n
 - **Ligar:** Linux: `./iniciar-linux.sh`. Mac: duplo clique em `iniciar-mac.command`. Os servidores rodam em segundo plano e abrem a janela com as abas no Chrome, Edge, Brave ou Chromium, se algum estiver instalado; senão, no navegador padrão. Os logs ficam na pasta `logs`.
 - **Desligar:** Linux: `./parar-linux.sh`. Mac: duplo clique em `parar-mac.command`. Fechar só a janela não desliga os servidores.
 
+## Armazenamento compartilhado de modelos
+
+No Windows, o Social Sound reconhece automaticamente a biblioteca central configurada pelo Social Music Beat em `%LOCALAPPDATA%\SocialNexus\model-storage.bat`. O VoxCPM2 usa o cache compartilhado `HuggingFace`; os modelos GGUF da área de IA usam `LLM`; e os caches PyTorch usam `Torch`. Os programas e ambientes Python continuam separados.
+
+Se a unidade escolhida não estiver conectada, o instalador e o inicializador avisam e param, sem baixar silenciosamente outra cópia para o disco do Windows. Se a biblioteca central não estiver configurada, o Social Sound mantém os caminhos locais padrão.
+
+No Linux/macOS, configure `SOCIAL_NEXUS_MODELS_DIR` no ambiente antes de instalar ou iniciar; o `config.sh` direciona os caches para as mesmas subpastas.
+
 ## Uso diário (Windows)
 
 - **Ligar:** duplo clique em `iniciar.bat`. Abre uma janela própria (Edge, sem barra de endereço) com a navegação lateral. Uma janela preta fica minimizada (servidor local): **não feche**.
