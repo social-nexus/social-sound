@@ -628,7 +628,11 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
                     full_path.unlink(missing_ok=True)
                 raise
             if backup_created:
-                backup_full.unlink(missing_ok=True)
+                try:
+                    backup_full.unlink(missing_ok=True)
+                except OSError:
+                    # Cleanup must not turn a completed approval into a reported failure.
+                    pass
                 backup_created = False
             return public_job(approved)
         except Exception as exc:
