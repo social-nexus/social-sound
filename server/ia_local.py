@@ -52,7 +52,10 @@ ROOT = data_root()
 RUNTIME_DIR = ROOT / "runtime"
 
 def models_dir() -> Path:
-    """Diretorio GGUF; compartilhavel entre ferramentas quando configurado."""
+    """GGUFs usam a subpasta LLM da biblioteca Social Nexus quando configurada."""
+    shared_root = os.environ.get("SOCIAL_NEXUS_MODELS_DIR")
+    if shared_root:
+        return (Path(shared_root).expanduser() / "LLM")
     return Path(os.environ.get("SOCIAL_SOUND_MODELS_DIR", str(ROOT / "models"))).expanduser()
 
 # O runtime llama.cpp e os logs continuam locais a esta instalacao.
