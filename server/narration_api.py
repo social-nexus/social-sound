@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import os
 import subprocess
+import shutil
 import sys
 import threading
 import time
@@ -607,14 +608,37 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
         paths[candidate["part_index"]] = Path(candidate["audio_path"])
         full_path = job_paths(job["id"]) / "completo.wav"
         temp_full = full_path.with_name("completo_aprovacao.tmp.wav")
+        backup_full = full_path.with_name(f".completo_rollback_{uuid.uuid4().hex}.wav")
+        backup_created = False
         try:
             merge_parts(paths, temp_full)
-            approved = db.approve_candidate(candidate_id)
+            # Keep the published audio intact until the replacement file is ready.
+            if full_path.is_file():
+                shutil.copy2(full_path, backup_full)
+                backup_created = True
             os.replace(temp_full, full_path)
+            try:
+                approved = db.approve_candidate(candidate_id)
+            except Exception:
+                # If the database update fails, restore the previously published audio.
+                if backup_created:
+                    os.replace(backup_full, full_path)
+                    backup_created = False
+                else:
+                    full_path.unlink(missing_ok=True)
+                raise
+            if backup_created:
+                backup_full.unlink(missing_ok=True)
+                backup_created = False
             return public_job(approved)
         except Exception as exc:
             temp_full.unlink(missing_ok=True)
-            raise HTTPException(500, f"Não foi possível aprovar a versão: {str(exc)[:400]}") from exc
+            # Preserve the rollback copy if restoration itself failed; it may be
+            # needed to recover the user's previously published narration.
+            detail = str(exc)
+            if backup_created and backup_full.is_file():
+                detail += f" (cópia de segurança preservada em {backup_full.name})"
+            raise HTTPException(500, f"Não foi possível aprovar a versão: {detail[:600]}") from exc
 
     @router.post("/candidates/{candidate_id}/discard")
     def discard_candidate(candidate_id: str):
