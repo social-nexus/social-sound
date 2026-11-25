@@ -33,6 +33,7 @@ LOCK = threading.RLock()
 RUNTIME_LIFECYCLE_LOCK = threading.RLock()
 JOBS: dict[str, dict] = {}
 MODEL_DOWNLOAD_LOCKS: dict[str, threading.Lock] = {}
+RUNTIME_INSTALL_LOCKS: dict[str, threading.Lock] = {}
 PROCESS: subprocess.Popen | None = None
 ACTIVE_MODEL: str | None = None
 ACTIVE_VARIANT: str | None = None
