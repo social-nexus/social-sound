@@ -101,3 +101,41 @@ def test_claim_next_respects_manual_queue_order(tmp_path):
     assert queue.finish(third["id"])["status"] == "completed"
     assert queue.claim_next()["id"] == first["id"]
     assert queue.get(second["id"])["status"] == "queued"
+
+def test_queue_migrates_existing_database_without_losing_jobs(tmp_path):
+    import sqlite3
+
+    path = tmp_path / "legacy-queue.sqlite3"
+    with sqlite3.connect(path) as db:
+        db.execute("""
+            CREATE TABLE narration_jobs (
+                id TEXT PRIMARY KEY,
+                text TEXT NOT NULL,
+                voice TEXT NOT NULL,
+                engine TEXT NOT NULL,
+                settings_json TEXT NOT NULL,
+                parts_json TEXT NOT NULL,
+                status TEXT NOT NULL,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                error TEXT
+            )
+        """)
+        db.execute(
+            """INSERT INTO narration_jobs
+               (id,text,voice,engine,settings_json,parts_json,status)
+               VALUES(?,?,?,?,?,?,?)""",
+            ("legacy-a", "Texto A", "voz", "voxcpm2", "{}", '[{"text":"A","status":"pending","audio_path":null}]', "queued"),
+        )
+        db.execute(
+            """INSERT INTO narration_jobs
+               (id,text,voice,engine,settings_json,parts_json,status)
+               VALUES(?,?,?,?,?,?,?)""",
+            ("legacy-b", "Texto B", "voz", "voxcpm2", "{}", '[{"text":"B","status":"pending","audio_path":null}]', "queued"),
+        )
+
+    queue = NarrationQueue(path)
+    jobs = [item for item in queue.list_jobs() if item["status"] == "queued"]
+    assert [item["id"] for item in jobs] == ["legacy-a", "legacy-b"]
+    assert [item["queue_order"] for item in jobs] == [0, 1]
+    assert queue.claim_next()["id"] == "legacy-a"
