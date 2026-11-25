@@ -9,7 +9,7 @@ Ferramenta **local** para Windows, Linux e macOS que junta, em uma janela só:
 - **IA — Roteiros e Narração**: área de criação assistida por IA (em desenvolvimento).
 - **IA — Prompts Visuais**: criação de prompts para vídeos e imagens (em desenvolvimento).
 
-Tudo roda no seu computador. A internet só é usada na instalação, para baixar os modelos.
+Tudo roda no seu computador. A internet é usada para baixar runtime/modelos e, quando escolhidas, para conectar às APIs externas.
 
 > Projeto criado com ajuda de inteligência artificial (Claude, da Anthropic) e testado só em parte.
 > Oferecido "como está", sem garantia. Veja [AVISOS.md](AVISOS.md).
@@ -43,7 +43,7 @@ Se algum download falhar, rode o `instalar.bat` de novo: o que já foi baixado n
 ## Instalação (Linux e macOS)
 
 1. Baixe o repositório (Code → Download ZIP ou `git clone`) e extraia numa pasta, por exemplo `~/SocialSound`.
-2. Abra um terminal nessa pasta e libere a execução dos scripts (só uma vez):
+1. Abra um terminal nessa pasta e libere a execução dos scripts (só uma vez):
    ```
    chmod +x *.sh *.command
    ```
