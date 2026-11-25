@@ -372,7 +372,12 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
                         pieces.append(wav)
             if not pieces:
                 raise RuntimeError("O motor não retornou áudio para esta parte.")
-            sf.write(str(destination), np.concatenate(pieces), sample_rate, subtype="PCM_16")
+            temporary = destination.with_name(f".{destination.stem}.{uuid.uuid4().hex}.tmp.wav")
+            try:
+                sf.write(str(temporary), np.concatenate(pieces), sample_rate, subtype="PCM_16")
+                os.replace(temporary, destination)
+            finally:
+                temporary.unlink(missing_ok=True)
         with lock:
             run(generate)
 
