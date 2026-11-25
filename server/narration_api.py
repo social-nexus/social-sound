@@ -41,6 +41,7 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
     worker_guard = threading.Lock()
     approval_guard = threading.Lock()
     candidate_guard = threading.Lock()
+    inference_guard = threading.Lock()
     worker_started = False
 
     def job_paths(job_id: str):
@@ -419,16 +420,17 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
                 folder = job_paths(job["id"])
                 if job.get("engine") != "voxcpm2" and unload_engine is not None:
                     unload_engine()
-                if job.get("engine") in {"omnivoice", "f5tts"}:
-                    render_external_job(job, folder)
-                else:
-                    for index, part in enumerate(job["parts"]):
-                        if part.get("status") == "completed" and part.get("audio_path") and valid_audio_file(Path(part["audio_path"])):
-                            continue
-                        db.update_part(job["id"], index, status="processing")
-                        target = folder / f"parte_{index + 1:03d}.wav"
-                        render_piece(job, index, target)
-                        db.update_part(job["id"], index, status="completed", audio_path=str(target))
+                with inference_guard:
+                    if job.get("engine") in {"omnivoice", "f5tts"}:
+                        render_external_job(job, folder)
+                    else:
+                        for index, part in enumerate(job["parts"]):
+                            if part.get("status") == "completed" and part.get("audio_path") and valid_audio_file(Path(part["audio_path"])):
+                                continue
+                            db.update_part(job["id"], index, status="processing")
+                            target = folder / f"parte_{index + 1:03d}.wav"
+                            render_piece(job, index, target)
+                            db.update_part(job["id"], index, status="completed", audio_path=str(target))
                 current = db.get(job["id"])
                 merge_parts([Path(p["audio_path"]) for p in current["parts"]],
                             folder / "completo.wav")
@@ -600,7 +602,8 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
             raise HTTPException(409, "Esta parte já tem uma versão aguardando aprovação.")
         candidate_path = job_paths(job_id) / f"candidata_{part_index + 1:03d}_{uuid.uuid4().hex[:8]}.wav"
         try:
-            render_piece(job, part_index, candidate_path)
+            with inference_guard:
+                render_piece(job, part_index, candidate_path)
             candidate_id = db.stage_candidate(job_id, part_index, str(candidate_path))
             return {"candidate_id": candidate_id, "part_index": part_index,
                     "audio_url": f"/saidas/narracoes/{job_id}/{candidate_path.name}",
