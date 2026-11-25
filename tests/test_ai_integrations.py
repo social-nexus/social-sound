@@ -472,6 +472,16 @@ def test_tts_engines_share_inference_lock():
     assert "inference_guard = inference_lock or threading.Lock()" in narration_source
 
 
+def test_narration_batch_queue_uses_stable_ids_and_locks_edits():
+    ui_source = (Path(__file__).resolve().parents[1] / "web" / "src" / "App.tsx").read_text(encoding="utf-8")
+    assert "const batchProcessingRef = useRef(false);" in ui_source
+    assert "if (batchProcessingRef.current || batchQueue.length === 0) return;" in ui_source
+    assert "const itemsToProcess = batchQueue.filter(item => item.status !== 'done');" in ui_source
+    assert "item.id === queueItem.id" in ui_source
+    assert "disabled={isGenerating}" in ui_source
+    assert "batchProcessingRef.current = false;" in ui_source
+
+
 def test_voice_upload_has_size_limit_atomic_publish_and_rollback():
     server_source = (Path(__file__).resolve().parents[1] / "server" / "server.py").read_text(encoding="utf-8")
     assert "sys, threading, uuid" in server_source
