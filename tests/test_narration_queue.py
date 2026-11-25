@@ -85,3 +85,19 @@ def test_queued_jobs_can_be_reordered_and_removed(tmp_path):
     assert queue.remove_queued(first["id"]) is True
     assert queue.get(first["id"]) is None
     assert queue.remove_queued(first["id"]) is False
+
+def test_claim_next_respects_manual_queue_order(tmp_path):
+    queue = NarrationQueue(tmp_path / "queue.sqlite3")
+    first = queue.enqueue("Texto 1", "voz", "voxcpm2", ["Parte 1"])
+    second = queue.enqueue("Texto 2", "voz", "voxcpm2", ["Parte 2"])
+    third = queue.enqueue("Texto 3", "voz", "voxcpm2", ["Parte 3"])
+
+    queue.move(third["id"], "up")
+    queue.move(third["id"], "up")
+
+    claimed = queue.claim_next()
+    assert claimed["id"] == third["id"]
+    assert queue.claim_next() is None
+    assert queue.finish(third["id"])["status"] == "completed"
+    assert queue.claim_next()["id"] == first["id"]
+    assert queue.get(second["id"])["status"] == "queued"
