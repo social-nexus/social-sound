@@ -349,3 +349,23 @@ def test_concurrent_provider_config_writes_remain_valid_json(monkeypatch, tmp_pa
     assert data["provider"] == "openai"
     assert data["models"]["openai"].startswith("model-")
     assert not list(tmp_path.glob("provider-config.json.tmp-*"))
+
+
+def test_model_deletion_waits_for_runtime_lifecycle_lock(monkeypatch, tmp_path):
+    import threading
+    import time
+
+    monkeypatch.setattr(ia_local, "MODELS_DIR", tmp_path)
+    finished = threading.Event()
+    result = []
+    ia_local.RUNTIME_LIFECYCLE_LOCK.acquire()
+    try:
+        worker = threading.Thread(target=lambda: (result.append(ia_local.delete_model("qwen3-4b-q4km", local_request())), finished.set()))
+        worker.start()
+        time.sleep(0.05)
+        assert not finished.is_set(), "Model deletion must serialize with runtime activation/deactivation"
+    finally:
+        ia_local.RUNTIME_LIFECYCLE_LOCK.release()
+    worker.join(timeout=2)
+    assert finished.is_set()
+    assert result == [{"ok": True}]
