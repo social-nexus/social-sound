@@ -31,14 +31,14 @@ python -m pip install torch torchaudio --index-url https://download.pytorch.org/
 if errorlevel 1 goto falha
 python -m pip install voxcpm fastapi "uvicorn[standard]" python-multipart soundfile httpx "keyring>=25.5,<26"
 if errorlevel 1 goto falha
-pip check
+python -m pip check
 if errorlevel 1 goto falha
 
 echo.
 echo [3/6] Instalando os complementos das abas Roteiro e Legendas...
 python -m pip install onnxruntime num2words faster-whisper
 if errorlevel 1 echo AVISO: nao consegui instalar algum complemento. As abas Roteiro e Legendas podem ficar limitadas. Rode este instalar.bat de novo mais tarde.
-python -m pip check
+python -m python -m pip check
 if errorlevel 1 echo AVISO: foram encontrados conflitos nas dependencias opcionais. Consulte a mensagem acima.
 
 echo.
