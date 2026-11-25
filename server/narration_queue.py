@@ -99,6 +99,7 @@ class NarrationQueue:
                     settings_json TEXT NOT NULL,
                     parts_json TEXT NOT NULL,
                     status TEXT NOT NULL,
+                    queue_order INTEGER NOT NULL DEFAULT 0,
                     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
                     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
                     error TEXT
@@ -114,6 +115,20 @@ class NarrationQueue:
                     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
                 );
             """)
+            columns = {row["name"] for row in db.execute("PRAGMA table_info(narration_jobs)")}
+            if "queue_order" not in columns:
+                db.execute("ALTER TABLE narration_jobs ADD COLUMN queue_order INTEGER NOT NULL DEFAULT 0")
+                rows = db.execute("SELECT id FROM narration_jobs ORDER BY created_at, rowid").fetchall()
+                for position, row in enumerate(rows):
+                    db.execute("UPDATE narration_jobs SET queue_order=? WHERE id=?", (position, row["id"]))
+            db.execute("CREATE INDEX IF NOT EXISTS idx_narration_jobs_order ON narration_jobs(status, queue_order)")
+            db.execute("""
+                CREATE TABLE IF NOT EXISTS narration_queue_control (
+                    id INTEGER PRIMARY KEY CHECK(id=1),
+                    paused INTEGER NOT NULL DEFAULT 0
+                )
+            """)
+            db.execute("INSERT OR IGNORE INTO narration_queue_control(id, paused) VALUES(1, 0)")
 
     def enqueue(self, text: str, voice: str, engine: str,
                 parts: list[str], settings: dict[str, Any] | None = None) -> dict:
@@ -121,14 +136,17 @@ class NarrationQueue:
             raise ValueError("A non-empty narration and at least one part are required")
         job_id = str(uuid.uuid4())
         with self._connect() as db:
+            next_order = db.execute(
+                "SELECT COALESCE(MAX(queue_order), -1) + 1 FROM narration_jobs"
+            ).fetchone()[0]
             db.execute(
                 """INSERT INTO narration_jobs
-                   (id,text,voice,engine,settings_json,parts_json,status)
-                   VALUES(?,?,?,?,?,?, 'queued')""",
+                   (id,text,voice,engine,settings_json,parts_json,status,queue_order)
+                   VALUES(?,?,?,?,?,?, 'queued', ?)""",
                 (job_id, text, voice, engine,
                  json.dumps(settings or {}, ensure_ascii=False),
                  json.dumps([{"text": p, "status": "pending", "audio_path": None}
-                             for p in parts], ensure_ascii=False))
+                             for p in parts], ensure_ascii=False), next_order)
             )
         return self.get(job_id)
 
@@ -140,7 +158,7 @@ class NarrationQueue:
     def list_jobs(self) -> list[dict]:
         with self._connect() as db:
             rows = db.execute(
-                "SELECT * FROM narration_jobs ORDER BY created_at, rowid"
+                "SELECT * FROM narration_jobs ORDER BY CASE WHEN status IN ('queued','processing') THEN 0 ELSE 1 END, queue_order, created_at, rowid"
             ).fetchall()
         return [self._row_dict(row) for row in rows]
 
@@ -155,6 +173,12 @@ class NarrationQueue:
         """Atomically claim one queued job; only one worker should call this."""
         with self._connect() as db:
             db.execute("BEGIN IMMEDIATE")
+            paused = db.execute(
+                "SELECT paused FROM narration_queue_control WHERE id=1"
+            ).fetchone()
+            if paused and paused["paused"]:
+                db.commit()
+                return None
             active = db.execute(
                 "SELECT 1 FROM narration_jobs WHERE status='processing' LIMIT 1"
             ).fetchone()
@@ -212,14 +236,64 @@ class NarrationQueue:
 
     def requeue(self, job_id: str) -> dict:
         with self._connect() as db:
+            next_order = db.execute(
+                "SELECT COALESCE(MAX(queue_order), -1) + 1 FROM narration_jobs"
+            ).fetchone()[0]
             cur = db.execute(
-                "UPDATE narration_jobs SET status='queued', error=NULL, "
+                "UPDATE narration_jobs SET status='queued', error=NULL, queue_order=?, "
                 "updated_at=CURRENT_TIMESTAMP WHERE id=? AND status IN ('interrupted','failed')",
-                (job_id,)
+                (next_order, job_id)
             )
             if not cur.rowcount:
                 raise ValueError("Only interrupted or failed jobs can be requeued")
         return self.get(job_id)
+
+    def remove_queued(self, job_id: str) -> bool:
+        with self._connect() as db:
+            cur = db.execute(
+                "DELETE FROM narration_jobs WHERE id=? AND status='queued'", (job_id,)
+            )
+            return bool(cur.rowcount)
+
+    def move(self, job_id: str, direction: str) -> dict:
+        if direction not in {"up", "down"}:
+            raise ValueError("direction must be 'up' or 'down'")
+        with self._connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            rows = db.execute(
+                "SELECT id, queue_order FROM narration_jobs WHERE status='queued' "
+                "ORDER BY queue_order, created_at, rowid"
+            ).fetchall()
+            ids = [row["id"] for row in rows]
+            if job_id not in ids:
+                db.rollback()
+                raise ValueError("Only queued jobs can be reordered")
+            index = ids.index(job_id)
+            other_index = index - 1 if direction == "up" else index + 1
+            if not 0 <= other_index < len(rows):
+                db.commit()
+                return self.get(job_id)
+            current, other = rows[index], rows[other_index]
+            temp_order = -1
+            db.execute("UPDATE narration_jobs SET queue_order=? WHERE id=?", (temp_order, current["id"]))
+            db.execute("UPDATE narration_jobs SET queue_order=? WHERE id=?", (current["queue_order"], other["id"]))
+            db.execute("UPDATE narration_jobs SET queue_order=? WHERE id=?", (other["queue_order"], current["id"]))
+            db.commit()
+        return self.get(job_id)
+
+    def set_paused(self, paused: bool) -> None:
+        with self._connect() as db:
+            db.execute(
+                "UPDATE narration_queue_control SET paused=? WHERE id=1",
+                (1 if paused else 0,)
+            )
+
+    def is_paused(self) -> bool:
+        with self._connect() as db:
+            row = db.execute(
+                "SELECT paused FROM narration_queue_control WHERE id=1"
+            ).fetchone()
+        return bool(row["paused"]) if row else False
 
     def stage_candidate(self, job_id: str, part_index: int, audio_path: str) -> str:
         job = self.get(job_id)
