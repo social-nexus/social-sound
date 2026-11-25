@@ -12,7 +12,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "server"))
 from narration_api import create_narration_router
 
 
-def test_voxcpm_queue_generates_parts_and_requires_candidate_approval(tmp_path):
+def test_voxcpm_queue_generates_parts_and_requires_candidate_approval(tmp_path, monkeypatch):
     model = SimpleNamespace(tts_model=SimpleNamespace(sample_rate=24000))
 
     def fake_run(fn):
@@ -113,6 +113,27 @@ def test_voxcpm_queue_generates_parts_and_requires_candidate_approval(tmp_path):
     still_original = client.get(f"/api/narration/jobs/{job_id}").json()
     assert still_original["parts"][0]["audio_path"] == original_path
 
+    # A failed final file replacement must not publish the candidate in SQLite
+    # or damage the previously completed narration.
+    import narration_api
+    full_audio = tmp_path / "audio" / job_id / "completo.wav"
+    original_full_audio = full_audio.read_bytes()
+    original_replace = narration_api.os.replace
+
+    def fail_published_audio_replace(source, destination):
+        if Path(source).name == "completo_aprovacao.tmp.wav" and Path(destination) == full_audio:
+            raise OSError("falha simulada ao substituir áudio completo")
+        return original_replace(source, destination)
+
+    monkeypatch.setattr(narration_api.os, "replace", fail_published_audio_replace)
+    failed_approval = client.post(f"/api/narration/candidates/{candidate['candidate_id']}/approve")
+    assert failed_approval.status_code == 500
+    after_failure = client.get(f"/api/narration/jobs/{job_id}").json()
+    assert after_failure["parts"][0]["audio_path"] == original_path
+    assert full_audio.read_bytes() == original_full_audio
+    assert client.get(f"/api/narration/jobs/{job_id}/candidates").json()["candidates"][0]["status"] == "awaiting_approval"
+
+    monkeypatch.setattr(narration_api.os, "replace", original_replace)
     approved = client.post(f"/api/narration/candidates/{candidate['candidate_id']}/approve")
     assert approved.status_code == 200
     assert approved.json()["parts"][0]["audio_path"] != original_path
