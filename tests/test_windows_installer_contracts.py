@@ -13,9 +13,9 @@ def test_main_installer_checks_virtual_environment_and_core_dependencies():
     assert 'if not exist ".venv\\Scripts\\python.exe" goto sem_python' in installer
     assert "python -m pip install --upgrade pip\nif errorlevel 1 goto falha" in installer
     assert (
-        'pip install voxcpm fastapi "uvicorn[standard]" python-multipart '
+        'python -m pip install voxcpm fastapi "uvicorn[standard]" python-multipart '
         'soundfile httpx "keyring>=25.5,<26"\n'
-        "if errorlevel 1 goto falha\npip check\nif errorlevel 1 goto falha"
+        "if errorlevel 1 goto falha\npython -m pip check\nif errorlevel 1 goto falha"
     ) in installer
 
 
