@@ -3,6 +3,9 @@ on:
   push:
     branches: [main, "feature/**"]
   pull_request:
+concurrency:
+  group: social-sound-build-${{ github.ref }}
+  cancel-in-progress: false
 jobs:
   checks:
     permissions:
@@ -41,7 +44,9 @@ jobs:
           if [ -n "$(git status --porcelain server/web web/package-lock.json)" ]; then
             git add server/web web/package-lock.json
             git commit -m "build: refresh packaged frontend assets"
-            git push
+            if ! git push; then
+              echo "AVISO: a branch mudou durante o build. Os assets serao atualizados pelo proximo CI da branch."
+            fi
           fi
       - name: Check JavaScript syntax
         run: node --check server/ai_web/app.js && node --check server/narracoes/app.js
