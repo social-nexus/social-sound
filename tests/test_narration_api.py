@@ -139,6 +139,23 @@ def test_voxcpm_queue_generates_parts_and_requires_candidate_approval(tmp_path, 
     assert approved.json()["parts"][0]["audio_path"] != original_path
     assert Path(tmp_path / "audio" / job_id / "completo.wav").is_file()
 
+    # A filesystem cleanup error after discard should not undo/report failure.
+    second_candidate = client.post(f"/api/narration/jobs/{job_id}/parts/1/regenerate")
+    assert second_candidate.status_code == 200
+    second_id = second_candidate.json()["candidate_id"]
+    candidate_path = Path(client.get(f"/api/narration/jobs/{job_id}/candidates").json()["candidates"][0]["audio_url"].split("/")[-1])
+    import pathlib
+    original_unlink = pathlib.Path.unlink
+    def fail_candidate_cleanup(self, *args, **kwargs):
+        if self.name.startswith("candidata_002_"):
+            raise OSError("cleanup test failure")
+        return original_unlink(self, *args, **kwargs)
+    monkeypatch.setattr(pathlib.Path, "unlink", fail_candidate_cleanup)
+    discarded = client.post(f"/api/narration/candidates/{second_id}/discard")
+    assert discarded.status_code == 200
+    assert client.get(f"/api/narration/jobs/{job_id}/candidates").json()["candidates"] == []
+    monkeypatch.setattr(pathlib.Path, "unlink", original_unlink)
+
 
 def test_f5tts_job_reuses_one_worker_and_preserves_completed_parts_on_retry(tmp_path, monkeypatch):
     import json
