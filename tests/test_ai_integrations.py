@@ -329,3 +329,23 @@ def test_duplicate_runtime_install_jobs_reuse_installed_runtime(monkeypatch, tmp
     assert len(downloaded) == 1
     assert all(ia_local.JOBS[jid]["status"] == "done" for jid in jobs)
     assert ia_local._runtime_binary(variant) is not None
+
+
+def test_concurrent_provider_config_writes_remain_valid_json(monkeypatch, tmp_path):
+    import threading
+    import json
+
+    path = tmp_path / "provider-config.json"
+    monkeypatch.setattr(ai_providers, "CONFIG_PATH", path)
+    workers = [threading.Thread(target=ai_providers._write_config, args=({
+        "provider": "openai", "models": {"openai": f"model-{index}"}
+    },)) for index in range(8)]
+    for worker in workers:
+        worker.start()
+    for worker in workers:
+        worker.join(timeout=2)
+    assert all(not worker.is_alive() for worker in workers)
+    data = json.loads(path.read_text(encoding="utf-8"))
+    assert data["provider"] == "openai"
+    assert data["models"]["openai"].startswith("model-")
+    assert not list(tmp_path.glob("provider-config.json.tmp-*"))
