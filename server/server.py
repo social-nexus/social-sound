@@ -120,7 +120,7 @@ class AILocalSecurityMiddleware:
     def __init__(self, app):
         self.app = app
     async def __call__(self, scope, receive, send):
-        if scope.get("type") != "http" or not scope.get("path", "").startswith("/api/ai"):
+        if scope.get("type") != "http" or not scope.get("path", "").startswith(("/api/ai", "/api/narration")):
             await self.app(scope, receive, send)
             return
         headers = dict(scope.get("headers", []))
@@ -386,6 +386,17 @@ from ai_providers import router as ai_providers_router
 from ia_local import router as ia_local_router
 app.include_router(ai_providers_router)
 app.include_router(ia_local_router)
+
+# Fila persistente e divisão inteligente de narrações longas (VoxCPM2).
+from ia_local import ROOT as SOCIAL_SOUND_DATA_ROOT  # noqa: E402
+from narration_api import create_narration_router  # noqa: E402
+
+narration_router = create_narration_router(
+    lock=_lock, run=run, synth=synth, ensure_preset=ensure_preset,
+    preset_by_id=preset_by_id, find_mine=find_mine,
+    data_dir=SOCIAL_SOUND_DATA_ROOT, output_dir=SAIDAS / "narracoes",
+)
+app.include_router(narration_router)
 
 # Interface compilada (pasta server/web): aberta em http://localhost:8000
 from fastapi.staticfiles import StaticFiles  # noqa: E402
