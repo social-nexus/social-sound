@@ -602,12 +602,18 @@ def delete_model(model_id: str, request: Request):
             _stop_runtime()
         if model_id in MODEL_CATALOG:
             folder = MODELS_DIR / model_id
+            # Wait for an in-flight download before deleting its directory.
+            with LOCK:
+                download_lock = MODEL_DOWNLOAD_LOCKS.setdefault(model_id, threading.Lock())
+            with download_lock:
+                if folder.exists():
+                    shutil.rmtree(folder)
         elif re.fullmatch(r"imported-[0-9a-f]{10}", model_id):
             folder = MODELS_DIR / model_id
+            if folder.exists():
+                shutil.rmtree(folder)
         else:
             raise HTTPException(400, "Modelo inválido.")
-        if folder.exists():
-            shutil.rmtree(folder)
         return {"ok": True}
 
 @router.post("/generate")
