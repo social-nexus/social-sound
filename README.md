@@ -122,7 +122,12 @@ O catálogo na aba **Fila de Narrações** separa a licença do código da licen
 - **Uso comercial permitido:** VoxCPM2 (código e pesos Apache-2.0); Supertonic 3 (código MIT e pesos OpenRAIL-M, com restrições de uso que precisam ser respeitadas).
 - **Uso não comercial:** OmniVoice (código Apache-2.0, pesos CC-BY-NC); F5-TTS (código MIT, pesos CC-BY-NC-4.0).
 
-Somente o VoxCPM2 está integrado nesta etapa. Os outros motores aparecem no catálogo para consulta, mas ainda não são instalados nem selecionáveis. A licença dos pesos prevalece para o uso do modelo; ter código MIT ou Apache não torna automaticamente os pesos comerciais.
+O VoxCPM2 continua sendo o motor instalado na configuração inicial. O **Supertonic 3** pode ser instalado separadamente pelo arquivo `instalar-supertonic.bat`: ele cria seu próprio ambiente Python, baixa cerca de 400 MB de modelos e disponibiliza 10 vozes predefinidas em 31 idiomas, incluindo português. O Supertonic não oferece clonagem direta de áudio nesta integração; estilos JSON criados/exportados anteriormente podem exigir configuração manual.
+
+**Aviso de manutenção:** o SDK Python oficial do Supertonic foi arquivado em 9 de setembro de 2026. A versão 1.3.1 continua disponível no PyPI, mas não recebe novas correções nem suporte. Por isso, a instalação é opcional e fica isolada do VoxCPM2. Se a instalação não estiver presente, o motor não aparece como selecionável.
+
+A licença dos pesos prevalece para o uso do modelo; ter código MIT ou Apache não torna automaticamente os pesos comerciais. O OpenRAIL-M permite uso comercial sujeito às restrições da licença, incluindo proibição de impersonação sem consentimento e de conteúdo enganoso.
+
 
 Fontes oficiais: [VoxCPM2](https://huggingface.co/openbmb/VoxCPM2), [Supertonic 3 e licença](https://huggingface.co/Supertone/supertonic-3), [OmniVoice](https://huggingface.co/k2-fsa/OmniVoice) e [F5-TTS](https://huggingface.co/SWivid/F5-TTS).
 
