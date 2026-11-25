@@ -1,5 +1,5 @@
 """Social Sound - servidor local de voz (VoxCPM2: clonagem + vozes padrão por Voice Design)."""
-import base64, gc, io, os, random, re, shutil, threading
+import base64, gc, io, os, random, re, shutil, sys, threading, uuid
 from pathlib import Path
 
 import numpy as np
