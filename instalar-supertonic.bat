@@ -35,6 +35,8 @@ echo [2/3] Instalando Supertonic 3 e dependencias ONNX...
 if errorlevel 1 goto falha
 "%SUPER_PY%" -m pip install "supertonic==1.3.1"
 if errorlevel 1 goto falha
+"%SUPER_PY%" -m pip check
+if errorlevel 1 goto falha
 
 echo.
 echo [3/3] Baixando os modelos e as vozes predefinidas (aprox. 400 MB)...
