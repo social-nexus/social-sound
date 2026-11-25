@@ -403,6 +403,33 @@ def test_model_deletion_waits_for_runtime_lifecycle_lock(monkeypatch, tmp_path):
     assert result == [{"ok": True}]
 
 
+def test_model_deletion_waits_for_model_download_lock(monkeypatch, tmp_path):
+    import threading
+    import time
+
+    model_id = "qwen3-4b-q4km"
+    monkeypatch.setattr(ia_local, "MODELS_DIR", tmp_path)
+    model_folder = tmp_path / model_id
+    model_folder.mkdir()
+    (model_folder / "partial.gguf").write_bytes(b"partial")
+    download_lock = ia_local.MODEL_DOWNLOAD_LOCKS.setdefault(model_id, threading.Lock())
+    finished = threading.Event()
+    result = []
+    download_lock.acquire()
+    try:
+        worker = threading.Thread(target=lambda: (result.append(ia_local.delete_model(model_id, local_request())), finished.set()))
+        worker.start()
+        time.sleep(0.05)
+        assert not finished.is_set(), "Model deletion must wait for an in-progress download"
+        assert model_folder.exists()
+    finally:
+        download_lock.release()
+    worker.join(timeout=2)
+    assert finished.is_set()
+    assert result == [{"ok": True}]
+    assert not model_folder.exists()
+
+
 def test_concurrent_provider_config_updates_preserve_model_settings(monkeypatch, tmp_path):
     import threading
     import json
