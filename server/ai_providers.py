@@ -14,6 +14,7 @@ from typing import Any
 
 import httpx
 from fastapi import APIRouter, HTTPException, Request
+from security_config import LOCAL_HOSTS, LOCAL_ORIGINS
 
 try:
     import keyring
@@ -49,15 +50,13 @@ CONFIG_PATH = _data_root() / "ai-provider-config.json"
 
 
 def _guard(request: Request) -> None:
-    allowed_hosts = {"localhost:8000", "127.0.0.1:8000"}
-    allowed_origins = {"http://localhost:8000", "http://127.0.0.1:8000"}
     host = (request.headers.get("host") or "").lower()
-    if host not in allowed_hosts:
+    if host not in LOCAL_HOSTS:
         raise HTTPException(403, "Acesso permitido somente pela interface local.")
     origin = request.headers.get("origin")
-    if origin is not None and origin not in allowed_origins:
+    if origin is not None and origin not in LOCAL_ORIGINS:
         raise HTTPException(403, "Origem não permitida para a API local.")
-    if request.method.upper() in {"POST", "PUT", "PATCH", "DELETE"} and origin not in allowed_origins:
+    if request.method.upper() in {"POST", "PUT", "PATCH", "DELETE"} and origin not in LOCAL_ORIGINS:
         raise HTTPException(403, "A origem da requisição local não pôde ser confirmada.")
     fetch_site = (request.headers.get("sec-fetch-site") or "").lower()
     if fetch_site and fetch_site not in {"same-origin", "none"}:
