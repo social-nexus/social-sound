@@ -472,6 +472,13 @@ def test_tts_engines_share_inference_lock():
     assert "inference_guard = inference_lock or threading.Lock()" in narration_source
 
 
+def test_linux_installer_reports_optional_download_failures():
+    installer = (Path(__file__).resolve().parents[1] / "instalar-linux.sh").read_text(encoding="utf-8")
+    assert "pip install --upgrade pip || echo" in installer
+    assert "modelo de acentos nao foi baixado" in installer
+    assert "faster_whisper" in installer
+
+
 def test_voice_ui_checks_mutation_http_errors():
     ui_source = (Path(__file__).resolve().parents[1] / "web" / "src" / "App.tsx").read_text(encoding="utf-8")
     assert "if (!response.ok) throw new Error" in ui_source
