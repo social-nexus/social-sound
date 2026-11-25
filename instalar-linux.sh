@@ -26,7 +26,7 @@ PY="$(find_python)" || { dica_python; exit 1; }
 }
 # shellcheck disable=SC1091
 . .venv/bin/activate
-python -m pip install --upgrade pip
+python -m pip install --upgrade pip || echo "AVISO: nao consegui atualizar o pip; continuarei usando a versao existente."
 
 echo
 echo "[2/6] Instalando o motor de voz (PyTorch e VoxCPM, varios GB)..."
@@ -55,7 +55,7 @@ python -c "from huggingface_hub import snapshot_download; snapshot_download('ope
 
 echo
 echo "[5/6] Baixando o modelo de acentos da aba Roteiro (cerca de 42 MB)..."
-python -c "import roteiro; roteiro._baixar(); print('erro:', roteiro.DOWNLOAD['erro'])"
+python -c "import roteiro; roteiro._baixar(); print('erro:', roteiro.DOWNLOAD['erro'])" || echo "AVISO: o modelo de acentos nao foi baixado. Ele sera baixado no primeiro uso da aba Roteiro."
 
 echo
 echo "[6/6] Baixando o modelo Whisper base da aba Legendas (cerca de 150 MB)..."
