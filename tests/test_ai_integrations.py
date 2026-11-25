@@ -227,3 +227,14 @@ def test_f5tts_worker_resolves_custom_huggingface_uris_before_loading(monkeypatc
     assert Path(loaded["ckpt_file"]).is_file()
     assert Path(loaded["vocab_file"]).is_file()
     assert loaded["device"] == "cpu"
+
+    import soundfile as sf
+    reference = tmp_path / "reference.wav"
+    sf.write(str(reference), np.zeros(2400, dtype=np.float32), 24000)
+    normalized = worker.prepare_reference_audio(reference)
+    try:
+        audio, sample_rate = sf.read(str(normalized))
+        assert sample_rate == 24000
+        assert audio.size == 2400
+    finally:
+        normalized.unlink(missing_ok=True)
