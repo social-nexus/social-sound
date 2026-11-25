@@ -2,6 +2,7 @@
 # Social Sound - inicia servidor local e abre janela do aplicativo.
 AQUI="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$AQUI/_comum.sh"
+. "$AQUI/config.sh"
 mkdir -p "$AQUI/logs"
 if [ ! -x "$AQUI/server/.venv/bin/python" ]; then
   echo "O Social Sound ainda nao foi instalado. Rode o instalar-linux.sh primeiro."
