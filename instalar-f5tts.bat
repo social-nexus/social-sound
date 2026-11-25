@@ -42,6 +42,10 @@ echo [2/4] Instalando PyTorch CUDA 12.8 e F5-TTS...
 if errorlevel 1 goto falha
 "%F5_PY%" -m pip install "torch==2.8.0" "torchaudio==2.8.0" --index-url https://download.pytorch.org/whl/cu128
 if errorlevel 1 goto falha
+REM TorchCodec 0.7.x e a familia compativel com PyTorch 2.8.0.
+REM Fixar a versao evita combinacoes binariamente incompativeis no Windows.
+"%F5_PY%" -m pip install "torchcodec==0.7.0"
+if errorlevel 1 goto falha
 "%F5_PY%" -m pip install "f5-tts==1.1.22"
 if errorlevel 1 goto falha
 "%F5_PY%" -m pip check
