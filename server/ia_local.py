@@ -591,7 +591,7 @@ def ai_job(jid: str):
 @router.delete("/models/{model_id}")
 def delete_model(model_id: str, request: Request):
     _guard_local_request(request)
-        with RUNTIME_LIFECYCLE_LOCK:
+    with RUNTIME_LIFECYCLE_LOCK:
         if model_id == ACTIVE_MODEL:
             _stop_runtime()
         if model_id in MODEL_CATALOG:
@@ -603,7 +603,7 @@ def delete_model(model_id: str, request: Request):
         if folder.exists():
             shutil.rmtree(folder)
         return {"ok": True}
-    
+
 @router.post("/generate")
 async def generate_text(payload: dict, request: Request):
     _guard_local_request(request)
