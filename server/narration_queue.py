@@ -187,7 +187,7 @@ class NarrationQueue:
                 return None
             row = db.execute(
                 "SELECT * FROM narration_jobs WHERE status='queued' "
-                "ORDER BY created_at, rowid LIMIT 1"
+                "ORDER BY queue_order, created_at, rowid LIMIT 1"
             ).fetchone()
             if row is None:
                 db.commit()
