@@ -48,6 +48,13 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
         folder.mkdir(parents=True, exist_ok=True)
         return folder
 
+    def valid_audio_file(path: Path) -> bool:
+        try:
+            info = sf.info(str(path))
+            return info.frames > 0 and info.samplerate >= 8000 and info.channels in (1, 2)
+        except Exception:
+            return False
+
     def supertonic_python() -> Path:
         configured = os.environ.get("SOCIAL_SOUND_SUPERTONIC_PYTHON")
         if configured:
@@ -244,7 +251,7 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
 
         pending = []
         for index, part in enumerate(job["parts"]):
-            if part.get("status") == "completed" and part.get("audio_path") and Path(part["audio_path"]).is_file():
+            if part.get("status") == "completed" and part.get("audio_path") and valid_audio_file(Path(part["audio_path"])):
                 continue
             target = folder / f"parte_{index + 1:03d}.wav"
             db.update_part(job["id"], index, status="processing")
@@ -270,7 +277,7 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
             # even if a later part fails or the process times out.
             for item in pending:
                 target = Path(item["output"])
-                if target.is_file() and target.stat().st_size >= 44:
+                if valid_audio_file(target):
                     db.update_part(job["id"], item["index"], status="completed", audio_path=str(target))
             if run_error is not None:
                 raise RuntimeError(f"Falha ao executar {engine}: {run_error}") from run_error
@@ -278,7 +285,7 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
                 detail = (result.stderr or result.stdout or "Falha sem detalhes")[-1200:]
                 raise RuntimeError(f"Falha na geração com {engine}: {detail}")
             missing = [Path(item["output"]).name for item in pending
-                       if not Path(item["output"]).is_file() or Path(item["output"]).stat().st_size < 44]
+                       if not valid_audio_file(Path(item["output"]))]
             if missing:
                 raise RuntimeError(f"{engine} terminou sem criar WAV válido para: {', '.join(missing)}")
         finally:
@@ -416,7 +423,7 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
                     render_external_job(job, folder)
                 else:
                     for index, part in enumerate(job["parts"]):
-                        if part.get("status") == "completed" and part.get("audio_path") and Path(part["audio_path"]).is_file():
+                        if part.get("status") == "completed" and part.get("audio_path") and valid_audio_file(Path(part["audio_path"])):
                             continue
                         db.update_part(job["id"], index, status="processing")
                         target = folder / f"parte_{index + 1:03d}.wav"
