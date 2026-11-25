@@ -46,6 +46,7 @@ PRESETS = [
 _model = None
 _device = DEVICE
 _lock = threading.Lock()
+ENGINE_INFERENCE_LOCK = threading.Lock()
 VOICE_UPLOAD_LOCK = threading.Lock()
 
 
@@ -297,7 +298,7 @@ def delete_voice(name: str):
 @app.post("/presets/{pid}/regenerate")
 def regenerate_preset(pid: str):
     preset = preset_by_id(pid)
-    with _lock:
+    with ENGINE_INFERENCE_LOCK, _lock:
         run(lambda m: ensure_preset(m, preset, force=True))
     return dict(ok=True)
 
@@ -415,7 +416,7 @@ def tts(text: str = Form(...), voice: str = Form(""), style: str = Form(""), srt
     kind, _, key = (voice or f"preset:{PRESETS[0]['id']}").partition(":")
     max_chars = max(15, min(srt_chars, 120))
     para_pause = max(0.0, min(para_pause, 5.0))
-    with _lock:
+    with ENGINE_INFERENCE_LOCK, _lock:
         def job(model):
             ref, transcript = None, None
             if kind == "mine":
@@ -466,6 +467,7 @@ narration_router = create_narration_router(
     preset_by_id=preset_by_id, find_mine=find_mine, parse_text=parse_text,
     split_sentences=split_sentences, tighten=tighten,
     data_dir=SOCIAL_SOUND_DATA_ROOT, output_dir=SOCIAL_SOUND_DATA_ROOT / "narracoes",
+    inference_lock=ENGINE_INFERENCE_LOCK,
 )
 app.include_router(narration_router)
 
