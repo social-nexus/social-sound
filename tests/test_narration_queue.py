@@ -55,3 +55,33 @@ def test_discarded_candidate_never_replaces_part(tmp_path):
     queue.discard_candidate(candidate)
     assert queue.get(job["id"])["parts"][0]["audio_path"] is None
     assert queue.candidate(candidate)["status"] == "discarded"
+
+
+def test_queue_pause_blocks_new_jobs_until_resumed(tmp_path):
+    queue = NarrationQueue(tmp_path / "queue.sqlite3")
+    job = queue.enqueue("Texto", "voz", "voxcpm2", ["Parte"])
+    queue.set_paused(True)
+    assert queue.is_paused() is True
+    assert queue.claim_next() is None
+    queue.set_paused(False)
+    assert queue.is_paused() is False
+    assert queue.claim_next()["id"] == job["id"]
+
+
+def test_queued_jobs_can_be_reordered_and_removed(tmp_path):
+    queue = NarrationQueue(tmp_path / "queue.sqlite3")
+    first = queue.enqueue("Texto 1", "voz", "voxcpm2", ["Parte 1"])
+    second = queue.enqueue("Texto 2", "voz", "voxcpm2", ["Parte 2"])
+    third = queue.enqueue("Texto 3", "voz", "voxcpm2", ["Parte 3"])
+
+    queue.move(third["id"], "up")
+    assert [job["id"] for job in queue.list_jobs() if job["status"] == "queued"] == [
+        first["id"], third["id"], second["id"]
+    ]
+    queue.move(first["id"], "down")
+    assert [job["id"] for job in queue.list_jobs() if job["status"] == "queued"] == [
+        third["id"], first["id"], second["id"]
+    ]
+    assert queue.remove_queued(first["id"]) is True
+    assert queue.get(first["id"]) is None
+    assert queue.remove_queued(first["id"]) is False
