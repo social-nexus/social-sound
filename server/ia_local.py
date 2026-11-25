@@ -285,36 +285,58 @@ def _runtime_binary(variant: str) -> Path | None:
     return candidates[0] if candidates else None
 
 def _install_runtime_worker(jid: str, variant: str):
-    meta = RUNTIME_CATALOG[variant]
-    try:
-        _update_job(jid, status="downloading", progress=0, message="Baixando runtime oficial llama.cpp…")
-        with tempfile.TemporaryDirectory(prefix="smb-llama-") as td:
-            temp = Path(td)
-            extracted = temp / "extracted"
-            extracted.mkdir()
-            packages = [meta, *meta.get("extras", [])]
-            for index, package in enumerate(packages, start=1):
-                archive = temp / (f"runtime-{index}.zip" if package["archive"] == "zip" else f"runtime-{index}.tar.gz")
-                _update_job(jid, status="downloading", message=f"Baixando pacote {index} de {len(packages)} do runtime…")
-                _download(package["url"], archive, package["size"], jid)
-                _update_job(jid, status="verifying", progress=99, message=f"Verificando SHA-256 do pacote {index}…")
-                actual = _sha256(archive)
-                if actual.lower() != package["sha256"].lower():
-                    raise ValueError(f"A verificação SHA-256 do pacote {index} falhou. O pacote foi descartado.")
-                _extract_archive(archive, extracted, package["archive"])
-            binary = next(iter(extracted.rglob(meta["binary"])), None)
-            if binary is None:
-                raise ValueError("O pacote não contém llama-server.")
-            final = RUNTIME_DIR / variant
-            if final.exists():
-                shutil.rmtree(final)
-            shutil.copytree(extracted, final)
-            installed = final / binary.relative_to(extracted)
-            if os.name != "nt":
-                installed.chmod(installed.stat().st_mode | 0o111)
-        _update_job(jid, status="done", progress=100, message="Runtime instalado e verificado.")
-    except Exception as exc:
-        _update_job(jid, status="error", message=str(exc)[:350])
+    with LOCK:
+        install_lock = RUNTIME_INSTALL_LOCKS.setdefault(variant, threading.Lock())
+    with install_lock:
+        meta = RUNTIME_CATALOG[variant]
+        try:
+            if _runtime_binary(variant):
+                _update_job(jid, status="done", progress=100, message="Runtime já instalado.")
+                return
+            if ACTIVE_VARIANT == variant and PROCESS and PROCESS.poll() is None:
+                raise RuntimeError("Desligue o runtime ativo antes de reinstalá-lo.")
+            _update_job(jid, status="downloading", progress=0, message="Baixando runtime oficial llama.cpp…")
+            with tempfile.TemporaryDirectory(prefix="smb-llama-") as td:
+                temp = Path(td)
+                extracted = temp / "extracted"
+                extracted.mkdir()
+                packages = [meta, *meta.get("extras", [])]
+                for index, package in enumerate(packages, start=1):
+                    archive = temp / (f"runtime-{index}.zip" if package["archive"] == "zip" else f"runtime-{index}.tar.gz")
+                    _update_job(jid, status="downloading", message=f"Baixando pacote {index} de {len(packages)} do runtime…")
+                    _download(package["url"], archive, package["size"], jid)
+                    _update_job(jid, status="verifying", progress=99, message=f"Verificando SHA-256 do pacote {index}…")
+                    actual = _sha256(archive)
+                    if actual.lower() != package["sha256"].lower():
+                        raise ValueError(f"A verificação SHA-256 do pacote {index} falhou. O pacote foi descartado.")
+                    _extract_archive(archive, extracted, package["archive"])
+                binary = next(iter(extracted.rglob(meta["binary"])), None)
+                if binary is None:
+                    raise ValueError("O pacote não contém llama-server.")
+                staging = RUNTIME_DIR / (variant + ".staging-" + uuid.uuid4().hex[:8])
+                backup = RUNTIME_DIR / (variant + ".backup-" + uuid.uuid4().hex[:8])
+                shutil.copytree(extracted, staging)
+                installed = staging / binary.relative_to(extracted)
+                if os.name != "nt":
+                    installed.chmod(installed.stat().st_mode | 0o111)
+                final = RUNTIME_DIR / variant
+                moved_old = False
+                try:
+                    if final.exists():
+                        final.replace(backup)
+                        moved_old = True
+                    staging.replace(final)
+                except Exception:
+                    if moved_old and backup.exists() and not final.exists():
+                        backup.replace(final)
+                    raise
+                finally:
+                    shutil.rmtree(staging, ignore_errors=True)
+                if backup.exists():
+                    shutil.rmtree(backup, ignore_errors=True)
+            _update_job(jid, status="done", progress=100, message="Runtime instalado e verificado.")
+        except Exception as exc:
+            _update_job(jid, status="error", message=str(exc)[:350])
 
 def _model_file(model_id: str) -> Path:
     if model_id not in MODEL_CATALOG:
