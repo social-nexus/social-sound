@@ -44,7 +44,7 @@ porta_aberta() { (exec 3<>"/dev/tcp/127.0.0.1/$1") >/dev/null 2>&1; }
 
 # Confirma que a API de vozes e do Social Sound, e nao apenas uma porta TCP, responde.
 social_sound_responde() {
-  curl -fsS "http://127.0.0.1:8000/voices" 2>/dev/null | grep -q '"presets"'
+  "$AQUI/server/.venv/bin/python" -c 'import json,sys,urllib.request; r=urllib.request.urlopen("http://127.0.0.1:8000/voices",timeout=2); d=json.load(r); sys.exit(0 if isinstance(d.get("presets"),list) else 1)' >/dev/null 2>&1
 }
 
 # Espera a API real do Social Sound (ate $1 segundos; padrao 120).
