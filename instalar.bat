@@ -27,17 +27,19 @@ if errorlevel 1 goto falha
 
 echo.
 echo [2/6] Instalando o motor de voz (PyTorch e VoxCPM, varios GB)...
-pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu124
+python -m pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu124
 if errorlevel 1 goto falha
-pip install voxcpm fastapi "uvicorn[standard]" python-multipart soundfile httpx "keyring>=25.5,<26"
+python -m pip install voxcpm fastapi "uvicorn[standard]" python-multipart soundfile httpx "keyring>=25.5,<26"
 if errorlevel 1 goto falha
 pip check
 if errorlevel 1 goto falha
 
 echo.
 echo [3/6] Instalando os complementos das abas Roteiro e Legendas...
-pip install onnxruntime num2words faster-whisper
+python -m pip install onnxruntime num2words faster-whisper
 if errorlevel 1 echo AVISO: nao consegui instalar algum complemento. As abas Roteiro e Legendas podem ficar limitadas. Rode este instalar.bat de novo mais tarde.
+python -m pip check
+if errorlevel 1 echo AVISO: foram encontrados conflitos nas dependencias opcionais. Consulte a mensagem acima.
 
 echo.
 echo [4/6] Baixando o modelo de voz VoxCPM2 (varios GB, pode demorar)...
