@@ -24,6 +24,7 @@ ENGINES = [
         "id": "supertonic3",
         "name": "Supertonic 3",
         "model": "Supertone/supertonic-3",
+        "package": "supertonic==1.3.1",
         "code_license": "MIT",
         "weights_license": "OpenRAIL-M",
         "commercial_use": True,
@@ -31,9 +32,9 @@ ENGINES = [
         "category": "commercial",
         "installed": False,
         "voice_cloning": False,
-        "notes": "Modelo ONNX leve com vozes predefinidas. OpenRAIL-M não é uma licença sem restrições: proíbe, entre outros usos, deepfakes sem consentimento, fraude e conteúdo enganoso.",
+        "notes": "Modelo ONNX leve, 31 idiomas incluindo português e 10 vozes predefinidas. O SDK Python oficial foi arquivado em setembro de 2026; a versão 1.3.1 permanece disponível, sem novas correções ou suporte. OpenRAIL-M impõe restrições de uso, inclusive contra impersonação sem consentimento e conteúdo enganoso.",
         "model_url": "https://huggingface.co/Supertone/supertonic-3",
-        "code_url": "https://github.com/supertone-oss-archive/supertonic",
+        "code_url": "https://github.com/supertone-oss-archive/supertonic-py",
         "license_url": "https://huggingface.co/Supertone/supertonic-3/blob/main/LICENSE",
     },
     {
@@ -71,5 +72,9 @@ ENGINES = [
 ]
 
 
-def public_catalog() -> list[dict]:
-    return [dict(engine, reviewed_on=REVIEWED_ON) for engine in ENGINES]
+def public_catalog(*, supertonic_installed: bool = False) -> list[dict]:
+    return [
+        dict(engine, installed=(supertonic_installed if engine["id"] == "supertonic3" else engine["installed"]),
+             reviewed_on=REVIEWED_ON)
+        for engine in ENGINES
+    ]
