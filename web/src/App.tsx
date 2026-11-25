@@ -439,31 +439,37 @@ const App = () => {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
+  const batchProcessingRef = useRef(false);
+
   const processBatch = async () => {
-    if (batchQueue.length === 0) return;
+    if (batchProcessingRef.current || batchQueue.length === 0) return;
+    batchProcessingRef.current = true;
     setIsGenerating(true);
+    // Snapshot the queue so additions made during processing wait for the next run.
+    const itemsToProcess = batchQueue.filter(item => item.status !== 'done');
 
-    for (let i = 0; i < batchQueue.length; i++) {
-      if (batchQueue[i].status === 'done') continue;
+    try {
+      for (const queueItem of itemsToProcess) {
+        setBatchQueue(prev => prev.map(item => item.id === queueItem.id ? { ...item, status: 'processing' } : item));
 
-      setBatchQueue(prev => prev.map((item, idx) => idx === i ? { ...item, status: 'processing' } : item));
+        try {
+          const url = await apiRequest(queueItem.content, selectedVoice.id, buildStyle());
+          const filename = `socialsound-${selectedVoice.label || selectedVoice.id}-${queueItem.name}.wav`;
 
-      try {
-        const url = await apiRequest(batchQueue[i].content, selectedVoice.id, buildStyle());
-        const filename = `socialsound-${selectedVoice.label || selectedVoice.id}-${batchQueue[i].name}.wav`;
-        
-        triggerDownload(url, filename);
-        if (makeSrt && SEGMENTS.get(url)) downloadSrt(buildSrt(SEGMENTS.get(url).cues), filename.slice(0, -4) + ".srt");
-        setBatchQueue(prev => prev.map((item, idx) => idx === i ? { ...item, status: 'done', url } : item));
-      } catch (err) {
-        console.error(err);
-        setBatchQueue(prev => prev.map((item, idx) => idx === i ? { ...item, status: 'error' } : item));
+          triggerDownload(url, filename);
+          if (makeSrt && SEGMENTS.get(url)) downloadSrt(buildSrt(SEGMENTS.get(url).cues), filename.slice(0, -4) + ".srt");
+          setBatchQueue(prev => prev.map(item => item.id === queueItem.id ? { ...item, status: 'done', url } : item));
+        } catch (err) {
+          console.error(err);
+          setBatchQueue(prev => prev.map(item => item.id === queueItem.id ? { ...item, status: 'error' } : item));
+        }
+
+        await new Promise(r => setTimeout(r, 200));
       }
-      
-      await new Promise(r => setTimeout(r, 200));
+    } finally {
+      batchProcessingRef.current = false;
+      setIsGenerating(false);
     }
-
-    setIsGenerating(false);
   };
 
   const removeFromQueue = (id) => setBatchQueue(prev => prev.filter(item => item.id !== id));
@@ -604,7 +610,7 @@ const App = () => {
                         SRT ÚNICO
                       </button>
                     )}
-                    <button onClick={clearDoneFromQueue} className="px-4 py-2 text-xs font-bold text-nx-muted bg-transparent border border-nx-line rounded-xl hover:bg-white/5 hover:text-nx-text transition-colors">
+                    <button onClick={clearDoneFromQueue} disabled={isGenerating} className="px-4 py-2 text-xs font-bold text-nx-muted bg-transparent border border-nx-line rounded-xl hover:bg-white/5 hover:text-nx-text transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
                         LIMPAR
                     </button>
                     <button 
@@ -640,7 +646,7 @@ const App = () => {
                       {item.status === 'done' && <CheckCircle className="text-emerald-400" size={18} />}
                       {item.status === 'error' && <AlertCircle className="text-red-400" size={18} />}
                       {item.status !== 'processing' && (
-                        <button onClick={() => removeFromQueue(item.id)} className="p-2 text-nx-muted/60 hover:text-red-400 bg-white/5 hover:bg-red-500/10 rounded-lg transition-colors">
+                        <button onClick={() => removeFromQueue(item.id)} disabled={isGenerating} className="p-2 text-nx-muted/60 hover:text-red-400 bg-white/5 hover:bg-red-500/10 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
                           <Trash2 size={16} />
                         </button>
                       )}
