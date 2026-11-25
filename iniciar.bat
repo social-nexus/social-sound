@@ -4,7 +4,7 @@ call "%~dp0config.bat"
 echo Ligando o Social Sound... (a primeira vez demora um pouco)
 REM Servidor local principal (voz, roteiro, dialogo e legendas)
 cd /d "%~dp0server"
-start "Social Sound - servidor" /min cmd /c "call .venv\Scripts\activate && python server.py"
+start "Social Sound - servidor" /min "%~dp0server\.venv\Scripts\python.exe" "%~dp0server\server.py"
 :espera_ini
 set /a n=0
 :espera
