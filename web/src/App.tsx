@@ -385,6 +385,10 @@ const App = () => {
         previewUrlRef.current = url;
         previewAudioRef.current.src = url;
         await previewAudioRef.current.play();
+        if (requestId !== previewRequestRef.current) {
+          if (previewUrlRef.current === url) releasePreviewUrl();
+          return;
+        }
         setPreviewState({ id: voiceId, status: "playing" });
         previewAudioRef.current.onended = () => {
           if (previewUrlRef.current === url) releasePreviewUrl();
