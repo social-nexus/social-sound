@@ -369,3 +369,23 @@ def test_model_deletion_waits_for_runtime_lifecycle_lock(monkeypatch, tmp_path):
     worker.join(timeout=2)
     assert finished.is_set()
     assert result == [{"ok": True}]
+
+
+def test_concurrent_provider_config_updates_preserve_model_settings(monkeypatch, tmp_path):
+    import threading
+    import json
+
+    path = tmp_path / "provider-config.json"
+    monkeypatch.setattr(ai_providers, "CONFIG_PATH", path)
+    updates = [(provider, f"model-{provider}") for provider in ai_providers.PROVIDERS]
+    workers = [threading.Thread(target=ai_providers._update_provider_config, args=(provider, model))
+               for provider, model in updates]
+    for worker in workers:
+        worker.start()
+    for worker in workers:
+        worker.join(timeout=3)
+    assert all(not worker.is_alive() for worker in workers)
+    config = json.loads(path.read_text(encoding="utf-8"))
+    assert config["provider"] in ai_providers.PROVIDERS
+    assert config["models"] == {provider: model for provider, model in updates}
+    assert not list(tmp_path.glob("provider-config.json.tmp-*"))
