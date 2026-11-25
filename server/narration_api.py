@@ -683,7 +683,11 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
                 candidate = db.candidate(candidate_id)
                 db.discard_candidate(candidate_id)
                 if candidate:
-                    Path(candidate["audio_path"]).unlink(missing_ok=True)
+                    try:
+                        Path(candidate["audio_path"]).unlink(missing_ok=True)
+                    except OSError as cleanup_error:
+                        # The discard is committed; report cleanup only as a warning.
+                        print(f"Warning: discarded candidate file cleanup failed: {cleanup_error}", file=sys.stderr)
                 return {"ok": True}
             except KeyError as exc:
                 raise HTTPException(404, "Versão candidata não encontrada ou já analisada.") from exc
