@@ -29,7 +29,7 @@ def test_optional_voice_engines_use_isolated_python_environments():
         installer = read_installer(filename)
         assert environment in installer
         assert "py -3.11 -m venv" in installer
-        assert "-m python -m pip check" in installer
+        assert "python -m pip check" in installer
         assert "if errorlevel 1 goto falha" in installer
 
 
