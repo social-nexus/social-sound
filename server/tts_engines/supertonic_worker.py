@@ -20,10 +20,11 @@ def main() -> int:
         print("Uso: supertonic_worker.py --download | payload.json", file=sys.stderr)
         return 2
 
-    cache_dir = Path(os.environ.get("SUPERTONIC_CACHE_DIR", "")).expanduser()
-    if not str(cache_dir):
+    configured_cache = os.environ.get("SUPERTONIC_CACHE_DIR")
+    if not configured_cache:
         print("SUPERTONIC_CACHE_DIR não foi configurado.", file=sys.stderr)
         return 2
+    cache_dir = Path(configured_cache).expanduser()
     cache_dir.mkdir(parents=True, exist_ok=True)
 
     if sys.argv[1] == "--download":
