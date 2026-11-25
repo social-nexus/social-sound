@@ -93,8 +93,9 @@ O `instalar.bat` baixa o modelo de acentos [Mark](https://huggingface.co/Mytholo
 ### Divisão Inteligente de Narrações
 - Abra a aba **Fila de Narrações** (atalho `Ctrl+7`) para enviar textos longos sem bloquear a tela principal.
 - Escolha a voz VoxCPM2, o estilo e a duração-alvo por parte (30, 45, 60, 90 ou 120 segundos). A divisão tenta respeitar frases e nunca corta palavras; o tempo é estimado e pode variar conforme a voz e o ritmo.
-- Os trabalhos são processados automaticamente, um por vez. Você pode adicionar outros textos enquanto um áudio está sendo gerado.
-- Cada parte é salva separadamente e o sistema monta também o áudio completo. A fila e o histórico ficam salvos no computador.
+- Os trabalhos são processados automaticamente, um por vez. Você pode adicionar outros textos enquanto um áudio está sendo gerado, reordenar os próximos e remover os que ainda não começaram.
+- **Pausar fila** impede o início do próximo trabalho, mas deixa a narração atual terminar com segurança; **Continuar fila** libera os próximos.
+- Cada parte é salva separadamente e o sistema monta também o áudio completo. A fila e o histórico ficam salvos no computador, e os arquivos de áudio ficam na pasta de dados do usuário, fora da instalação do programa.
 - Para corrigir uma parte, use **Regenerar esta parte**. A nova versão fica separada para ouvir; só substitui a parte e reconstrói o áudio completo depois de clicar em **Aprovar e substituir**. Se descartar, o áudio anterior permanece.
 
 ### Diálogo
