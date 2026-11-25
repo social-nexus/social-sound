@@ -307,6 +307,12 @@ def tts(text: str = Form(...), voice: str = Form(""), style: str = Form(""), srt
     return JSONResponse(data)
 
 
+# Integrações de IA local e APIs externas (rotas protegidas para acesso local).
+from ai_providers import router as ai_providers_router
+from ia_local import router as ia_local_router
+app.include_router(ai_providers_router)
+app.include_router(ia_local_router)
+
 # Interface compilada (pasta server/web): aberta em http://localhost:8000
 from fastapi.staticfiles import StaticFiles  # noqa: E402
 
