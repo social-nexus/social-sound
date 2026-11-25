@@ -18,7 +18,7 @@ echo.
 echo [2/6] Instalando o motor de voz (PyTorch e VoxCPM, varios GB)...
 pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu124
 if errorlevel 1 goto falha
-pip install voxcpm fastapi "uvicorn[standard]" python-multipart soundfile
+pip install voxcpm fastapi "uvicorn[standard]" python-multipart soundfile httpx "keyring>=25.5,<26"
 if errorlevel 1 goto falha
 
 echo.
