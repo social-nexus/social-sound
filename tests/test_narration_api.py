@@ -129,6 +129,7 @@ def test_f5tts_job_reuses_one_worker_and_preserves_completed_parts_on_retry(tmp_
     python.parent.mkdir(parents=True)
     python.write_bytes(b"fake python")
     (runtime / "Lib" / "site-packages" / "f5_tts").mkdir(parents=True)
+    (runtime / "lib" / "python3.11" / "site-packages" / "f5_tts").mkdir(parents=True)
     cache = tmp_path / "hf-cache"
     (cache / "models--Cataldir--F5-TTS-pt-br" / "snapshots" / "model").mkdir(parents=True)
     (cache / "models--charactr--vocos-mel-24khz" / "snapshots" / "vocoder").mkdir(parents=True)
