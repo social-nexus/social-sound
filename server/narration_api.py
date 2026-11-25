@@ -137,6 +137,11 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
     db.recover_interrupted()
     start_worker()
 
+    @router.get("/engines")
+    def list_engines():
+        from tts_engine_catalog import public_catalog
+        return {"engines": public_catalog()}
+
     @router.post("/split")
     def split_text(payload: EnqueueRequest):
         return {"parts": split_for_duration(payload.text, payload.target_seconds, payload.chars_per_minute),
