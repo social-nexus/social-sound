@@ -248,3 +248,5 @@ def test_f5_installer_pins_torchcodec_to_pytorch_28_compatible_release():
     codec_install = installer.index('"torchcodec==0.7.0"')
     f5_install = installer.index('"f5-tts==1.1.22"')
     assert torch_install < codec_install < f5_install
+    assert "assert m.version('torchcodec') == '0.7.0'" in installer
+    assert "assert torch.__version__.startswith('2.8.0')" in installer
