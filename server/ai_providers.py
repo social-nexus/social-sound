@@ -157,7 +157,7 @@ def _validate_provider(provider: str) -> str:
     return provider
 
 
-async def _request_completion(provider: str, model: str, api_key: str, system: str, user: str) -> str:
+async def _request_completion(provider: str, model: str, api_key: str, system: str, user: str, max_tokens: int = 1800) -> str:
     meta = PROVIDERS[provider]
     timeout = httpx.Timeout(120.0, connect=15.0)
     async with httpx.AsyncClient(timeout=timeout) as client:
@@ -167,7 +167,7 @@ async def _request_completion(provider: str, model: str, api_key: str, system: s
                 base + "/chat/completions",
                 headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
                 json={"model": model, "messages": [{"role": "system", "content": system},
-                      {"role": "user", "content": user}], "temperature": 0.7, "max_tokens": 1800},
+                      {"role": "user", "content": user}], "temperature": 0.7, "max_tokens": max_tokens},
             )
             response.raise_for_status()
             result = response.json()["choices"][0]["message"]["content"]
@@ -188,7 +188,7 @@ async def _request_completion(provider: str, model: str, api_key: str, system: s
                 headers={"x-goog-api-key": api_key, "content-type": "application/json"},
                 json={"systemInstruction": {"parts": [{"text": system}]},
                       "contents": [{"role": "user", "parts": [{"text": user}]}],
-                      "generationConfig": {"temperature": 0.7, "maxOutputTokens": 1800}},
+                      "generationConfig": {"temperature": 0.7, "maxOutputTokens": max_tokens}},
             )
             response.raise_for_status()
             candidates = response.json().get("candidates", [])
@@ -199,7 +199,7 @@ async def _request_completion(provider: str, model: str, api_key: str, system: s
     return result.strip()
 
 
-async def generate_with_provider(provider: str, model: str, system: str, user: str) -> str:
+async def generate_with_provider(provider: str, model: str, system: str, user: str, max_tokens: int = 1800) -> str:
     provider = _validate_provider(provider)
     key = _get_key(provider)
     if not key:
@@ -207,7 +207,7 @@ async def generate_with_provider(provider: str, model: str, system: str, user: s
     if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:/-]{0,159}", model) or ".." in model:
         raise ValueError("Informe um identificador de modelo válido.")
     try:
-        return await _request_completion(provider, model, key, system, user)
+        return await _request_completion(provider, model, key, system, user, max_tokens=max_tokens)
     except httpx.HTTPStatusError as exc:
         status = exc.response.status_code
         if status in (401, 403):
