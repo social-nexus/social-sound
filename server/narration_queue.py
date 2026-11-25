@@ -240,6 +240,14 @@ class NarrationQueue:
             row = db.execute("SELECT * FROM narration_candidates WHERE id=?", (candidate_id,)).fetchone()
         return dict(row) if row else None
 
+    def list_candidates(self, job_id: str, status: str = "awaiting_approval") -> list[dict]:
+        with self._connect() as db:
+            rows = db.execute(
+                "SELECT * FROM narration_candidates WHERE job_id=? AND status=? ORDER BY created_at, rowid",
+                (job_id, status)
+            ).fetchall()
+        return [dict(row) for row in rows]
+
     def approve_candidate(self, candidate_id: str) -> dict:
         """Publish candidate path in job metadata only after explicit approval."""
         with self._connect() as db:
