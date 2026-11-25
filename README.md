@@ -48,7 +48,7 @@ Se algum download falhar, rode o `instalar.bat` de novo: o que já foi baixado n
    chmod +x *.sh *.command
    ```
    No Mac, se o ZIP veio do navegador e o sistema bloquear os arquivos `.command` ("desenvolvedor não identificado"), rode também `xattr -dr com.apple.quarantine .` na pasta.
-4. Rode `./instalar.sh` (no Mac, também dá para dar duplo clique em `instalar.command`). Baixa vários GB.
+4. Rode `./instalar-linux.sh` (Linux). No Mac, dê duplo clique em `instalar-mac.command` — ele chama o mesmo instalador. Baixa vários GB.
 
 **Python 3.11:** se não tiver, instale (`brew install python@3.11` no Mac; `sudo apt install python3.11 python3.11-venv` no Debian/Ubuntu). Se a sua distribuição Linux não tiver o 3.11, instale o [uv](https://docs.astral.sh/uv/): o `instalar.sh` o usa para baixar o Python 3.11 sozinho.
 
@@ -58,8 +58,8 @@ Se algum download falhar, rode o `instalar.bat` de novo: o que já foi baixado n
 
 ## Uso diário (Linux e macOS)
 
-- **Ligar:** `./iniciar.sh` (Mac: duplo clique em `iniciar.command`). Os servidores rodam em segundo plano e abrem a janela com as abas no Chrome, Edge, Brave ou Chromium, se algum estiver instalado; senão, no navegador padrão. Os logs ficam na pasta `logs`.
-- **Desligar:** `./parar.sh` (Mac: `parar.command`). Fechar só a janela não desliga os servidores.
+- **Ligar:** Linux: `./iniciar-linux.sh`. Mac: duplo clique em `iniciar-mac.command`. Os servidores rodam em segundo plano e abrem a janela com as abas no Chrome, Edge, Brave ou Chromium, se algum estiver instalado; senão, no navegador padrão. Os logs ficam na pasta `logs`.
+- **Desligar:** Linux: `./parar-linux.sh`. Mac: duplo clique em `parar-mac.command`. Fechar só a janela não desliga os servidores.
 
 ## Uso diário (Windows)
 
