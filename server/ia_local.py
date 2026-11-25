@@ -32,6 +32,7 @@ router = APIRouter(prefix="/api/ai", tags=["ia-local"])
 LOCK = threading.RLock()
 RUNTIME_LIFECYCLE_LOCK = threading.RLock()
 JOBS: dict[str, dict] = {}
+MODEL_DOWNLOAD_LOCKS: dict[str, threading.Lock] = {}
 PROCESS: subprocess.Popen | None = None
 ACTIVE_MODEL: str | None = None
 ACTIVE_VARIANT: str | None = None
@@ -343,26 +344,36 @@ def _hf_file_digest(repo: str, filename: str) -> tuple[str, int]:
     return digest, size
 
 def _download_model_worker(jid: str, model_id: str):
-    try:
-        meta = MODEL_CATALOG[model_id]
-        _update_job(jid, status="verifying", message="Consultando hash e tamanho no Hugging Face…")
-        digest, size = _hf_file_digest(meta["repo"], meta["filename"])
-        target_dir = MODELS_DIR / model_id
-        target_dir.mkdir(parents=True, exist_ok=True)
-        target = target_dir / meta["filename"]
-        url = f"https://huggingface.co/{meta['repo']}/resolve/main/{meta['filename']}"
-        _download(url, target, size, jid)
-        _update_job(jid, status="verifying", progress=99, message="Validando SHA-256 do modelo…")
-        if _sha256(target).lower() != digest.lower():
-            target.unlink(missing_ok=True)
-            raise ValueError("Hash SHA-256 do modelo não confere; arquivo removido.")
-        (target_dir / "model.json").write_text(json.dumps({
-            "model_id": model_id, "repo": meta["repo"], "filename": meta["filename"],
-            "sha256": digest, "license": meta["license"], "installed_at": int(time.time())
-        }, indent=2), encoding="utf-8")
-        _update_job(jid, status="done", progress=100, message="Modelo baixado e verificado.")
-    except Exception as exc:
-        _update_job(jid, status="error", message=str(exc)[:350])
+    with LOCK:
+        model_lock = MODEL_DOWNLOAD_LOCKS.setdefault(model_id, threading.Lock())
+    with model_lock:
+        try:
+            meta = MODEL_CATALOG[model_id]
+            _update_job(jid, status="verifying", message="Consultando hash e tamanho no Hugging Face…")
+            digest, size = _hf_file_digest(meta["repo"], meta["filename"])
+            target_dir = MODELS_DIR / model_id
+            target_dir.mkdir(parents=True, exist_ok=True)
+            target = target_dir / meta["filename"]
+            if target.is_file() and target.stat().st_size == size and _sha256(target).lower() == digest.lower():
+                (target_dir / "model.json").write_text(json.dumps({
+                    "model_id": model_id, "repo": meta["repo"], "filename": meta["filename"],
+                    "sha256": digest, "license": meta["license"], "installed_at": int(time.time())
+                }, indent=2), encoding="utf-8")
+                _update_job(jid, status="done", progress=100, message="Modelo já instalado e verificado.")
+                return
+            url = f"https://huggingface.co/{meta['repo']}/resolve/main/{meta['filename']}"
+            _download(url, target, size, jid)
+            _update_job(jid, status="verifying", progress=99, message="Validando SHA-256 do modelo…")
+            if _sha256(target).lower() != digest.lower():
+                target.unlink(missing_ok=True)
+                raise ValueError("Hash SHA-256 do modelo não confere; arquivo removido.")
+            (target_dir / "model.json").write_text(json.dumps({
+                "model_id": model_id, "repo": meta["repo"], "filename": meta["filename"],
+                "sha256": digest, "license": meta["license"], "installed_at": int(time.time())
+            }, indent=2), encoding="utf-8")
+            _update_job(jid, status="done", progress=100, message="Modelo baixado e verificado.")
+        except Exception as exc:
+            _update_job(jid, status="error", message=str(exc)[:350])
 
 def _installed_models():
     found = []
