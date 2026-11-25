@@ -240,6 +240,7 @@ async def upload_voice(file: UploadFile = File(...), name: str = Form(""), trans
                 shutil.copy2(destination, audio_backup)
             if transcript_existed:
                 shutil.copy2(transcript_path, transcript_backup)
+            rollback_failed = False
             try:
                 os.replace(temp, destination)
                 if transcript.strip():
@@ -248,14 +249,18 @@ async def upload_voice(file: UploadFile = File(...), name: str = Form(""), trans
                     transcript_path.unlink(missing_ok=True)
             except Exception:
                 # Restore both files together if either publication fails.
-                if audio_existed and audio_backup.exists():
-                    os.replace(audio_backup, destination)
-                else:
-                    destination.unlink(missing_ok=True)
-                if transcript_existed and transcript_backup.exists():
-                    os.replace(transcript_backup, transcript_path)
-                else:
-                    transcript_path.unlink(missing_ok=True)
+                try:
+                    if audio_existed and audio_backup.exists():
+                        os.replace(audio_backup, destination)
+                    else:
+                        destination.unlink(missing_ok=True)
+                    if transcript_existed and transcript_backup.exists():
+                        os.replace(transcript_backup, transcript_path)
+                    else:
+                        transcript_path.unlink(missing_ok=True)
+                except Exception:
+                    rollback_failed = True
+                    raise
                 raise
             # Remove previous audio formats only after the audio/transcript pair
             # has been published successfully.
@@ -264,8 +269,12 @@ async def upload_voice(file: UploadFile = File(...), name: str = Form(""), trans
                     old.unlink()
         return dict(name=stem)
     finally:
-        for leftover in (temp, transcript_temp, audio_backup, transcript_backup):
+        for leftover in (temp, transcript_temp):
             leftover.unlink(missing_ok=True)
+        # Preserve backup copies if rollback itself failed, so recovery remains possible.
+        if not locals().get("rollback_failed", False):
+            for backup_file in (audio_backup, transcript_backup):
+                backup_file.unlink(missing_ok=True)
 
 
 @app.delete("/voices/{name}")
