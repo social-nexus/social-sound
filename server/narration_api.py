@@ -32,7 +32,7 @@ class EnqueueRequest(BaseModel):
 
 
 def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
-                            find_mine, parse_text, split_sentences, tighten, data_dir: Path, output_dir: Path, unload_engine=None):
+                            find_mine, parse_text, split_sentences, tighten, data_dir: Path, output_dir: Path, unload_engine=None, inference_lock=None):
     router = APIRouter(prefix="/api/narration", tags=["narracao"])
     db = NarrationQueue(data_dir / "narration_queue.sqlite3")
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -41,7 +41,7 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
     worker_guard = threading.Lock()
     approval_guard = threading.Lock()
     candidate_guard = threading.Lock()
-    inference_guard = threading.Lock()
+    inference_guard = inference_lock or threading.Lock()
     worker_started = False
 
     def job_paths(job_id: str):
