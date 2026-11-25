@@ -9,6 +9,8 @@ import json
 import os
 import platform
 import re
+import threading
+import uuid
 from pathlib import Path
 from typing import Any
 
@@ -47,6 +49,7 @@ def _data_root() -> Path:
 
 
 CONFIG_PATH = _data_root() / "ai-provider-config.json"
+CONFIG_LOCK = threading.Lock()
 
 
 def _guard(request: Request) -> None:
@@ -76,10 +79,14 @@ def _read_config() -> dict:
 
 
 def _write_config(data: dict) -> None:
-    CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
-    temp = CONFIG_PATH.with_suffix(".tmp")
-    temp.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
-    temp.replace(CONFIG_PATH)
+    with CONFIG_LOCK:
+        CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
+        temp = CONFIG_PATH.with_name(CONFIG_PATH.name + ".tmp-" + uuid.uuid4().hex[:8])
+        try:
+            temp.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+            temp.replace(CONFIG_PATH)
+        finally:
+            temp.unlink(missing_ok=True)
 
 
 def _keyring_ready() -> bool:
