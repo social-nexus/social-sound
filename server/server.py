@@ -132,9 +132,10 @@ class AILocalSecurityMiddleware:
     def __init__(self, app):
         self.app = app
     async def __call__(self, scope, receive, send):
-        if scope.get("type") != "http" or not scope.get("path", "").startswith(("/api/ai", "/api/narration", "/api/dialogo", "/api/legenda", "/api/roteiro", "/voices", "/presets", "/tts")):
+        if scope.get("type") != "http":
             await self.app(scope, receive, send)
             return
+        protected_path = scope.get("path", "").startswith(("/api/ai", "/api/narration", "/api/dialogo", "/api/legenda", "/api/roteiro", "/voices", "/presets", "/tts"))
         headers = dict(scope.get("headers", []))
         host = headers.get(b"host", b"").lower()
         origin = headers.get(b"origin")
@@ -146,10 +147,10 @@ class AILocalSecurityMiddleware:
         if method in {"POST", "PUT", "PATCH", "DELETE"} and origin not in AI_LOCAL_ORIGINS:
             await self._reject(send, 403, "Origem local não confirmada para alteração.")
             return
-        if fetch_site and fetch_site not in (b"same-origin", b"none"):
+        if protected_path and fetch_site and fetch_site not in (b"same-origin", b"none"):
             await self._reject(send, 403, "Requisição de outra origem não permitida.")
             return
-        if scope.get("path") != "/api/ai/models/import" or method != "POST":
+        if not protected_path or scope.get("path") != "/api/ai/models/import" or method != "POST":
             await self.app(scope, receive, send)
             return
         length = headers.get(b"content-length")
