@@ -159,6 +159,16 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
             raise HTTPException(404, "Narração não encontrada.")
         return public_job(job)
 
+    @router.get("/jobs/{job_id}/candidates")
+    def list_candidates(job_id: str):
+        if not db.get(job_id):
+            raise HTTPException(404, "Narração não encontrada.")
+        items = []
+        for candidate in db.list_candidates(job_id):
+            candidate["audio_url"] = f"/saidas/narracoes/{job_id}/{Path(candidate['audio_path']).name}"
+            items.append(candidate)
+        return {"candidates": items}
+
     @router.post("/jobs/{job_id}/requeue")
     def requeue(job_id: str):
         try:
