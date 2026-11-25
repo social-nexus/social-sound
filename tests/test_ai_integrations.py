@@ -182,3 +182,48 @@ def test_generic_cloud_generation_works_without_local_runtime(monkeypatch):
         assert result["text"] == "Roteiro teste"
         ia_local.generate_with_provider.assert_awaited_once()
     asyncio.run(run_test())
+
+
+
+def test_f5tts_worker_resolves_custom_huggingface_uris_before_loading(monkeypatch, tmp_path):
+    import importlib.util
+    import types
+
+    resolved = []
+    loaded = {}
+    def fake_cached_path(uri, cache_dir=None):
+        resolved.append((uri, cache_dir))
+        target = tmp_path / Path(uri).name
+        target.write_bytes(b"model-file")
+        return target
+
+    class FakeF5TTS:
+        def __init__(self, **kwargs):
+            loaded.update(kwargs)
+
+    fake_torch = types.SimpleNamespace(cuda=types.SimpleNamespace(is_available=lambda: False))
+    fake_cached = types.ModuleType("cached_path")
+    fake_cached.cached_path = fake_cached_path
+    fake_api = types.ModuleType("f5_tts.api")
+    fake_api.F5TTS = FakeF5TTS
+    fake_package = types.ModuleType("f5_tts")
+    fake_package.__path__ = []
+
+    monkeypatch.setitem(sys.modules, "torch", fake_torch)
+    monkeypatch.setitem(sys.modules, "cached_path", fake_cached)
+    monkeypatch.setitem(sys.modules, "f5_tts", fake_package)
+    monkeypatch.setitem(sys.modules, "f5_tts.api", fake_api)
+    monkeypatch.setenv("HF_HUB_CACHE", str(tmp_path / "hub-cache"))
+
+    worker_path = Path(__file__).resolve().parents[1] / "server" / "tts_engines" / "f5tts_worker.py"
+    spec = importlib.util.spec_from_file_location("f5tts_worker_test", worker_path)
+    worker = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(worker)
+
+    model = worker.load()
+    assert isinstance(model, FakeF5TTS)
+    assert [item[0] for item in resolved] == [worker.CHECKPOINT, worker.VOCAB]
+    assert all(item[1] == str(tmp_path / "hub-cache") for item in resolved)
+    assert Path(loaded["ckpt_file"]).is_file()
+    assert Path(loaded["vocab_file"]).is_file()
+    assert loaded["device"] == "cpu"
