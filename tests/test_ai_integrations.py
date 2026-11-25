@@ -438,4 +438,5 @@ def test_voice_upload_has_size_limit_atomic_publish_and_rollback():
     assert "Restore both files together" in server_source
     assert "shutil.copy2(destination, audio_backup)" in server_source
     assert "shutil.copy2(transcript_path, transcript_backup)" in server_source
-    assert "temp.unlink(missing_ok=True)" in server_source
+    assert "for leftover in (temp, transcript_temp):" in server_source
+    assert "leftover.unlink(missing_ok=True)" in server_source
