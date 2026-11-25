@@ -39,6 +39,7 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
     reference_dir = data_dir / "narration_references"
     reference_dir.mkdir(parents=True, exist_ok=True)
     worker_guard = threading.Lock()
+    approval_guard = threading.Lock()
     worker_started = False
 
     def job_paths(job_id: str):
@@ -596,8 +597,7 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
             candidate_path.unlink(missing_ok=True)
             raise HTTPException(500, f"Não foi possível regenerar a parte: {str(exc)[:400]}") from exc
 
-    @router.post("/candidates/{candidate_id}/approve")
-    def approve_candidate(candidate_id: str):
+    def _approve_candidate(candidate_id: str):
         candidate = db.candidate(candidate_id)
         if not candidate or candidate["status"] != "awaiting_approval":
             raise HTTPException(404, "Versão candidata não encontrada ou já analisada.")
@@ -643,6 +643,13 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
             if backup_created and backup_full.is_file():
                 detail += f" (cópia de segurança preservada em {backup_full.name})"
             raise HTTPException(500, f"Não foi possível aprovar a versão: {detail[:600]}") from exc
+
+    @router.post("/candidates/{candidate_id}/approve")
+    def approve_candidate(candidate_id: str):
+        # File publication and SQLite approval must not interleave across requests.
+        # The lock is process-local; SQLite still validates the candidate state.
+        with approval_guard:
+            return _approve_candidate(candidate_id)
 
     @router.post("/candidates/{candidate_id}/discard")
     def discard_candidate(candidate_id: str):
