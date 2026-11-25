@@ -234,7 +234,7 @@ async def upload_voice(file: UploadFile = File(...), name: str = Form(""), trans
         temp.write_bytes(raw)
         if transcript.strip():
             transcript_temp.write_text(transcript.strip(), encoding="utf-8")
-        with VOICE_UPLOAD_LOCK:
+        with _lock, VOICE_UPLOAD_LOCK:
             audio_existed = destination.is_file()
             transcript_existed = transcript_path.is_file()
             if audio_existed:
@@ -283,12 +283,15 @@ async def upload_voice(file: UploadFile = File(...), name: str = Form(""), trans
 
 @app.delete("/voices/{name}")
 def delete_voice(name: str):
-    p = find_mine(name)
-    if not p:
-        raise HTTPException(404, "Voz não encontrada.")
-    p.unlink()
-    p.with_suffix(".txt").unlink(missing_ok=True)
-    return dict(ok=True)
+    # Serialize deletion with synthesis and upload so an in-use reference cannot
+    # disappear or be replaced during inference.
+    with _lock, VOICE_UPLOAD_LOCK:
+        p = find_mine(name)
+        if not p:
+            raise HTTPException(404, "Voz não encontrada.")
+        p.unlink()
+        p.with_suffix(".txt").unlink(missing_ok=True)
+        return dict(ok=True)
 
 
 @app.post("/presets/{pid}/regenerate")
