@@ -20,5 +20,7 @@ jobs:
         run: python -m compileall -q server
       - name: Test AI modules
         run: pytest -q tests
+      - name: Check shell script syntax
+        run: bash -n config.sh iniciar-linux.sh instalar-linux.sh
       - name: Check JavaScript syntax
         run: node --check server/ai_web/app.js && node --check server/narracoes/app.js
