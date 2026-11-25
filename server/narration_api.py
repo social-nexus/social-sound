@@ -1,7 +1,10 @@
 """API and sequential worker for long-form VoxCPM2 narrations."""
 from __future__ import annotations
 
+import json
 import os
+import subprocess
+import sys
 import threading
 import time
 import uuid
@@ -21,6 +24,7 @@ class EnqueueRequest(BaseModel):
     style: str = Field(default="", max_length=500)
     target_seconds: int = Field(default=60, ge=15, le=300)
     chars_per_minute: int = Field(default=850, ge=300, le=1500)
+    engine: str = Field(default="voxcpm2", pattern="^(voxcpm2|supertonic3)$")
 
 
 def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
@@ -36,6 +40,68 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
         folder.mkdir(parents=True, exist_ok=True)
         return folder
 
+    def supertonic_python() -> Path:
+        configured = os.environ.get("SOCIAL_SOUND_SUPERTONIC_PYTHON")
+        if configured:
+            return Path(configured).expanduser()
+        root = Path(__file__).resolve().parent / ".venvs" / "supertonic"
+        return root / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
+
+    def supertonic_cache() -> Path:
+        configured = os.environ.get("SUPERTONIC_CACHE_DIR")
+        if configured:
+            return Path(configured).expanduser()
+        return data_dir / "models" / "Narradores" / "Supertonic3"
+
+    def supertonic_ready() -> bool:
+        python = supertonic_python()
+        cache = supertonic_cache()
+        return (python.is_file() and (cache / "onnx").is_dir()
+                and any((cache / "onnx").glob("*.onnx"))
+                and (cache / "voice_styles").is_dir()
+                and any((cache / "voice_styles").glob("*.json")))
+
+    def render_supertonic_piece(job, part_index: int, destination: Path):
+        if not supertonic_ready():
+            raise RuntimeError("Supertonic 3 não está instalado. Feche o Social Sound e execute instalar-supertonic.bat.")
+        _, _, voice = job["voice"].partition(":")
+        segments = []
+        for segment_type, value in parse_text(job["parts"][part_index]["text"]):
+            if segment_type == "pause":
+                segments.append({"type": "pause", "seconds": float(value)})
+                continue
+            for chunk in split_sentences(value):
+                if chunk.strip():
+                    segments.append({"type": "text", "text": chunk})
+        if not any(item["type"] == "text" for item in segments):
+            raise RuntimeError("Esta parte não contém texto para sintetizar.")
+        request_file = destination.with_name(f".supertonic_{uuid.uuid4().hex}.json")
+        payload = {
+            "output": str(destination),
+            "voice": voice,
+            "language": "pt",
+            "steps": 8,
+            "speed": 1.0,
+            "segments": segments,
+        }
+        env = os.environ.copy()
+        env["SUPERTONIC_CACHE_DIR"] = str(supertonic_cache())
+        try:
+            request_file.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+            result = subprocess.run(
+                [str(supertonic_python()), str(Path(__file__).resolve().parent / "tts_engines" / "supertonic_worker.py"),
+                 str(request_file)],
+                capture_output=True, text=True, encoding="utf-8", errors="replace",
+                timeout=3600, env=env, check=False,
+            )
+            if result.returncode != 0:
+                detail = (result.stderr or result.stdout or "Falha sem detalhes")[-900:]
+                raise RuntimeError(f"Falha na geração com Supertonic 3: {detail}")
+            if not destination.is_file() or destination.stat().st_size < 44:
+                raise RuntimeError("Supertonic 3 terminou sem criar um arquivo WAV válido.")
+        finally:
+            request_file.unlink(missing_ok=True)
+
     def public_job(job):
         if not job:
             return None
@@ -47,6 +113,11 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
         return item
 
     def render_piece(job, part_index: int, destination: Path):
+        if job.get("engine") == "supertonic3":
+            render_supertonic_piece(job, part_index, destination)
+            return
+        if job.get("engine") != "voxcpm2":
+            raise RuntimeError("Motor de narração não reconhecido.")
         kind, _, key = job["voice"].partition(":")
         style = (job.get("settings") or {}).get("style", "")
         def generate(model):
@@ -140,7 +211,7 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
     @router.get("/engines")
     def list_engines():
         from tts_engine_catalog import public_catalog
-        return {"engines": public_catalog()}
+        return {"engines": public_catalog(supertonic_installed=supertonic_ready())}
 
     @router.post("/split")
     def split_text(payload: EnqueueRequest):
@@ -171,14 +242,23 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
         parts = split_for_duration(payload.text, payload.target_seconds, payload.chars_per_minute)
         if not parts:
             raise HTTPException(400, "Digite um texto antes de adicionar à fila.")
-        if payload.voice.startswith("preset:"):
-            preset_by_id(payload.voice.split(":", 1)[1])
-        elif payload.voice.startswith("mine:"):
-            if not find_mine(payload.voice.split(":", 1)[1]):
-                raise HTTPException(404, "A voz salva não foi encontrada.")
+        if payload.engine == "voxcpm2":
+            if payload.voice.startswith("preset:"):
+                preset_by_id(payload.voice.split(":", 1)[1])
+            elif payload.voice.startswith("mine:"):
+                if not find_mine(payload.voice.split(":", 1)[1]):
+                    raise HTTPException(404, "A voz salva não foi encontrada.")
+            else:
+                raise HTTPException(400, "Selecione uma voz válida para o VoxCPM2.")
+        elif payload.engine == "supertonic3":
+            if not supertonic_ready():
+                raise HTTPException(409, "Supertonic 3 não está instalado. Execute instalar-supertonic.bat.")
+            voice_id = payload.voice.removeprefix("supertonic:")
+            if payload.voice != f"supertonic:{voice_id}" or voice_id not in {"M1","M2","M3","M4","M5","F1","F2","F3","F4","F5"}:
+                raise HTTPException(400, "Selecione uma voz predefinida válida do Supertonic 3.")
         else:
-            raise HTTPException(400, "Selecione uma voz válida.")
-        job = db.enqueue(payload.text, payload.voice, "voxcpm2", parts,
+            raise HTTPException(400, "Motor de narração inválido.")
+        job = db.enqueue(payload.text, payload.voice, payload.engine, parts,
                          {"style": payload.style, "target_seconds": payload.target_seconds,
                           "chars_per_minute": payload.chars_per_minute})
         return public_job(job)
