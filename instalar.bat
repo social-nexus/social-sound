@@ -20,14 +20,18 @@ echo.
 echo [1/6] Criando o ambiente Python 3.11...
 py -3.11 -m venv .venv
 if errorlevel 1 goto sem_python
+if not exist ".venv\Scripts\python.exe" goto sem_python
 call .venv\Scripts\activate
 python -m pip install --upgrade pip
+if errorlevel 1 goto falha
 
 echo.
 echo [2/6] Instalando o motor de voz (PyTorch e VoxCPM, varios GB)...
 pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu124
 if errorlevel 1 goto falha
 pip install voxcpm fastapi "uvicorn[standard]" python-multipart soundfile httpx "keyring>=25.5,<26"
+if errorlevel 1 goto falha
+pip check
 if errorlevel 1 goto falha
 
 echo.
