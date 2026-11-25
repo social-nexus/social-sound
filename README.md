@@ -16,13 +16,14 @@ Tudo roda no seu computador. A internet só é usada na instalação, para baixa
 
 ## Requisitos
 
+- Para as novas áreas de IA: conexão à internet para baixar o runtime llama.cpp e modelos; as APIs externas exigem chave e podem gerar cobrança. As chaves são guardadas no cofre de credenciais do sistema operacional.
+
 - Para usar as IAs locais e os provedores API, a versão atual instala também `llama.cpp` sob demanda, `httpx` e `keyring` (o cofre de credenciais do sistema).
 
 - **Windows, Linux ou macOS** (veja a tabela abaixo)
 - Python 3.11 (no Windows, marque **Add python.exe to PATH** na instalação)
 - Placa NVIDIA com drivers atualizados (o modelo pede cerca de 8 GB de VRAM; se faltar, ele muda sozinho para a CPU). Sem placa NVIDIA, tudo funciona na CPU, só que bem mais devagar.
 - Espaço livre em disco para os modelos (vários GB)
-- Opcional: o [AutoEditor MS](https://github.com/pedroibd/autoeditor-ms), para usar a aba "Edição de vídeo". Ele **não** faz parte deste repositório e tem licença própria.
 
 | Sistema | Arquivos | Observação |
 |---|---|---|
