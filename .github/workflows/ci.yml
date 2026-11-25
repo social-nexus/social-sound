@@ -15,7 +15,7 @@ jobs:
         with:
           node-version: "20"
       - name: Install test dependencies
-        run: python -m pip install pytest fastapi httpx "keyring>=25.5,<26" python-multipart
+        run: python -m pip install pytest fastapi httpx numpy soundfile "keyring>=25.5,<26" python-multipart
       - name: Compile Python sources
         run: python -m compileall -q server
       - name: Test AI modules
