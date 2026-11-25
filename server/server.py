@@ -58,6 +58,17 @@ def get_model():
     return _model
 
 
+def unload_voxcpm2():
+    """Libera o modelo VoxCPM2 antes de iniciar outro motor TTS."""
+    global _model, _device
+    with _lock:
+        _model = None
+        _device = DEVICE
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+
+
 def run(fn):
     """Executa fn(model); se faltar memória na GPU, recarrega na CPU e tenta de novo."""
     global _model, _device
@@ -392,7 +403,7 @@ from ia_local import ROOT as SOCIAL_SOUND_DATA_ROOT  # noqa: E402
 from narration_api import create_narration_router  # noqa: E402
 
 narration_router = create_narration_router(
-    lock=_lock, run=run, synth=synth, ensure_preset=ensure_preset,
+    lock=_lock, run=run, synth=synth, ensure_preset=ensure_preset, unload_engine=unload_voxcpm2,
     preset_by_id=preset_by_id, find_mine=find_mine, parse_text=parse_text,
     split_sentences=split_sentences, tighten=tighten,
     data_dir=SOCIAL_SOUND_DATA_ROOT, output_dir=SOCIAL_SOUND_DATA_ROOT / "narracoes",

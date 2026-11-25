@@ -44,6 +44,7 @@ def test_voxcpm_queue_generates_parts_and_requires_candidate_approval(tmp_path):
     assert engines["voxcpm2"]["installed"] is True
     assert engines["supertonic3"]["installed"] is False
     assert engines["omnivoice"]["installed"] is False
+    assert engines["f5tts"]["installed"] is False
     unavailable = client.post("/api/narration/jobs", json={
         "text": "Teste Supertonic.",
         "engine": "supertonic3",
@@ -52,6 +53,8 @@ def test_voxcpm_queue_generates_parts_and_requires_candidate_approval(tmp_path):
     assert unavailable.status_code == 409
     omni_unavailable = client.post("/api/narration/jobs", json={"text": "Teste OmniVoice.", "engine": "omnivoice", "voice": "omnivoice:auto"})
     assert omni_unavailable.status_code == 409
+    f5_unavailable = client.post("/api/narration/jobs", json={"text": "Teste F5.", "engine": "f5tts", "voice": "f5tts:clone"})
+    assert f5_unavailable.status_code == 409
     text = "Esta é uma frase de teste para a narração. " * 12
 
     paused = client.post("/api/narration/queue/pause")

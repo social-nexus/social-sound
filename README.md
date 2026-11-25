@@ -132,6 +132,8 @@ O **OmniVoice** também pode ser instalado separadamente por `instalar-omnivoice
 
 Para clonagem, envie um áudio WAV, FLAC ou OGG de até 25 MB e informe a transcrição exata. Use somente gravação própria ou de pessoa que tenha autorizado a clonagem. Também existem os modos de voz automática e criação por descrição.
 
+O **F5-TTS PT-BR** pode ser instalado separadamente por `instalar-f5tts.bat`. A integração usa o código oficial F5-TTS e o checkpoint comunitário [Cataldir/F5-TTS-pt-br](https://huggingface.co/Cataldir/F5-TTS-pt-br), ajustado para português brasileiro. O checkpoint é experimental e não é mantido pelo projeto oficial F5-TTS; a qualidade deve ser avaliada antes de uso em produção. Os pesos são CC-BY-NC-4.0, portanto somente uso não comercial. A instalação cria ambiente Python separado e baixa o checkpoint e o vocoder para o cache compartilhado. A geração usa clonagem com áudio de referência e sua transcrição.
+
 Fontes oficiais: [código OmniVoice](https://github.com/k2-fsa/OmniVoice), [modelo e licença dos pesos](https://huggingface.co/k2-fsa/OmniVoice) e [licença do tokenizer Higgs Audio V2](https://huggingface.co/bosonai/higgs-audio-v2-tokenizer).
 
 

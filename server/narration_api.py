@@ -24,14 +24,14 @@ class EnqueueRequest(BaseModel):
     style: str = Field(default="", max_length=500)
     target_seconds: int = Field(default=60, ge=15, le=300)
     chars_per_minute: int = Field(default=850, ge=300, le=1500)
-    engine: str = Field(default="voxcpm2", pattern="^(voxcpm2|supertonic3|omnivoice)$")
+    engine: str = Field(default="voxcpm2", pattern="^(voxcpm2|supertonic3|omnivoice|f5tts)$")
     mode: str = Field(default="auto", pattern="^(auto|clone|design)$")
     reference_audio: str = Field(default="", max_length=1000)
     reference_text: str = Field(default="", max_length=5000)
 
 
 def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
-                            find_mine, parse_text, split_sentences, tighten, data_dir: Path, output_dir: Path):
+                            find_mine, parse_text, split_sentences, tighten, data_dir: Path, output_dir: Path, unload_engine=None):
     router = APIRouter(prefix="/api/narration", tags=["narracao"])
     db = NarrationQueue(data_dir / "narration_queue.sqlite3")
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -168,6 +168,60 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
         finally:
             request_file.unlink(missing_ok=True)
 
+    def f5tts_python() -> Path:
+        configured = os.environ.get("SOCIAL_SOUND_F5TTS_PYTHON")
+        if configured:
+            return Path(configured).expanduser()
+        root = Path(__file__).resolve().parent / ".venvs" / "f5tts"
+        return root / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
+
+    def f5tts_ready() -> bool:
+        python = f5tts_python()
+        cache = Path(os.environ.get("HF_HUB_CACHE", Path(os.environ.get("HF_HOME", Path.home() / ".cache" / "huggingface")) / "hub"))
+        model_cache = cache / "models--Cataldir--F5-TTS-pt-br" / "snapshots"
+        vocoder_cache = cache / "models--charactr--vocos-mel-24khz" / "snapshots"
+        root = python.parent.parent
+        package_dir = root / ("Lib/site-packages/f5_tts" if os.name == "nt" else "lib/python3.11/site-packages/f5_tts")
+        return (python.is_file() and package_dir.is_dir() and model_cache.is_dir()
+                and any(model_cache.iterdir()) and vocoder_cache.is_dir() and any(vocoder_cache.iterdir()))
+
+    def render_f5tts_piece(job, part_index: int, destination: Path):
+        if not f5tts_ready():
+            raise RuntimeError("F5-TTS PT-BR não está instalado. Execute instalar-f5tts.bat e aceite a licença para uso não comercial.")
+        settings = job.get("settings") or {}
+        candidate = Path(settings.get("reference_audio", "")).resolve()
+        if reference_dir.resolve() not in candidate.parents or not candidate.is_file():
+            raise RuntimeError("O áudio de referência não foi encontrado na pasta segura do Social Sound.")
+        reference_text = settings.get("reference_text", "")
+        if not reference_text.strip():
+            raise RuntimeError("Informe a transcrição do áudio de referência.")
+        segments = []
+        for segment_type, value in parse_text(job["parts"][part_index]["text"]):
+            if segment_type == "pause":
+                segments.append({"type": "pause", "seconds": float(value)})
+            else:
+                for chunk in split_sentences(value):
+                    if chunk.strip():
+                        segments.append({"type": "text", "text": chunk})
+        if not any(item["type"] == "text" for item in segments):
+            raise RuntimeError("Esta parte não contém texto para sintetizar.")
+        request_file = destination.with_name(f".f5tts_{uuid.uuid4().hex}.json")
+        payload = {"output": str(destination), "reference_audio": str(candidate),
+                   "reference_text": reference_text, "segments": segments, "steps": 16}
+        try:
+            request_file.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+            result = subprocess.run(
+                [str(f5tts_python()), str(Path(__file__).resolve().parent / "tts_engines" / "f5tts_worker.py"), str(request_file)],
+                capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=7200,
+                env=os.environ.copy(), check=False)
+            if result.returncode != 0:
+                detail = (result.stderr or result.stdout or "Falha sem detalhes")[-1200:]
+                raise RuntimeError(f"Falha na geração com F5-TTS: {detail}")
+            if not destination.is_file() or destination.stat().st_size < 44:
+                raise RuntimeError("F5-TTS terminou sem criar um arquivo WAV válido.")
+        finally:
+            request_file.unlink(missing_ok=True)
+
     def public_job(job):
         if not job:
             return None
@@ -184,6 +238,9 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
             return
         if job.get("engine") == "omnivoice":
             render_omnivoice_piece(job, part_index, destination)
+            return
+        if job.get("engine") == "f5tts":
+            render_f5tts_piece(job, part_index, destination)
             return
         if job.get("engine") != "voxcpm2":
             raise RuntimeError("Motor de narração não reconhecido.")
@@ -249,6 +306,8 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
                 continue
             try:
                 folder = job_paths(job["id"])
+                if job.get("engine") != "voxcpm2" and unload_engine is not None:
+                    unload_engine()
                 for index, part in enumerate(job["parts"]):
                     if part.get("status") == "completed" and part.get("audio_path") and Path(part["audio_path"]).is_file():
                         continue
@@ -280,7 +339,7 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
     @router.get("/engines")
     def list_engines():
         from tts_engine_catalog import public_catalog
-        return {"engines": public_catalog(supertonic_installed=supertonic_ready(), omnivoice_installed=omnivoice_ready())}
+        return {"engines": public_catalog(supertonic_installed=supertonic_ready(), omnivoice_installed=omnivoice_ready(), f5tts_installed=f5tts_ready())}
 
     @router.post("/split")
     def split_text(payload: EnqueueRequest):
@@ -338,6 +397,14 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
                     raise HTTPException(404, "A voz salva não foi encontrada.")
             else:
                 raise HTTPException(400, "Selecione uma voz válida para o VoxCPM2.")
+        elif payload.engine == "f5tts":
+            if not f5tts_ready():
+                raise HTTPException(409, "F5-TTS PT-BR não está instalado. Execute instalar-f5tts.bat.")
+            candidate = Path(payload.reference_audio).resolve()
+            if reference_dir.resolve() not in candidate.parents or not candidate.is_file():
+                raise HTTPException(400, "Envie um áudio de referência válido pelo campo próprio do F5-TTS.")
+            if not payload.reference_text.strip():
+                raise HTTPException(400, "Informe a transcrição do áudio de referência.")
         elif payload.engine == "omnivoice":
             if not omnivoice_ready():
                 raise HTTPException(409, "OmniVoice não está instalado. Execute instalar-omnivoice.bat.")

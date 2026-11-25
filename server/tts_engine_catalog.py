@@ -56,7 +56,7 @@ ENGINES = [
     {
         "id": "f5tts",
         "name": "F5-TTS",
-        "model": "SWivid/F5-TTS",
+        "model": "Cataldir/F5-TTS-pt-br",
         "code_license": "MIT",
         "weights_license": "CC-BY-NC-4.0",
         "commercial_use": False,
@@ -64,17 +64,17 @@ ENGINES = [
         "category": "non_commercial",
         "installed": False,
         "voice_cloning": True,
-        "notes": "O código é MIT, mas os pesos oficiais são CC-BY-NC-4.0. Não usar para conteúdo monetizado ou outras finalidades comerciais sem autorização/licença diferente.",
-        "model_url": "https://huggingface.co/SWivid/F5-TTS",
+        "notes": "Checkpoint comunitário ajustado para português brasileiro, usando a API oficial F5-TTS. Pesos CC-BY-NC-4.0: somente uso não comercial. O checkpoint não é mantido pelo projeto oficial e a qualidade deve ser validada antes de uso em produção.",
+        "model_url": "https://huggingface.co/Cataldir/F5-TTS-pt-br",
         "code_url": "https://github.com/SWivid/F5-TTS",
-        "license_url": "https://huggingface.co/SWivid/F5-TTS",
+        "license_url": "https://huggingface.co/Cataldir/F5-TTS-pt-br",
     },
 ]
 
 
-def public_catalog(*, supertonic_installed: bool = False, omnivoice_installed: bool = False) -> list[dict]:
+def public_catalog(*, supertonic_installed: bool = False, omnivoice_installed: bool = False, f5tts_installed: bool = False) -> list[dict]:
     return [
-        dict(engine, installed=(supertonic_installed if engine["id"] == "supertonic3" else omnivoice_installed if engine["id"] == "omnivoice" else engine["installed"]),
+        dict(engine, installed=(supertonic_installed if engine["id"] == "supertonic3" else omnivoice_installed if engine["id"] == "omnivoice" else f5tts_installed if engine["id"] == "f5tts" else engine["installed"]),
              reviewed_on=REVIEWED_ON)
         for engine in ENGINES
     ]

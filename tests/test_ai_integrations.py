@@ -154,6 +154,16 @@ def test_omnivoice_catalog_is_optional_and_noncommercial():
     assert installed["omnivoice"]["installed"] is True
 
 
+def test_f5tts_catalog_uses_ptbr_checkpoint_and_noncommercial_license():
+    from tts_engine_catalog import ENGINES, public_catalog
+    item = next(engine for engine in ENGINES if engine["id"] == "f5tts")
+    assert item["model"] == "Cataldir/F5-TTS-pt-br"
+    assert item["weights_license"] == "CC-BY-NC-4.0"
+    assert item["commercial_use"] is False
+    assert next(engine for engine in public_catalog() if engine["id"] == "f5tts")["installed"] is False
+    assert next(engine for engine in public_catalog(f5tts_installed=True) if engine["id"] == "f5tts")["installed"] is True
+
+
 def test_local_model_catalog_includes_qwen_and_license_flag_for_gemma():
     qwen = ia_local.MODEL_CATALOG["qwen3-4b-q4km"]
     gemma = ia_local.MODEL_CATALOG["gemma3-4b-it-q4km"]
