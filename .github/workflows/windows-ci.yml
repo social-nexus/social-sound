@@ -1,0 +1,44 @@
+name: Social Sound Windows CI
+
+on:
+  push:
+    branches: [main, "feature/**"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows-checks:
+    name: Windows / Python 3.11
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install test dependencies
+        run: python -m pip install pytest fastapi httpx numpy soundfile "keyring>=25.5,<26" python-multipart
+
+      - name: Compile Python sources
+        run: python -m compileall -q server
+
+      - name: Run automated tests
+        run: python -m pytest -q tests
+
+      - name: Check JavaScript syntax
+        run: |
+          node --check server/ai_web/app.js
+          node --check server/narracoes/app.js
