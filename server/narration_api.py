@@ -185,6 +185,8 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
             raise HTTPException(409, "Conclua a narração antes de regenerar uma parte.")
         if not 0 <= part_index < len(job["parts"]):
             raise HTTPException(404, "Parte não encontrada.")
+        if any(item["part_index"] == part_index for item in db.list_candidates(job_id)):
+            raise HTTPException(409, "Esta parte já tem uma versão aguardando aprovação.")
         candidate_path = job_paths(job_id) / f"candidata_{part_index + 1:03d}_{uuid.uuid4().hex[:8]}.wav"
         try:
             render_piece(job, part_index, candidate_path)
