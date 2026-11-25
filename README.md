@@ -16,6 +16,8 @@ Tudo roda no seu computador. A internet só é usada na instalação, para baixa
 
 ## Requisitos
 
+- Para usar as IAs locais e os provedores API, a versão atual instala também `llama.cpp` sob demanda, `httpx` e `keyring` (o cofre de credenciais do sistema).
+
 - **Windows, Linux ou macOS** (veja a tabela abaixo)
 - Python 3.11 (no Windows, marque **Add python.exe to PATH** na instalação)
 - Placa NVIDIA com drivers atualizados (o modelo pede cerca de 8 GB de VRAM; se faltar, ele muda sozinho para a CPU). Sem placa NVIDIA, tudo funciona na CPU, só que bem mais devagar.
