@@ -492,6 +492,17 @@ def test_voice_ui_checks_mutation_http_errors():
     assert "finally {\n      setRegenId(null);" in ui_source
 
 
+def test_voice_audio_object_urls_are_released_and_stale_previews_cancelled():
+    ui_source = (Path(__file__).resolve().parents[1] / "web" / "src" / "App.tsx").read_text(encoding="utf-8")
+    assert "const previewRequestRef = useRef(0);" in ui_source
+    assert "requestId !== previewRequestRef.current" in ui_source
+    assert "const releasePreviewUrl = () => {" in ui_source
+    assert "URL.revokeObjectURL(url);" in ui_source
+    assert "SEGMENTS.delete(url);" in ui_source
+    assert "previewAudioRef.current?.pause();" in ui_source
+    assert "URL.revokeObjectURL(removed.url);" in ui_source
+
+
 def test_narration_batch_queue_uses_stable_ids_and_locks_edits():
     ui_source = (Path(__file__).resolve().parents[1] / "web" / "src" / "App.tsx").read_text(encoding="utf-8")
     assert "const batchProcessingRef = useRef(false);" in ui_source
