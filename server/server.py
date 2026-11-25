@@ -395,7 +395,7 @@ narration_router = create_narration_router(
     lock=_lock, run=run, synth=synth, ensure_preset=ensure_preset,
     preset_by_id=preset_by_id, find_mine=find_mine, parse_text=parse_text,
     split_sentences=split_sentences, tighten=tighten,
-    data_dir=SOCIAL_SOUND_DATA_ROOT, output_dir=SAIDAS / "narracoes",
+    data_dir=SOCIAL_SOUND_DATA_ROOT, output_dir=SOCIAL_SOUND_DATA_ROOT / "narracoes",
 )
 app.include_router(narration_router)
 
@@ -431,6 +431,10 @@ app.include_router(dialogo.criar_router(dict(
     split_sentences=split_sentences, ensure_preset=ensure_preset, find_mine=find_mine, preset_by_id=preset_by_id,
     saidas=SAIDAS,
 )))
+# Áudios da fila ficam no diretório de dados do usuário, fora da pasta do programa.
+NARRACAO_AUDIO_DIR = SOCIAL_SOUND_DATA_ROOT / "narracoes"
+NARRACAO_AUDIO_DIR.mkdir(parents=True, exist_ok=True)
+app.mount("/saidas/narracoes", StaticFiles(directory=str(NARRACAO_AUDIO_DIR)), name="narracoes-audio")
 app.mount("/saidas", StaticFiles(directory=str(SAIDAS)), name="saidas")
 DIALOGO_WEB = BASE / "dialogo_web"
 if DIALOGO_WEB.is_dir():
