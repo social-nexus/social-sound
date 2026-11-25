@@ -299,6 +299,38 @@ def test_duplicate_model_download_jobs_serialize_and_reuse_verified_file(monkeyp
     assert all(ia_local.JOBS[jid]["status"] == "done" for jid in jobs)
 
 
+def test_runtime_install_refuses_publish_if_runtime_activated_during_download(monkeypatch, tmp_path):
+    variant = "linux-cpu-x64"
+    meta = ia_local.RUNTIME_CATALOG[variant]
+    monkeypatch.setattr(ia_local, "RUNTIME_DIR", tmp_path / "runtime")
+    ia_local.RUNTIME_DIR.mkdir(parents=True)
+
+    class ActiveProcess:
+        def poll(self):
+            return None
+
+    def fake_download(url, archive, size, job_id):
+        archive.write_bytes(b"package")
+        # Simulate another request activating this variant during the download.
+        monkeypatch.setattr(ia_local, "PROCESS", ActiveProcess())
+        monkeypatch.setattr(ia_local, "ACTIVE_VARIANT", variant)
+        monkeypatch.setattr(ia_local, "ACTIVE_MODEL", "test-model")
+
+    def fake_extract(archive, destination, kind):
+        destination.mkdir(parents=True, exist_ok=True)
+        (destination / meta["binary"]).write_bytes(b"fake-runtime")
+
+    monkeypatch.setattr(ia_local, "_download", fake_download)
+    monkeypatch.setattr(ia_local, "_extract_archive", fake_extract)
+    monkeypatch.setattr(ia_local, "_sha256", lambda path: meta["sha256"])
+    jid = ia_local._job("runtime")
+    ia_local._install_runtime_worker(jid, variant)
+
+    assert ia_local.JOBS[jid]["status"] == "error"
+    assert "ativado durante a instalação" in ia_local.JOBS[jid]["message"]
+    assert ia_local._runtime_binary(variant) is None
+
+
 def test_duplicate_runtime_install_jobs_reuse_installed_runtime(monkeypatch, tmp_path):
     import threading
 
