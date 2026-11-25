@@ -65,7 +65,7 @@ Se algum download falhar, rode o `instalar.bat` de novo: o que já foi baixado n
 
 - **Ligar:** duplo clique em `iniciar.bat`. Abre uma janela própria (Edge, sem barra de endereço) com a navegação lateral. Uma janela preta fica minimizada (servidor local): **não feche**.
 - **Desligar:** duplo clique em `parar.bat`. Fechar só a janela do programa **não** desliga os servidores nem libera a placa de vídeo.
-- **Atalhos:** `Ctrl+1` Roteiro · `Ctrl+2` Narração · `Ctrl+3` Diálogo · `Ctrl+4` Legendas · `Ctrl+5` IA Roteiros · `Ctrl+6` IA Prompts.
+- **Atalhos:** `Ctrl+1` Roteiro · `Ctrl+2` Narração · `Ctrl+3` Diálogo · `Ctrl+4` Legendas · `Ctrl+5` IA Roteiros · `Ctrl+6` IA Prompts · `Ctrl+7` Fila de Narrações.
 - Feche o ComfyUI (ou outro programa que use a placa) antes de ligar.
 
 ## As abas
@@ -81,6 +81,13 @@ O `instalar.bat` baixa o modelo de acentos [Mark](https://huggingface.co/Mytholo
 - Vozes padrão: criadas na primeira vez que você usa cada uma (`server\voices\_padrao`).
 - Pausas: `<short pause>` = 0,5 s · `<pause 1s>` = 1 s (qualquer valor) · `<long pause>` = 1,2 s. Cada quebra de linha vira uma pausa de parágrafo (padrão 0,8 s, ajustável no painel de tom).
 - Para forçar a CPU, coloque `set DEVICE=cpu` no `iniciar.bat` (Windows), antes do `start`, ou `export DEVICE=cpu` no `config.sh` (Linux/macOS).
+
+### Divisão Inteligente de Narrações
+- Abra a aba **Fila de Narrações** (atalho `Ctrl+7`) para enviar textos longos sem bloquear a tela principal.
+- Escolha a voz VoxCPM2, o estilo e a duração-alvo por parte (30, 45, 60, 90 ou 120 segundos). A divisão tenta respeitar frases e nunca corta palavras; o tempo é estimado e pode variar conforme a voz e o ritmo.
+- Os trabalhos são processados automaticamente, um por vez. Você pode adicionar outros textos enquanto um áudio está sendo gerado.
+- Cada parte é salva separadamente e o sistema monta também o áudio completo. A fila e o histórico ficam salvos no computador.
+- Para corrigir uma parte, use **Regenerar esta parte**. A nova versão fica separada para ouvir; só substitui a parte e reconstrói o áudio completo depois de clicar em **Aprovar e substituir**. Se descartar, o áudio anterior permanece.
 
 ### Diálogo
 - Escreva uma fala por linha no formato `Nome: fala`. Linhas sem nome usam a voz do Narrador.
