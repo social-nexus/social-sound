@@ -185,6 +185,92 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
         return (python.is_file() and package_dir.is_dir() and model_cache.is_dir()
                 and any(model_cache.iterdir()) and vocoder_cache.is_dir() and any(vocoder_cache.iterdir()))
 
+
+    def external_segments(text: str):
+        segments = []
+        for segment_type, value in parse_text(text):
+            if segment_type == "pause":
+                segments.append({"type": "pause", "seconds": float(value)})
+            else:
+                for chunk in split_sentences(value):
+                    if chunk.strip():
+                        segments.append({"type": "text", "text": chunk})
+        if not any(item["type"] == "text" for item in segments):
+            raise RuntimeError("Esta parte não contém texto para sintetizar.")
+        return segments
+
+    def render_external_job(job, folder: Path):
+        """Run OmniVoice/F5-TTS once for the whole job, keeping successful part files."""
+        engine = job.get("engine")
+        settings = job.get("settings") or {}
+        if engine == "omnivoice":
+            if not omnivoice_ready():
+                raise RuntimeError("OmniVoice não está instalado. Execute instalar-omnivoice.bat e aceite as licenças para uso não comercial.")
+            mode = settings.get("mode", "auto")
+            reference_audio = settings.get("reference_audio", "")
+            reference_text = settings.get("reference_text", "")
+            instruction = settings.get("style", "")
+            if mode == "clone":
+                candidate = Path(reference_audio).resolve()
+                if reference_dir.resolve() not in candidate.parents or not candidate.is_file():
+                    raise RuntimeError("O áudio de referência não foi encontrado na pasta segura do Social Sound.")
+                if not reference_text.strip():
+                    raise RuntimeError("Informe a transcrição do áudio de referência.")
+                reference_audio = str(candidate)
+            elif mode == "design" and not instruction.strip():
+                raise RuntimeError("Descreva a voz desejada para usar o modo de criação de voz.")
+            python, worker, prefix = omnivoice_python(), "omnivoice_worker.py", ".omnivoice_"
+            base = {"mode": mode, "reference_audio": reference_audio,
+                    "reference_text": reference_text, "instruction": instruction}
+        elif engine == "f5tts":
+            if not f5tts_ready():
+                raise RuntimeError("F5-TTS PT-BR não está instalado. Execute instalar-f5tts.bat e aceite a licença para uso não comercial.")
+            candidate = Path(settings.get("reference_audio", "")).resolve()
+            if reference_dir.resolve() not in candidate.parents or not candidate.is_file():
+                raise RuntimeError("O áudio de referência não foi encontrado na pasta segura do Social Sound.")
+            reference_text = settings.get("reference_text", "")
+            if not reference_text.strip():
+                raise RuntimeError("Informe a transcrição do áudio de referência.")
+            python, worker, prefix = f5tts_python(), "f5tts_worker.py", ".f5tts_"
+            base = {"reference_audio": str(candidate), "reference_text": reference_text, "steps": 16}
+        else:
+            raise RuntimeError("Motor externo não reconhecido.")
+
+        pending = []
+        for index, part in enumerate(job["parts"]):
+            if part.get("status") == "completed" and part.get("audio_path") and Path(part["audio_path"]).is_file():
+                continue
+            target = folder / f"parte_{index + 1:03d}.wav"
+            db.update_part(job["id"], index, status="processing")
+            pending.append({"index": index, "output": str(target),
+                            "segments": external_segments(part["text"])})
+        if not pending:
+            return
+
+        request_file = folder / f"{prefix}{uuid.uuid4().hex}.json"
+        payload = {**base, "parts": pending}
+        try:
+            request_file.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+            result = subprocess.run(
+                [str(python), str(Path(__file__).resolve().parent / "tts_engines" / worker), str(request_file)],
+                capture_output=True, text=True, encoding="utf-8", errors="replace",
+                timeout=7200, env=os.environ.copy(), check=False)
+            # Workers write each part as soon as it finishes. Record those files
+            # even if a later part fails, so requeue only retries unfinished parts.
+            for item in pending:
+                target = Path(item["output"])
+                if target.is_file() and target.stat().st_size >= 44:
+                    db.update_part(job["id"], item["index"], status="completed", audio_path=str(target))
+            if result.returncode != 0:
+                detail = (result.stderr or result.stdout or "Falha sem detalhes")[-1200:]
+                raise RuntimeError(f"Falha na geração com {engine}: {detail}")
+            missing = [Path(item["output"]).name for item in pending
+                       if not Path(item["output"]).is_file() or Path(item["output"]).stat().st_size < 44]
+            if missing:
+                raise RuntimeError(f"{engine} terminou sem criar WAV válido para: {', '.join(missing)}")
+        finally:
+            request_file.unlink(missing_ok=True)
+
     def render_f5tts_piece(job, part_index: int, destination: Path):
         if not f5tts_ready():
             raise RuntimeError("F5-TTS PT-BR não está instalado. Execute instalar-f5tts.bat e aceite a licença para uso não comercial.")
@@ -308,13 +394,16 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
                 folder = job_paths(job["id"])
                 if job.get("engine") != "voxcpm2" and unload_engine is not None:
                     unload_engine()
-                for index, part in enumerate(job["parts"]):
-                    if part.get("status") == "completed" and part.get("audio_path") and Path(part["audio_path"]).is_file():
-                        continue
-                    db.update_part(job["id"], index, status="processing")
-                    target = folder / f"parte_{index + 1:03d}.wav"
-                    render_piece(job, index, target)
-                    db.update_part(job["id"], index, status="completed", audio_path=str(target))
+                if job.get("engine") in {"omnivoice", "f5tts"}:
+                    render_external_job(job, folder)
+                else:
+                    for index, part in enumerate(job["parts"]):
+                        if part.get("status") == "completed" and part.get("audio_path") and Path(part["audio_path"]).is_file():
+                            continue
+                        db.update_part(job["id"], index, status="processing")
+                        target = folder / f"parte_{index + 1:03d}.wav"
+                        render_piece(job, index, target)
+                        db.update_part(job["id"], index, status="completed", audio_path=str(target))
                 current = db.get(job["id"])
                 merge_parts([Path(p["audio_path"]) for p in current["parts"]],
                             folder / "completo.wav")
