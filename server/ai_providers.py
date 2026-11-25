@@ -49,7 +49,7 @@ def _data_root() -> Path:
 
 
 CONFIG_PATH = _data_root() / "ai-provider-config.json"
-CONFIG_LOCK = threading.Lock()
+CONFIG_LOCK = threading.RLock()
 
 
 def _guard(request: Request) -> None:
@@ -87,6 +87,17 @@ def _write_config(data: dict) -> None:
             temp.replace(CONFIG_PATH)
         finally:
             temp.unlink(missing_ok=True)
+
+
+def _update_provider_config(provider: str, model: str | None = None) -> dict:
+    """Serialize config read-modify-write to avoid losing concurrent provider settings."""
+    with CONFIG_LOCK:
+        cfg = _read_config()
+        cfg["provider"] = provider
+        if provider != "local" and model is not None:
+            cfg["models"][provider] = model
+        _write_config(cfg)
+        return cfg
 
 
 def _keyring_ready() -> bool:
@@ -242,14 +253,12 @@ def update_config(payload: dict, request: Request):
     provider = str(payload.get("provider", "local")).strip().lower()
     if provider not in ("local", *PROVIDERS):
         raise HTTPException(400, "Provedor não permitido.")
-    cfg = _read_config()
-    cfg["provider"] = provider
+    model = None
     if provider != "local":
         model = str(payload.get("model", "")).strip()
         if not model or len(model) > 160:
             raise HTTPException(400, "Informe o identificador do modelo.")
-        cfg["models"][provider] = model
-    _write_config(cfg)
+    _update_provider_config(provider, model)
     return public_config()
 
 
