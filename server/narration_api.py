@@ -24,7 +24,7 @@ class EnqueueRequest(BaseModel):
 
 
 def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
-                            find_mine, data_dir: Path, output_dir: Path):
+                            find_mine, parse_text, split_sentences, tighten, data_dir: Path, output_dir: Path):
     router = APIRouter(prefix="/api/narration", tags=["narracao"])
     db = NarrationQueue(data_dir / "narration_queue.sqlite3")
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -61,11 +61,23 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
                 transcript = None
             else:
                 raise RuntimeError("Tipo de voz inválido.")
-            wav = np.asarray(synth(model, job["parts"][part_index]["text"],
-                                   style=style, ref=ref, transcript=transcript), dtype=np.float32).reshape(-1)
-            if wav.size == 0:
+            sample_rate = model.tts_model.sample_rate
+            pieces = []
+            for kind, value in parse_text(job["parts"][part_index]["text"]):
+                if kind == "pause":
+                    pieces.append(np.zeros(int(sample_rate * value), dtype=np.float32))
+                    continue
+                for chunk in split_sentences(value):
+                    if not chunk.strip():
+                        continue
+                    wav = np.asarray(synth(model, chunk, style=style, ref=ref,
+                                           transcript=transcript), dtype=np.float32).reshape(-1)
+                    wav = np.asarray(tighten(wav, sample_rate), dtype=np.float32).reshape(-1)
+                    if wav.size:
+                        pieces.append(wav)
+            if not pieces:
                 raise RuntimeError("O motor não retornou áudio para esta parte.")
-            sf.write(str(destination), wav, model.tts_model.sample_rate, subtype="PCM_16")
+            sf.write(str(destination), np.concatenate(pieces), sample_rate, subtype="PCM_16")
         with lock:
             run(generate)
 
