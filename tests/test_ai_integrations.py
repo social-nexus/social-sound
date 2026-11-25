@@ -3,9 +3,6 @@ import os
 import sys
 import tempfile
 import pytest
-import os
-import sys
-import tempfile
 from pathlib import Path
 from unittest.mock import AsyncMock
 
@@ -40,6 +37,21 @@ def test_ai_provider_guard_rejects_external_origin():
 
 def test_ai_provider_guard_accepts_local_same_origin():
     ai_providers._guard(local_request())
+
+
+def test_local_ai_guard_rejects_external_origin():
+    with pytest.raises(ia_local.HTTPException):
+        ia_local._guard_local_request(local_request(origin="https://attacker.example"))
+
+
+def test_local_ai_guard_rejects_untrusted_host():
+    with pytest.raises(ia_local.HTTPException):
+        ia_local._guard_local_request(local_request(host="attacker.example"))
+
+
+def test_local_ai_guard_requires_origin_for_mutating_request():
+    with pytest.raises(ia_local.HTTPException):
+        ia_local._guard_local_request(local_request(origin=None))
 
 
 def test_config_stores_provider_preferences_without_secrets(tmp_path, monkeypatch):
