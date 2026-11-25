@@ -214,6 +214,7 @@ def test_omnivoice_catalog_uses_explicit_huggingface_hub_cache(tmp_path, monkeyp
     python.parent.mkdir(parents=True)
     python.write_bytes(b"fake python")
     (runtime / "Lib" / "site-packages" / "omnivoice").mkdir(parents=True)
+    (runtime / "lib" / "python3.11" / "site-packages" / "omnivoice").mkdir(parents=True)
     cache = tmp_path / "custom-hf-cache"
     (cache / "models--k2-fsa--OmniVoice" / "snapshots" / "model").mkdir(parents=True)
     (cache / "models--bosonai--higgs-audio-v2-tokenizer" / "snapshots" / "tokenizer").mkdir(parents=True)
