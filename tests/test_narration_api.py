@@ -63,6 +63,11 @@ def test_voxcpm_queue_generates_parts_and_requires_candidate_approval(tmp_path):
     regenerated = client.post(f"/api/narration/jobs/{job_id}/parts/0/regenerate")
     assert regenerated.status_code == 200
     candidate = regenerated.json()
+    restored = client.get(f"/api/narration/jobs/{job_id}/candidates")
+    assert restored.status_code == 200
+    assert restored.json()["candidates"][0]["id"] == candidate["candidate_id"]
+    duplicate = client.post(f"/api/narration/jobs/{job_id}/parts/0/regenerate")
+    assert duplicate.status_code == 409
     still_original = client.get(f"/api/narration/jobs/{job_id}").json()
     assert still_original["parts"][0]["audio_path"] == original_path
 
