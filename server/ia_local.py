@@ -388,6 +388,13 @@ def _stop_runtime():
             proc.kill()
     return True
 
+def _runtime_args(binary: Path, model_path: Path, gpu_layers: int = 0) -> list[str]:
+    return [str(binary), "--host", "127.0.0.1", "--port", str(PORT),
+            "--model", str(model_path), "--alias", "social-sound-local", "--ctx-size", "4096", "--jinja",
+            "--n-gpu-layers", str(max(0, min(int(gpu_layers), 200))),
+            "--parallel", "1", "--no-webui", "--cors-origins", "localhost"]
+
+
 def _start_runtime(model_id: str, variant: str, gpu_layers: int = 0):
     global PROCESS, ACTIVE_MODEL, ACTIVE_VARIANT
     if variant not in RUNTIME_CATALOG or _runtime_binary(variant) is None:
@@ -405,10 +412,7 @@ def _start_runtime(model_id: str, variant: str, gpu_layers: int = 0):
             raise RuntimeError(f"A porta local {PORT} já está sendo usada por outro programa.")
     binary = _runtime_binary(variant)
     log = (LOG_DIR / "llama-server.log").open("ab")
-    args = [str(binary), "--host", "127.0.0.1", "--port", str(PORT),
-            "--model", str(model_path), "--alias", "social-sound-local", "--ctx-size", "4096", "--jinja",
-            "--n-gpu-layers", str(max(0, min(int(gpu_layers), 200))),
-            "--parallel", "1", "--no-webui", "--cors-origins", "localhost"]
+    args = _runtime_args(binary, model_path, gpu_layers)
     try:
         proc = subprocess.Popen(args, cwd=str(binary.parent), stdout=log,
                                 stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL)
