@@ -251,16 +251,23 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
         payload = {**base, "parts": pending}
         try:
             request_file.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
-            result = subprocess.run(
-                [str(python), str(Path(__file__).resolve().parent / "tts_engines" / worker), str(request_file)],
-                capture_output=True, text=True, encoding="utf-8", errors="replace",
-                timeout=7200, env=os.environ.copy(), check=False)
+            result = None
+            run_error = None
+            try:
+                result = subprocess.run(
+                    [str(python), str(Path(__file__).resolve().parent / "tts_engines" / worker), str(request_file)],
+                    capture_output=True, text=True, encoding="utf-8", errors="replace",
+                    timeout=7200, env=os.environ.copy(), check=False)
+            except Exception as exc:
+                run_error = exc
             # Workers write each part as soon as it finishes. Record those files
-            # even if a later part fails, so requeue only retries unfinished parts.
+            # even if a later part fails or the process times out.
             for item in pending:
                 target = Path(item["output"])
                 if target.is_file() and target.stat().st_size >= 44:
                     db.update_part(job["id"], item["index"], status="completed", audio_path=str(target))
+            if run_error is not None:
+                raise RuntimeError(f"Falha ao executar {engine}: {run_error}") from run_error
             if result.returncode != 0:
                 detail = (result.stderr or result.stdout or "Falha sem detalhes")[-1200:]
                 raise RuntimeError(f"Falha na geração com {engine}: {detail}")
