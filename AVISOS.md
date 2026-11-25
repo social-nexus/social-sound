@@ -2,7 +2,7 @@
 
 ## 1. O que é este projeto
 
-Social Sound: ferramenta local de narração com clonagem de voz, preparação de roteiro, legendas (SRT) e janela com abas para o editor de vídeo.
+Social Sound: ferramenta local de narração com clonagem de voz, preparação de roteiro, legendas (SRT) e áreas de criação assistida por IA. A edição de vídeo é oferecida em um aplicativo separado.
 
 Foi criado com ajuda de inteligência artificial (Claude, da Anthropic) e testado só em parte. É oferecido "como está", sem garantia de funcionamento, e o uso é por conta e risco de quem usa.
 
@@ -42,7 +42,7 @@ Nada abaixo está dentro deste repositório. O instalador baixa direto das fonte
 
 **Interface** (já compilada em `server/web`): React (MIT), Vite (MIT), Tailwind CSS (MIT), lucide-react (ISC).
 
-**Editor de vídeo:** a aba "Edição de vídeo" só abre o AutoEditor Mod que cada pessoa já tem instalado. O AutoEditor MS **não** faz parte deste repositório e tem licença própria, que **não** permite uso comercial ([github.com/pedroibd/autoeditor-ms](https://github.com/pedroibd/autoeditor-ms)). Não o redistribua.
+**Editor de vídeo:** não faz parte do Social Sound. O projeto de edição de vídeo é separado e possui documentação e licença próprias.
 
 ## 3. Uso responsável
 
