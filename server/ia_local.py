@@ -591,18 +591,19 @@ def ai_job(jid: str):
 @router.delete("/models/{model_id}")
 def delete_model(model_id: str, request: Request):
     _guard_local_request(request)
-    if model_id == ACTIVE_MODEL:
-        _stop_runtime()
-    if model_id in MODEL_CATALOG:
-        folder = MODELS_DIR / model_id
-    elif re.fullmatch(r"imported-[0-9a-f]{10}", model_id):
-        folder = MODELS_DIR / model_id
-    else:
-        raise HTTPException(400, "Modelo inválido.")
-    if folder.exists():
-        shutil.rmtree(folder)
-    return {"ok": True}
-
+        with RUNTIME_LIFECYCLE_LOCK:
+        if model_id == ACTIVE_MODEL:
+            _stop_runtime()
+        if model_id in MODEL_CATALOG:
+            folder = MODELS_DIR / model_id
+        elif re.fullmatch(r"imported-[0-9a-f]{10}", model_id):
+            folder = MODELS_DIR / model_id
+        else:
+            raise HTTPException(400, "Modelo inválido.")
+        if folder.exists():
+            shutil.rmtree(folder)
+        return {"ok": True}
+    
 @router.post("/generate")
 async def generate_text(payload: dict, request: Request):
     _guard_local_request(request)
