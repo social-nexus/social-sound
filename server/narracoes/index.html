@@ -8,7 +8,7 @@
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px system-ui,"Segoe UI",sans-serif}
 main{max-width:1100px;margin:auto;padding:28px 22px 60px}.top{display:flex;align-items:center;gap:14px;margin-bottom:22px}.top img{width:42px;height:42px;object-fit:contain}.top h1{font-size:23px;margin:0}.top p{margin:4px 0 0;color:var(--muted)}
 .panel,.job{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px;margin-bottom:18px}
-h2{font-size:16px;margin:0 0 14px}.grid{display:grid;grid-template-columns:1fr 180px;gap:12px}
+h2{font-size:16px;margin:0 0 14px}.grid{display:grid;grid-template-columns:1fr 1fr 180px;gap:12px}
 label{display:block;color:var(--muted);font-size:12px;font-weight:700;margin:0 0 6px}
 textarea,input,select{width:100%;border:1px solid var(--line);border-radius:10px;background:#0b1324;color:var(--text);padding:11px;font:inherit;outline:none}
 textarea{min-height:170px;resize:vertical;line-height:1.55}.field{margin-bottom:13px}
@@ -35,10 +35,12 @@ audio{width:100%;height:38px}.candidate{border:1px solid #8b5cf6;border-radius:1
 <div class="field"><label for="script">Texto da narração</label><textarea id="script" placeholder="Cole aqui uma narração curta ou longa. Textos longos serão divididos automaticamente, respeitando frases e palavras."></textarea></div>
 <div class="actions" style="margin:-3px 0 14px"><label class="linkbtn secondary" for="txtfile">Abrir arquivo TXT</label><input id="txtfile" type="file" accept=".txt,text/plain" hidden><span class="small muted" id="filelabel">Você também pode colar o texto diretamente.</span></div>
 <div class="grid">
+<div class="field"><label for="engine">Motor de voz</label><select id="engine"><option value="voxcpm2">VoxCPM2</option></select></div>
 <div class="field"><label for="voice">Voz</label><select id="voice"><option>Carregando vozes...</option></select></div>
 <div class="field"><label for="duration">Duração-alvo por parte</label><select id="duration"><option value="30">30 segundos</option><option value="45">45 segundos</option><option value="60" selected>60 segundos</option><option value="90">90 segundos</option><option value="120">120 segundos</option></select></div>
 </div>
-<div class="field"><label for="style">Estilo / direção de voz (opcional)</label><input id="style" maxlength="500" placeholder="Ex.: voz calma, ritmo de documentário, tom acolhedor"></div>
+<div class="field" id="styleField"><label for="style">Estilo / direção de voz (opcional)</label><input id="style" maxlength="500" placeholder="Ex.: voz calma, ritmo de documentário, tom acolhedor"></div>
+<p id="stylehint" class="small muted" style="margin:-4px 0 12px">O VoxCPM2 aceita vozes salvas e vozes predefinidas.</p>
 <div class="actions"><button id="preview">Analisar divisão</button><button id="enqueue">Adicionar à fila</button><span id="splitinfo" class="small muted"></span></div>
 <div id="formerror" class="error"></div>
 <div class="note small">A duração é uma estimativa. O tamanho real de cada áudio varia conforme a voz, o ritmo e as pausas. A fila continua automaticamente e é recuperada quando o Social Sound é aberto novamente.</div>
