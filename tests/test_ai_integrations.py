@@ -119,8 +119,16 @@ def test_archive_path_rejects_traversal(tmp_path):
 
 def test_models_directory_override(monkeypatch, tmp_path):
     shared = tmp_path / "shared-models"
+    monkeypatch.delenv("SOCIAL_NEXUS_MODELS_DIR", raising=False)
     monkeypatch.setenv("SOCIAL_SOUND_MODELS_DIR", str(shared))
     assert ia_local.models_dir() == shared
+
+
+def test_global_social_nexus_models_directory_uses_llm_subfolder(monkeypatch, tmp_path):
+    root = tmp_path / "IA_MODELS"
+    monkeypatch.setenv("SOCIAL_NEXUS_MODELS_DIR", str(root))
+    monkeypatch.setenv("SOCIAL_SOUND_MODELS_DIR", str(tmp_path / "legacy-models"))
+    assert ia_local.models_dir() == root / "LLM"
 
 
 def test_local_model_catalog_includes_qwen_and_license_flag_for_gemma():
