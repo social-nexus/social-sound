@@ -210,19 +210,39 @@ def voices():
     return dict(presets=presets, mine=mine, device=_device)
 
 
+VOICE_UPLOAD_LIMIT = 50 * 1024 * 1024
+
 @app.post("/voices")
 async def upload_voice(file: UploadFile = File(...), name: str = Form(""), transcript: str = Form("")):
     stem = re.sub(r"[^\w\- ]", "", name or Path(file.filename).stem).strip() or "voz"
     ext = Path(file.filename).suffix.lower()
     if ext not in EXTS:
-        raise HTTPException(400, "Formato não suportado. Use WAV ou MP3.")
-    for old in VOICES_DIR.glob(f"{stem}.*"):
-        if old.is_file():
-            old.unlink()
-    (VOICES_DIR / f"{stem}{ext}").write_bytes(await file.read())
-    if transcript.strip():
-        (VOICES_DIR / f"{stem}.txt").write_text(transcript.strip(), encoding="utf-8")
-    return dict(name=stem)
+        raise HTTPException(400, "Formato não suportado. Use WAV, MP3, FLAC, OGG ou M4A.")
+    raw = await file.read(VOICE_UPLOAD_LIMIT + 1)
+    if len(raw) > VOICE_UPLOAD_LIMIT:
+        raise HTTPException(413, "O arquivo de voz deve ter no máximo 50 MB.")
+    destination = VOICES_DIR / f"{stem}{ext}"
+    temp = VOICES_DIR / f".{stem}.{uuid.uuid4().hex}.upload"
+    try:
+        temp.write_bytes(raw)
+        os.replace(temp, destination)
+        # Only remove previous variants after the new file is safely published.
+        for old in VOICES_DIR.glob(f"{stem}.*"):
+            if old.is_file() and old != destination and old.suffix.lower() != ".txt":
+                old.unlink()
+        transcript_path = VOICES_DIR / f"{stem}.txt"
+        if transcript.strip():
+            transcript_temp = VOICES_DIR / f".{stem}.{uuid.uuid4().hex}.transcript"
+            try:
+                transcript_temp.write_text(transcript.strip(), encoding="utf-8")
+                os.replace(transcript_temp, transcript_path)
+            finally:
+                transcript_temp.unlink(missing_ok=True)
+        else:
+            transcript_path.unlink(missing_ok=True)
+        return dict(name=stem)
+    finally:
+        temp.unlink(missing_ok=True)
 
 
 @app.delete("/voices/{name}")
