@@ -472,6 +472,14 @@ def test_tts_engines_share_inference_lock():
     assert "inference_guard = inference_lock or threading.Lock()" in narration_source
 
 
+def test_voice_ui_checks_mutation_http_errors():
+    ui_source = (Path(__file__).resolve().parents[1] / "web" / "src" / "App.tsx").read_text(encoding="utf-8")
+    assert "if (!response.ok) throw new Error" in ui_source
+    assert "Falha ao remover a voz:" in ui_source
+    assert "Não consegui gerar outra versão desta voz:" in ui_source
+    assert "finally {\n      setRegenId(null);" in ui_source
+
+
 def test_narration_batch_queue_uses_stable_ids_and_locks_edits():
     ui_source = (Path(__file__).resolve().parents[1] / "web" / "src" / "App.tsx").read_text(encoding="utf-8")
     assert "const batchProcessingRef = useRef(false);" in ui_source
