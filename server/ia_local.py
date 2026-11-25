@@ -322,19 +322,24 @@ def _install_runtime_worker(jid: str, variant: str):
                     installed.chmod(installed.stat().st_mode | 0o111)
                 final = RUNTIME_DIR / variant
                 moved_old = False
-                try:
-                    if final.exists():
-                        final.replace(backup)
-                        moved_old = True
-                    staging.replace(final)
-                except Exception:
-                    if moved_old and backup.exists() and not final.exists():
-                        backup.replace(final)
-                    raise
-                finally:
-                    shutil.rmtree(staging, ignore_errors=True)
-                if backup.exists():
-                    shutil.rmtree(backup, ignore_errors=True)
+                # Serialize the final publication with runtime activation/stop.
+                # A runtime may become active while downloads are in progress.
+                with RUNTIME_LIFECYCLE_LOCK:
+                    if ACTIVE_VARIANT == variant and PROCESS and PROCESS.poll() is None:
+                        raise RuntimeError("O runtime foi ativado durante a instalação. Desligue-o antes de substituir os arquivos.")
+                    try:
+                        if final.exists():
+                            final.replace(backup)
+                            moved_old = True
+                        staging.replace(final)
+                    except Exception:
+                        if moved_old and backup.exists() and not final.exists():
+                            backup.replace(final)
+                        raise
+                    finally:
+                        shutil.rmtree(staging, ignore_errors=True)
+                    if backup.exists():
+                        shutil.rmtree(backup, ignore_errors=True)
             _update_job(jid, status="done", progress=100, message="Runtime instalado e verificado.")
         except Exception as exc:
             _update_job(jid, status="error", message=str(exc)[:350])
