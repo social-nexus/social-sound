@@ -22,5 +22,15 @@ jobs:
         run: pytest -q tests
       - name: Check shell script syntax
         run: bash -n config.sh iniciar-linux.sh instalar-linux.sh
+      - name: Build packaged React frontend
+        working-directory: web
+        run: npm install --no-audit --no-fund && npm run build
+      - name: Upload packaged frontend build
+        uses: actions/upload-artifact@v4
+        with:
+          name: social-sound-web-dist
+          path: |
+            server/web
+            web/package-lock.json
       - name: Check JavaScript syntax
         run: node --check server/ai_web/app.js && node --check server/narracoes/app.js
