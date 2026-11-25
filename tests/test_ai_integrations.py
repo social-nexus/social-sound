@@ -297,3 +297,35 @@ def test_duplicate_model_download_jobs_serialize_and_reuse_verified_file(monkeyp
     assert all(not thread.is_alive() for thread in threads)
     assert len(download_calls) == 1
     assert all(ia_local.JOBS[jid]["status"] == "done" for jid in jobs)
+
+
+def test_duplicate_runtime_install_jobs_reuse_installed_runtime(monkeypatch, tmp_path):
+    import threading
+
+    variant = "linux-cpu-x64"
+    meta = ia_local.RUNTIME_CATALOG[variant]
+    monkeypatch.setattr(ia_local, "RUNTIME_DIR", tmp_path / "runtime")
+    ia_local.RUNTIME_DIR.mkdir(parents=True)
+    downloaded = []
+
+    def fake_download(url, archive, size, job_id):
+        downloaded.append(job_id)
+        archive.write_bytes(b"package")
+
+    def fake_extract(archive, destination, kind):
+        destination.mkdir(parents=True, exist_ok=True)
+        (destination / meta["binary"]).write_bytes(b"fake-runtime")
+
+    monkeypatch.setattr(ia_local, "_download", fake_download)
+    monkeypatch.setattr(ia_local, "_extract_archive", fake_extract)
+    monkeypatch.setattr(ia_local, "_sha256", lambda path: meta["sha256"])
+    jobs = [ia_local._job("runtime"), ia_local._job("runtime")]
+    workers = [threading.Thread(target=ia_local._install_runtime_worker, args=(jid, variant)) for jid in jobs]
+    for worker in workers:
+        worker.start()
+    for worker in workers:
+        worker.join(timeout=3)
+    assert all(not worker.is_alive() for worker in workers)
+    assert len(downloaded) == 1
+    assert all(ia_local.JOBS[jid]["status"] == "done" for jid in jobs)
+    assert ia_local._runtime_binary(variant) is not None
