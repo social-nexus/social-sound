@@ -1,0 +1,24 @@
+name: Social Sound CI
+on:
+  push:
+    branches: [main, "feature/**"]
+  pull_request:
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install test dependencies
+        run: python -m pip install pytest fastapi httpx "keyring>=25.5,<26"
+      - name: Compile Python sources
+        run: python -m compileall -q server
+      - name: Test AI modules
+        run: pytest -q tests
+      - name: Check JavaScript syntax
+        run: node --check server/ai_web/app.js
