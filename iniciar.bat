@@ -13,6 +13,12 @@ curl -s -o nul http://localhost:8000/estudio/
 if not errorlevel 1 goto abrir
 set /a n+=1
 if %n% LSS 60 goto espera
+echo.
+echo ERRO: O servidor do Social Sound nao respondeu apos 120 segundos.
+echo Verifique a instalacao e tente executar instalar.bat novamente.
+echo Se o problema continuar, procure mensagens de erro na janela do servidor.
+pause
+exit /b 1
 :abrir
 start "" msedge --app=http://localhost:8000/estudio/ --window-size=1400,900
-exit
+exit /b 0
