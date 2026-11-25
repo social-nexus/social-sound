@@ -8,6 +8,7 @@ import torch
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from security_config import LOCAL_HOSTS, LOCAL_ORIGINS, LOCAL_ORIGIN_BYTES
 
 BASE = Path(__file__).parent
 VOICES_DIR = BASE / "voices"
@@ -111,8 +112,8 @@ def find_mine(name):
 
 
 # Protege as rotas da IA local contra chamadas de outras origens e limita upload de modelos.
-AI_LOCAL_HOSTS = {b"localhost:8000", b"127.0.0.1:8000"}
-AI_LOCAL_ORIGINS = {b"http://localhost:8000", b"http://127.0.0.1:8000"}
+AI_LOCAL_HOSTS = {host.encode("ascii") for host in LOCAL_HOSTS}
+AI_LOCAL_ORIGINS = LOCAL_ORIGIN_BYTES
 AI_MAX_UPLOAD = 30 * 1024**3 + 1024 * 1024
 
 class AILocalSecurityMiddleware:
@@ -184,7 +185,7 @@ class AILocalSecurityMiddleware:
 
 app = FastAPI()
 app.add_middleware(AILocalSecurityMiddleware)
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+app.add_middleware(CORSMiddleware, allow_origins=sorted(LOCAL_ORIGINS), allow_methods=["*"], allow_headers=["*"])
 
 
 @app.get("/voices")
