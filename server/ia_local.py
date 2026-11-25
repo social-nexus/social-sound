@@ -577,7 +577,7 @@ async def generate_text(payload: dict, request: Request):
     if provider != "local":
         model = str(payload.get("provider_model", "")).strip()
         try:
-            answer = await generate_with_provider(provider, model, system, prompt)
+            answer = await generate_with_provider(provider, model, system, prompt, max_tokens=max_tokens)
             return {"text": answer, "model": f"{provider}/{model}", "provider": provider}
         except (RuntimeError, ValueError) as exc:
             raise HTTPException(502, str(exc)[:350])
