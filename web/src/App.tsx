@@ -171,19 +171,26 @@ const App = () => {
 
   const deleteVoice = async (e, voice) => {
     e.stopPropagation();
-    await fetch(`${API}/voices/${encodeURIComponent(voice.label)}`, { method: "DELETE" });
-    await loadVoices();
+    try {
+      const response = await fetch(`${API}/voices/${encodeURIComponent(voice.label)}`, { method: "DELETE" });
+      if (!response.ok) throw new Error(`HTTP ${response.status}: ${(await response.text()).slice(0, 160)}`);
+      await loadVoices();
+    } catch (err) {
+      setError("Falha ao remover a voz: " + String(err.message || err).slice(0, 180));
+    }
   };
 
   const regeneratePreset = async (e, voice) => {
     e.stopPropagation();
     setRegenId(voice.id);
     try {
-      await fetch(`${API}/presets/${voice.id.split(":")[1]}/regenerate`, { method: "POST" });
+      const response = await fetch(`${API}/presets/${voice.id.split(":")[1]}/regenerate`, { method: "POST" });
+      if (!response.ok) throw new Error(`HTTP ${response.status}: ${(await response.text()).slice(0, 160)}`);
     } catch (err) {
-      setError("Não consegui gerar outra versão desta voz.");
+      setError("Não consegui gerar outra versão desta voz: " + String(err.message || err).slice(0, 180));
+    } finally {
+      setRegenId(null);
     }
-    setRegenId(null);
   };
 
   const pcmToWav = (pcmData, sampleRate) => {
