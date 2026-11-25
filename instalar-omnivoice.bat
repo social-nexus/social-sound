@@ -45,6 +45,8 @@ if errorlevel 1 goto falha
 if errorlevel 1 goto falha
 "%OMNI_PY%" -m pip install "omnivoice==0.2.1"
 if errorlevel 1 goto falha
+"%OMNI_PY%" -m pip check
+if errorlevel 1 goto falha
 
 echo.
 echo [3/4] Baixando modelo e tokenizer para o cache compartilhado...
