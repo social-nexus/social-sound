@@ -42,6 +42,10 @@ def test_voxcpm_queue_generates_parts_and_requires_candidate_approval(tmp_path):
     assert len(catalogue.json()["engines"]) == 4
     text = "Esta é uma frase de teste para a narração. " * 12
 
+    paused = client.post("/api/narration/queue/pause")
+    assert paused.status_code == 200
+    assert client.get("/api/narration/queue/status").json()["paused"] is True
+
     created = client.post("/api/narration/jobs", json={
         "text": text,
         "voice": "preset:narrador-grave",
@@ -50,6 +54,23 @@ def test_voxcpm_queue_generates_parts_and_requires_candidate_approval(tmp_path):
     })
     assert created.status_code == 200
     job_id = created.json()["id"]
+
+    second = client.post("/api/narration/jobs", json={
+        "text": text,
+        "voice": "preset:narrador-grave",
+        "target_seconds": 15,
+        "chars_per_minute": 300,
+    })
+    assert second.status_code == 200
+    second_id = second.json()["id"]
+    assert client.post(f"/api/narration/jobs/{second_id}/move-up").status_code == 200
+    ordered = client.get("/api/narration/jobs").json()["jobs"]
+    queued_ids = [item["id"] for item in ordered if item["status"] == "queued"]
+    assert queued_ids[:2] == [second_id, job_id]
+    assert client.delete(f"/api/narration/jobs/{second_id}").status_code == 200
+    resumed = client.post("/api/narration/queue/resume")
+    assert resumed.status_code == 200
+    assert client.get("/api/narration/queue/status").json()["paused"] is False
 
     finished = None
     for _ in range(100):
