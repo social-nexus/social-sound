@@ -86,6 +86,22 @@ const App = () => {
   // Estado e Referência para o Preview de Voz
   const [previewState, setPreviewState] = useState({ id: null, status: 'idle' });
   const previewAudioRef = useRef(typeof Audio !== "undefined" ? new Audio() : null);
+  const previewUrlRef = useRef(null);
+
+  useEffect(() => () => {
+    previewAudioRef.current?.pause();
+    for (const url of SEGMENTS.keys()) URL.revokeObjectURL(url);
+    SEGMENTS.clear();
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (audioUrl) {
+        URL.revokeObjectURL(audioUrl);
+        SEGMENTS.delete(audioUrl);
+      }
+    };
+  }, [audioUrl]);
 
   const fileInputRef = useRef(null);
   const textareaRef = useRef(null);
@@ -327,39 +343,59 @@ const App = () => {
   };
 
   // Função para Tocar/Pausar a Amostra da Voz
-  const togglePreview = async (e, voiceId) => {
-    e.stopPropagation(); // Evita que clique selecione a voz na lista principal imediatamente
-    
-    if (previewState.id === voiceId && (previewState.status === 'playing' || previewState.status === 'loading')) {
-      if (previewAudioRef.current) previewAudioRef.current.pause();
-      setPreviewState({ id: null, status: 'idle' });
-      return;
-    }
-
-    // Para qualquer preview anterior que estivesse tocando
-    if (previewAudioRef.current) previewAudioRef.current.pause();
-    
-    setPreviewState({ id: voiceId, status: 'loading' });
-
-    try {
-      // Gera uma frase de amostra usando a própria API
-      const url = await apiRequest("Olá! Esta é uma demonstração de como a minha voz soa.", voiceId, "");
-      
-      if (previewAudioRef.current) {
-        previewAudioRef.current.src = url;
-        previewAudioRef.current.play();
-        setPreviewState({ id: voiceId, status: 'playing' });
-        
-        previewAudioRef.current.onended = () => {
-          setPreviewState({ id: null, status: 'idle' });
-        };
-      }
-    } catch (err) {
-      console.error("Erro no preview da voz:", err);
-      setPreviewState({ id: null, status: 'idle' });
+  const releasePreviewUrl = () => {
+    const url = previewUrlRef.current;
+    if (url) {
+      URL.revokeObjectURL(url);
+      SEGMENTS.delete(url);
+      previewUrlRef.current = null;
     }
   };
 
+  const togglePreview = async (e, voiceId) => {
+    e.stopPropagation();
+    if (previewState.id === voiceId && (previewState.status === "playing" || previewState.status === "loading")) {
+      if (previewAudioRef.current) {
+        previewAudioRef.current.onended = null;
+        previewAudioRef.current.pause();
+        previewAudioRef.current.src = "";
+      }
+      releasePreviewUrl();
+      setPreviewState({ id: null, status: "idle" });
+      return;
+    }
+    if (previewAudioRef.current) {
+      previewAudioRef.current.onended = null;
+      previewAudioRef.current.pause();
+      previewAudioRef.current.src = "";
+    }
+    releasePreviewUrl();
+    setPreviewState({ id: voiceId, status: "loading" });
+    let url = null;
+    try {
+      url = await apiRequest("Olá! Esta é uma demonstração de como a minha voz soa.", voiceId, "");
+      if (previewAudioRef.current) {
+        previewUrlRef.current = url;
+        previewAudioRef.current.src = url;
+        await previewAudioRef.current.play();
+        setPreviewState({ id: voiceId, status: "playing" });
+        previewAudioRef.current.onended = () => {
+          if (previewUrlRef.current === url) releasePreviewUrl();
+          setPreviewState({ id: null, status: "idle" });
+        };
+      } else {
+        URL.revokeObjectURL(url);
+        SEGMENTS.delete(url);
+      }
+    } catch (err) {
+      if (url && previewUrlRef.current !== url) {
+        URL.revokeObjectURL(url);
+        SEGMENTS.delete(url);
+      }
+      console.error("Erro no preview da voz:", err);
+      setPreviewState({ id: null, status: "idle" });
+    }
+  };
   const apiRequest = async (inputText, voiceId, style) => {
     const form = new FormData();
     form.append("text", inputText);
@@ -479,8 +515,21 @@ const App = () => {
     }
   };
 
-  const removeFromQueue = (id) => setBatchQueue(prev => prev.filter(item => item.id !== id));
-  const clearDoneFromQueue = () => setBatchQueue(prev => prev.filter(item => item.status !== 'done'));
+  const removeFromQueue = (id) => {
+    const removed = batchQueue.find(item => item.id === id);
+    if (removed?.url) {
+      URL.revokeObjectURL(removed.url);
+      SEGMENTS.delete(removed.url);
+    }
+    setBatchQueue(prev => prev.filter(item => item.id !== id));
+  };
+  const clearDoneFromQueue = () => {
+    batchQueue.filter(item => item.status === 'done' && item.url).forEach(item => {
+      URL.revokeObjectURL(item.url);
+      SEGMENTS.delete(item.url);
+    });
+    setBatchQueue(prev => prev.filter(item => item.status !== 'done'));
+  };
 
   return (
     <div className="min-h-screen bg-nx-bg text-nx-text font-sans pb-20">
