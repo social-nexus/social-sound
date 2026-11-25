@@ -239,3 +239,12 @@ def test_f5tts_worker_resolves_custom_huggingface_uris_before_loading(monkeypatc
         assert audio.size == 2400
     finally:
         normalized.unlink(missing_ok=True)
+
+
+
+def test_f5_installer_pins_torchcodec_to_pytorch_28_compatible_release():
+    installer = (Path(__file__).resolve().parents[1] / "instalar-f5tts.bat").read_text(encoding="utf-8")
+    torch_install = installer.index('"torch==2.8.0" "torchaudio==2.8.0"')
+    codec_install = installer.index('"torchcodec==0.7.0"')
+    f5_install = installer.index('"f5-tts==1.1.22"')
+    assert torch_install < codec_install < f5_install
