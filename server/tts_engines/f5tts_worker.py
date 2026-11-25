@@ -58,8 +58,8 @@ def main():
     reference_wav = prepare_reference_audio(payload["reference_audio"])
     try:
         def render_segments(segments):
-                nonlocal model
-                pieces = []
+            nonlocal model
+            pieces = []
             sample_rate = model.target_sample_rate
             for segment in segments:
                 if segment["type"] == "pause":
@@ -81,7 +81,7 @@ def main():
                     torch.cuda.empty_cache()
                     model = load(force_cpu=True)
                     wav, sr, _ = model.infer(
-                        ref_file=payload["reference_audio"], ref_text=payload["reference_text"],
+                        ref_file=str(reference_wav), ref_text=payload["reference_text"],
                         gen_text=text, nfe_step=int(payload.get("steps", 16)),
                         speed=1.0, remove_silence=False)
                 sample_rate = int(sr)
