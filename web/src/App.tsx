@@ -87,6 +87,7 @@ const App = () => {
   const [previewState, setPreviewState] = useState({ id: null, status: 'idle' });
   const previewAudioRef = useRef(typeof Audio !== "undefined" ? new Audio() : null);
   const previewUrlRef = useRef(null);
+  const previewRequestRef = useRef(0);
 
   useEffect(() => () => {
     previewAudioRef.current?.pause();
@@ -354,6 +355,7 @@ const App = () => {
 
   const togglePreview = async (e, voiceId) => {
     e.stopPropagation();
+    const requestId = ++previewRequestRef.current;
     if (previewState.id === voiceId && (previewState.status === "playing" || previewState.status === "loading")) {
       if (previewAudioRef.current) {
         previewAudioRef.current.onended = null;
@@ -374,6 +376,11 @@ const App = () => {
     let url = null;
     try {
       url = await apiRequest("Olá! Esta é uma demonstração de como a minha voz soa.", voiceId, "");
+      if (requestId !== previewRequestRef.current) {
+        URL.revokeObjectURL(url);
+        SEGMENTS.delete(url);
+        return;
+      }
       if (previewAudioRef.current) {
         previewUrlRef.current = url;
         previewAudioRef.current.src = url;
@@ -388,12 +395,14 @@ const App = () => {
         SEGMENTS.delete(url);
       }
     } catch (err) {
-      if (url && previewUrlRef.current !== url) {
-        URL.revokeObjectURL(url);
-        SEGMENTS.delete(url);
+      if (url) {
+        if (previewUrlRef.current === url) releasePreviewUrl();
+        else { URL.revokeObjectURL(url); SEGMENTS.delete(url); }
       }
-      console.error("Erro no preview da voz:", err);
-      setPreviewState({ id: null, status: "idle" });
+      if (requestId === previewRequestRef.current) {
+        console.error("Erro no preview da voz:", err);
+        setPreviewState({ id: null, status: "idle" });
+      }
     }
   };
   const apiRequest = async (inputText, voiceId, style) => {
