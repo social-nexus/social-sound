@@ -19,7 +19,7 @@ if porta_aberta 8000; then
 else
   ( cd "$AQUI/server" && nohup .venv/bin/python "$AQUI/server/server.py" >"$AQUI/logs/servidor.log" 2>&1 & echo $! >"$AQUI/logs/servidor.pid" )
 fi
-if esperar_porta 8000 120; then
+if esperar_social_sound 120; then
   abrir_janela "http://localhost:8000/estudio/"
   echo "Pronto. Para encerrar e liberar a memoria, rode parar-linux.sh."
 else
