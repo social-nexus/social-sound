@@ -155,6 +155,12 @@ class NarrationQueue:
         """Atomically claim one queued job; only one worker should call this."""
         with self._connect() as db:
             db.execute("BEGIN IMMEDIATE")
+            active = db.execute(
+                "SELECT 1 FROM narration_jobs WHERE status='processing' LIMIT 1"
+            ).fetchone()
+            if active is not None:
+                db.commit()
+                return None
             row = db.execute(
                 "SELECT * FROM narration_jobs WHERE status='queued' "
                 "ORDER BY created_at, rowid LIMIT 1"
