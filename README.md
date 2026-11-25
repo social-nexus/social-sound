@@ -6,7 +6,8 @@ Ferramenta **local** para Windows, Linux e macOS que junta, em uma janela só:
 - **Narração**: gera voz com clonagem de voz (VoxCPM2);
 - **Diálogo**: narração com várias vozes, uma por personagem;
 - **Legendas**: gera o `.srt` (normal ou palavra por palavra) ou a lista de timestamps a partir de um áudio pronto e do roteiro;
-- **Edição de vídeo**: abre o seu [AutoEditor MS](https://github.com/pedroibd/autoeditor-ms) dentro da mesma janela.
+- **IA — Roteiros e Narração**: área de criação assistida por IA (em desenvolvimento).
+- **IA — Prompts Visuais**: criação de prompts para vídeos e imagens (em desenvolvimento).
 
 Tudo roda no seu computador. A internet só é usada na instalação, para baixar os modelos.
 
@@ -32,8 +33,7 @@ Tudo roda no seu computador. A internet só é usada na instalação, para baixa
 ## Instalação (Windows)
 
 1. Baixe este repositório: botão verde **Code → Download ZIP** (ou `git clone`) e extraia numa pasta de fácil acesso, por exemplo `C:\SocialSound`.
-2. Abra o `config.bat` com o Bloco de Notas e troque `COLE_O_CAMINHO_DO_AutoEditor-MS_AQUI` pelo caminho da sua pasta do AutoEditor MS (a que tem `server` e `out` dentro). Se você não usa o editor, pode deixar como está.
-3. Dê duplo clique em `instalar.bat`. Ele cria o ambiente Python e instala tudo de uma vez (motor de voz, aba Roteiro e aba Legendas) e baixa os modelos. **Demora e baixa vários GB.**
+2. Dê duplo clique em `instalar.bat`. Ele cria o ambiente Python e instala tudo de uma vez (motor de voz, aba Roteiro e aba Legendas) e baixa os modelos. **Demora e baixa vários GB.**
 
 Se algum download falhar, rode o `instalar.bat` de novo: o que já foi baixado não é baixado outra vez.
 
@@ -45,7 +45,6 @@ Se algum download falhar, rode o `instalar.bat` de novo: o que já foi baixado n
    chmod +x *.sh *.command
    ```
    No Mac, se o ZIP veio do navegador e o sistema bloquear os arquivos `.command` ("desenvolvedor não identificado"), rode também `xattr -dr com.apple.quarantine .` na pasta.
-3. Se for usar a aba de edição de vídeo, edite o `config.sh` e coloque o caminho do seu AutoEditor em `AUTOEDITOR_DIR`. Ele precisa do Node.js (o `runtime` do AutoEditor, se existir, é usado automaticamente).
 4. Rode `./instalar.sh` (no Mac, também dá para dar duplo clique em `instalar.command`). Baixa vários GB.
 
 **Python 3.11:** se não tiver, instale (`brew install python@3.11` no Mac; `sudo apt install python3.11 python3.11-venv` no Debian/Ubuntu). Se a sua distribuição Linux não tiver o 3.11, instale o [uv](https://docs.astral.sh/uv/): o `instalar.sh` o usa para baixar o Python 3.11 sozinho.
@@ -61,9 +60,9 @@ Se algum download falhar, rode o `instalar.bat` de novo: o que já foi baixado n
 
 ## Uso diário (Windows)
 
-- **Ligar:** duplo clique em `iniciar.bat`. Abre uma janela própria (Edge, sem barra de endereço) com as cinco abas. Duas janelas pretas ficam minimizadas (voz e editor): **não feche**.
+- **Ligar:** duplo clique em `iniciar.bat`. Abre uma janela própria (Edge, sem barra de endereço) com a navegação lateral. Uma janela preta fica minimizada (servidor local): **não feche**.
 - **Desligar:** duplo clique em `parar.bat`. Fechar só a janela do programa **não** desliga os servidores nem libera a placa de vídeo.
-- **Atalhos:** `Ctrl+1` Roteiro · `Ctrl+2` Narração · `Ctrl+3` Diálogo · `Ctrl+4` Legendas · `Ctrl+5` Edição de vídeo.
+- **Atalhos:** `Ctrl+1` Roteiro · `Ctrl+2` Narração · `Ctrl+3` Diálogo · `Ctrl+4` Legendas · `Ctrl+5` IA Roteiros · `Ctrl+6` IA Prompts.
 - Feche o ComfyUI (ou outro programa que use a placa) antes de ligar.
 
 ## As abas
@@ -97,16 +96,13 @@ Formatos:
 - **Palavra por palavra** (`.srt`): 1, 2 ou 3 palavras por vez, estilo Shorts/Reels. Nunca junta palavras de frases diferentes. Fica mais exata no modo Preciso.
 - **Timestamps** (`.txt`): uma linha por frase com o momento em que ela começa, ex.: `[00:04] Beleza, hoje o treino é esperar.`
 
-### Edição de vídeo
-Só carrega quando você abre a aba pela primeira vez. A narração baixada vai para a pasta Downloads; para usar no editor, arraste o áudio (e o `.srt`) para dentro da aba. Seus projetos do editor continuam aparecendo se você usar o mesmo navegador (Edge).
-
 ## Estrutura do projeto
 
 ```
 social-sound/
 ├── instalar / iniciar / parar    .bat (Windows) · .sh e .command (Linux/macOS)
-├── config.bat / config.sh        configuração (caminho do AutoEditor)
-├── _editor.bat / _comum.sh       arquivos de apoio dos scripts
+├── config.bat / config.sh        configurações opcionais
+├── _comum.sh                     arquivo de apoio dos scripts
 ├── server/          servidor Python (FastAPI) e interface já compilada
 │   ├── server.py, roteiro.py, dialogo.py, legenda.py
 │   ├── web/             tela de Narração (compilada)
