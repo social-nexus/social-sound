@@ -28,10 +28,10 @@ const item=document.createElement("div");item.className="model-item";
 const name=document.createElement("strong");name.textContent=m.name;item.appendChild(name);
 const description=document.createElement("div");description.className="small";description.textContent=m.description||"Modelo importado";item.appendChild(description);
 const licenseLine=document.createElement("div");licenseLine.className="small";licenseLine.textContent="Licença: "+(m.license||"Licença do modelo")+" · "+(m.approx_size_gb?m.approx_size_gb+" GB aproximados":"arquivo importado");item.appendChild(licenseLine);
-const isActive=aiStatus?.active_model===m.id;
+let check=null;if(m.requires_license_acceptance){const label=document.createElement("label");label.className="small inline";check=document.createElement("input");check.type="checkbox";label.append(check,document.createTextNode("Li e aceito os termos de licença"));item.appendChild(label);
 if(!m.installed){
 if(m.requires_license_acceptance){
-const label=document.createElement("label");label.className="small inline";const check=document.createElement("input");check.type="checkbox";label.append(check,document.createTextNode("Li e aceito os termos de licença"));item.appendChild(label);
+if(m.requires_license_acceptance)check.onchange=()=>button.disabled=!check.checked;
 const link=document.createElement("a");link.href=m.license_url;link.target="_blank";link.rel="noopener";link.textContent="Abrir licença";link.className="small";item.appendChild(link);
 }
 const row=document.createElement("div");row.className="row";const button=document.createElement("button");button.className="btn";button.textContent="Baixar modelo";button.disabled=!!m.requires_license_acceptance;button.onclick=()=>downloadModel(m);row.appendChild(button);item.appendChild(row);
