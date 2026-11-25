@@ -91,6 +91,7 @@ const App = () => {
 
   useEffect(() => () => {
     previewAudioRef.current?.pause();
+    if (previewAudioRef.current) previewAudioRef.current.src = "";
     for (const url of SEGMENTS.keys()) URL.revokeObjectURL(url);
     SEGMENTS.clear();
   }, []);
@@ -392,6 +393,7 @@ const App = () => {
         setPreviewState({ id: voiceId, status: "playing" });
         previewAudioRef.current.onended = () => {
           if (previewUrlRef.current === url) releasePreviewUrl();
+          if (previewAudioRef.current) previewAudioRef.current.src = "";
           setPreviewState({ id: null, status: "idle" });
         };
       } else {
