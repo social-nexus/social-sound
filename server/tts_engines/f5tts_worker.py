@@ -1,5 +1,5 @@
 """Isolated F5-TTS PT-BR worker. Official checkpoint is non-commercial."""
-import gc, json, os, sys, tempfile
+import gc, json, os, sys, tempfile, uuid
 from pathlib import Path
 import numpy as np
 import soundfile as sf
