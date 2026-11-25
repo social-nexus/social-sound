@@ -37,6 +37,9 @@ def test_voxcpm_queue_generates_parts_and_requires_candidate_approval(tmp_path):
         output_dir=tmp_path / "audio",
     ))
     client = TestClient(app)
+    catalogue = client.get("/api/narration/engines")
+    assert catalogue.status_code == 200
+    assert len(catalogue.json()["engines"]) == 4
     text = "Esta é uma frase de teste para a narração. " * 12
 
     created = client.post("/api/narration/jobs", json={
