@@ -235,7 +235,7 @@ async def upload_voice(file: UploadFile = File(...), name: str = Form(""), trans
         temp.write_bytes(raw)
         if transcript.strip():
             transcript_temp.write_text(transcript.strip(), encoding="utf-8")
-        with _lock, VOICE_UPLOAD_LOCK:
+        with ENGINE_INFERENCE_LOCK, _lock, VOICE_UPLOAD_LOCK:
             audio_existed = destination.is_file()
             transcript_existed = transcript_path.is_file()
             if audio_existed:
@@ -286,7 +286,7 @@ async def upload_voice(file: UploadFile = File(...), name: str = Form(""), trans
 def delete_voice(name: str):
     # Serialize deletion with synthesis and upload so an in-use reference cannot
     # disappear or be replaced during inference.
-    with _lock, VOICE_UPLOAD_LOCK:
+    with ENGINE_INFERENCE_LOCK, _lock, VOICE_UPLOAD_LOCK:
         p = find_mine(name)
         if not p:
             raise HTTPException(404, "Voz não encontrada.")
@@ -498,8 +498,13 @@ if LEGENDA_WEB.is_dir():
 # Aba Diálogo: várias vozes no mesmo áudio (veja dialogo.py). Usa o mesmo modelo carregado aqui.
 import dialogo  # noqa: E402
 
+def run_dialogo(fn):
+    """Mantém o lock do modelo dentro do lock compartilhado de inferência."""
+    with _lock:
+        return run(fn)
+
 app.include_router(dialogo.criar_router(dict(
-    lock=_lock, run=run, synth=synth, tighten=tighten, make_cues=make_cues, parse_text=parse_text,
+    lock=ENGINE_INFERENCE_LOCK, run=run_dialogo, synth=synth, tighten=tighten, make_cues=make_cues, parse_text=parse_text,
     split_sentences=split_sentences, ensure_preset=ensure_preset, find_mine=find_mine, preset_by_id=preset_by_id,
     saidas=SAIDAS,
 )))
