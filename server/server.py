@@ -266,7 +266,10 @@ async def upload_voice(file: UploadFile = File(...), name: str = Form(""), trans
             # has been published successfully.
             for old in VOICES_DIR.glob(f"{stem}.*"):
                 if old.is_file() and old != destination and old.suffix.lower() != ".txt":
-                    old.unlink()
+                    try:
+                        old.unlink()
+                    except OSError as cleanup_error:
+                        print(f"Warning: old voice variant cleanup failed: {cleanup_error}", file=sys.stderr)
         return dict(name=stem)
     finally:
         for leftover in (temp, transcript_temp):
