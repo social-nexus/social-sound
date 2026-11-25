@@ -339,7 +339,7 @@ DIALOGO_WEB = BASE / "dialogo_web"
 if DIALOGO_WEB.is_dir():
     app.mount("/dialogo", StaticFiles(directory=str(DIALOGO_WEB), html=True), name="dialogo")
 
-# Janela com abas (Roteiro + Narração + Diálogo + Legendas + Edição de vídeo): http://localhost:8000/estudio/
+# Janela principal com navegação lateral (Roteiro, Narração, Diálogo, Legendas e áreas de IA): http://localhost:8000/estudio/
 ESTUDIO = BASE / "estudio"
 if ESTUDIO.is_dir():
     app.mount("/estudio", StaticFiles(directory=str(ESTUDIO), html=True), name="estudio")
