@@ -1,5 +1,5 @@
 """Isolated F5-TTS PT-BR worker. Official checkpoint is non-commercial."""
-import gc, json, os, sys
+import gc, json, os, sys, tempfile
 from pathlib import Path
 import numpy as np
 import soundfile as sf
@@ -26,6 +26,19 @@ def load(force_cpu=False):
     return F5TTS(device=device, ckpt_file=str(checkpoint_path),
                  vocab_file=str(vocab_path), hf_cache_dir=cache_dir())
 
+def prepare_reference_audio(source):
+    """Normalize supported uploads to WAV so F5-TTS does not need FFmpeg codecs."""
+    audio, sample_rate = sf.read(str(source), dtype="float32", always_2d=True)
+    handle = tempfile.NamedTemporaryFile(prefix="social_sound_f5_ref_", suffix=".wav", delete=False)
+    handle.close()
+    try:
+        sf.write(handle.name, audio, int(sample_rate), subtype="PCM_16")
+    except Exception:
+        Path(handle.name).unlink(missing_ok=True)
+        raise
+    return Path(handle.name)
+
+
 def main():
     if len(sys.argv) != 2:
         return 2
@@ -42,45 +55,49 @@ def main():
         gc.collect()
         if torch.cuda.is_available(): torch.cuda.empty_cache()
         model = load(force_cpu=True)
-    def render_segments(segments):
-        nonlocal model
-        pieces = []
-        sample_rate = model.target_sample_rate
-        for segment in segments:
-            if segment["type"] == "pause":
-                pieces.append(np.zeros(int(sample_rate * float(segment["seconds"])), dtype=np.float32))
-                continue
-            text = str(segment.get("text", "")).strip()
-            if not text:
-                continue
-            try:
-                wav, sr, _ = model.infer(
-                    ref_file=payload["reference_audio"], ref_text=payload["reference_text"],
-                    gen_text=text, nfe_step=int(payload.get("steps", 16)),
-                    speed=1.0, remove_silence=False)
-            except torch.cuda.OutOfMemoryError:
-                if str(model.device).startswith("cpu"):
-                    raise
-                del model
-                gc.collect()
-                torch.cuda.empty_cache()
-                model = load(force_cpu=True)
-                wav, sr, _ = model.infer(
-                    ref_file=payload["reference_audio"], ref_text=payload["reference_text"],
-                    gen_text=text, nfe_step=int(payload.get("steps", 16)),
-                    speed=1.0, remove_silence=False)
-            sample_rate = int(sr)
-            pieces.append(np.asarray(wav, dtype=np.float32).reshape(-1))
-        if not pieces:
-            raise RuntimeError("F5-TTS não gerou áudio para uma das partes.")
-        return np.concatenate(pieces), sample_rate
+    reference_wav = prepare_reference_audio(payload["reference_audio"])
+    try:
+        def render_segments(segments):
+                nonlocal model
+                pieces = []
+            sample_rate = model.target_sample_rate
+            for segment in segments:
+                if segment["type"] == "pause":
+                    pieces.append(np.zeros(int(sample_rate * float(segment["seconds"])), dtype=np.float32))
+                    continue
+                text = str(segment.get("text", "")).strip()
+                if not text:
+                    continue
+                try:
+                    wav, sr, _ = model.infer(
+                        ref_file=str(reference_wav), ref_text=payload["reference_text"],
+                        gen_text=text, nfe_step=int(payload.get("steps", 16)),
+                        speed=1.0, remove_silence=False)
+                except torch.cuda.OutOfMemoryError:
+                    if str(model.device).startswith("cpu"):
+                        raise
+                    del model
+                    gc.collect()
+                    torch.cuda.empty_cache()
+                    model = load(force_cpu=True)
+                    wav, sr, _ = model.infer(
+                        ref_file=payload["reference_audio"], ref_text=payload["reference_text"],
+                        gen_text=text, nfe_step=int(payload.get("steps", 16)),
+                        speed=1.0, remove_silence=False)
+                sample_rate = int(sr)
+                pieces.append(np.asarray(wav, dtype=np.float32).reshape(-1))
+            if not pieces:
+                raise RuntimeError("F5-TTS não gerou áudio para uma das partes.")
+            return np.concatenate(pieces), sample_rate
 
-    jobs = payload.get("parts") or [{"output": payload["output"], "segments": payload["segments"]}]
-    for part in jobs:
-        audio, sample_rate = render_segments(part["segments"])
-        output = Path(part["output"]).resolve()
-        output.parent.mkdir(parents=True, exist_ok=True)
-        sf.write(str(output), audio, sample_rate, subtype="PCM_16")
+        jobs = payload.get("parts") or [{"output": payload["output"], "segments": payload["segments"]}]
+        for part in jobs:
+            audio, sample_rate = render_segments(part["segments"])
+            output = Path(part["output"]).resolve()
+            output.parent.mkdir(parents=True, exist_ok=True)
+            sf.write(str(output), audio, sample_rate, subtype="PCM_16")
+    finally:
+        reference_wav.unlink(missing_ok=True)
     return 0
 
 if __name__ == "__main__":
