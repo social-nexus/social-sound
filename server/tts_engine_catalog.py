@@ -72,9 +72,9 @@ ENGINES = [
 ]
 
 
-def public_catalog(*, supertonic_installed: bool = False) -> list[dict]:
+def public_catalog(*, supertonic_installed: bool = False, omnivoice_installed: bool = False) -> list[dict]:
     return [
-        dict(engine, installed=(supertonic_installed if engine["id"] == "supertonic3" else engine["installed"]),
+        dict(engine, installed=(supertonic_installed if engine["id"] == "supertonic3" else omnivoice_installed if engine["id"] == "omnivoice" else engine["installed"]),
              reviewed_on=REVIEWED_ON)
         for engine in ENGINES
     ]

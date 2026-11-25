@@ -128,6 +128,12 @@ O VoxCPM2 continua sendo o motor instalado na configuração inicial. O **Supert
 
 A licença dos pesos prevalece para o uso do modelo; ter código MIT ou Apache não torna automaticamente os pesos comerciais. O OpenRAIL-M permite uso comercial sujeito às restrições da licença, incluindo proibição de impersonação sem consentimento e de conteúdo enganoso.
 
+O **OmniVoice** também pode ser instalado separadamente por `instalar-omnivoice.bat`. A instalação cria um ambiente Python próprio e baixa o modelo e o tokenizer para o cache Hugging Face compartilhado. Antes de instalar, o script exige confirmação de que o uso será não comercial. Os pesos do modelo são CC-BY-NC; o tokenizer Higgs Audio V2 tem uma licença comunitária separada, que também precisa ser lida e respeitada. Não use OmniVoice em vídeos monetizados, publicidade, serviços pagos ou outras atividades comerciais sem autorização adequada. A geração tenta usar a GPU e recorre à CPU se faltar memória; na CPU, o processamento pode ser consideravelmente mais lento.
+
+Para clonagem, envie um áudio WAV, FLAC ou OGG de até 25 MB e informe a transcrição exata. Use somente gravação própria ou de pessoa que tenha autorizado a clonagem. Também existem os modos de voz automática e criação por descrição.
+
+Fontes oficiais: [código OmniVoice](https://github.com/k2-fsa/OmniVoice), [modelo e licença dos pesos](https://huggingface.co/k2-fsa/OmniVoice) e [licença do tokenizer Higgs Audio V2](https://huggingface.co/bosonai/higgs-audio-v2-tokenizer).
+
 
 Fontes oficiais: [VoxCPM2](https://huggingface.co/openbmb/VoxCPM2), [Supertonic 3 e licença](https://huggingface.co/Supertone/supertonic-3), [OmniVoice](https://huggingface.co/k2-fsa/OmniVoice) e [F5-TTS](https://huggingface.co/SWivid/F5-TTS).
 

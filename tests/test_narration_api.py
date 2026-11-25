@@ -43,12 +43,15 @@ def test_voxcpm_queue_generates_parts_and_requires_candidate_approval(tmp_path):
     engines = {item["id"]: item for item in catalogue.json()["engines"]}
     assert engines["voxcpm2"]["installed"] is True
     assert engines["supertonic3"]["installed"] is False
+    assert engines["omnivoice"]["installed"] is False
     unavailable = client.post("/api/narration/jobs", json={
         "text": "Teste Supertonic.",
         "engine": "supertonic3",
         "voice": "supertonic:M1",
     })
     assert unavailable.status_code == 409
+    omni_unavailable = client.post("/api/narration/jobs", json={"text": "Teste OmniVoice.", "engine": "omnivoice", "voice": "omnivoice:auto"})
+    assert omni_unavailable.status_code == 409
     text = "Esta é uma frase de teste para a narração. " * 12
 
     paused = client.post("/api/narration/queue/pause")

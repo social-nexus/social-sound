@@ -12,7 +12,7 @@ from pathlib import Path
 
 import numpy as np
 import soundfile as sf
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, File, HTTPException, UploadFile
 from pydantic import BaseModel, Field
 
 from narration_queue import NarrationQueue, split_for_duration
@@ -24,7 +24,10 @@ class EnqueueRequest(BaseModel):
     style: str = Field(default="", max_length=500)
     target_seconds: int = Field(default=60, ge=15, le=300)
     chars_per_minute: int = Field(default=850, ge=300, le=1500)
-    engine: str = Field(default="voxcpm2", pattern="^(voxcpm2|supertonic3)$")
+    engine: str = Field(default="voxcpm2", pattern="^(voxcpm2|supertonic3|omnivoice)$")
+    mode: str = Field(default="auto", pattern="^(auto|clone|design)$")
+    reference_audio: str = Field(default="", max_length=1000)
+    reference_text: str = Field(default="", max_length=5000)
 
 
 def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
@@ -32,6 +35,8 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
     router = APIRouter(prefix="/api/narration", tags=["narracao"])
     db = NarrationQueue(data_dir / "narration_queue.sqlite3")
     output_dir.mkdir(parents=True, exist_ok=True)
+    reference_dir = data_dir / "narration_references"
+    reference_dir.mkdir(parents=True, exist_ok=True)
     worker_guard = threading.Lock()
     worker_started = False
 
@@ -102,6 +107,67 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
         finally:
             request_file.unlink(missing_ok=True)
 
+    def omnivoice_python() -> Path:
+        configured = os.environ.get("SOCIAL_SOUND_OMNIVOICE_PYTHON")
+        if configured:
+            return Path(configured).expanduser()
+        root = Path(__file__).resolve().parent / ".venvs" / "omnivoice"
+        return root / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
+
+    def omnivoice_ready() -> bool:
+        python = omnivoice_python()
+        hf_home = Path(os.environ.get("HF_HOME", Path.home() / ".cache" / "huggingface"))
+        model_cache = hf_home / "hub" / "models--k2-fsa--OmniVoice" / "snapshots"
+        tokenizer_cache = hf_home / "hub" / "models--bosonai--higgs-audio-v2-tokenizer" / "snapshots"
+        runtime_root = python.parent.parent
+        package_dir = runtime_root / ("Lib/site-packages/omnivoice" if os.name == "nt" else "lib/python3.11/site-packages/omnivoice")
+        return (python.is_file() and package_dir.is_dir() and model_cache.is_dir()
+                and any(model_cache.iterdir()) and tokenizer_cache.is_dir() and any(tokenizer_cache.iterdir()))
+
+    def render_omnivoice_piece(job, part_index: int, destination: Path):
+        if not omnivoice_ready():
+            raise RuntimeError("OmniVoice não está instalado. Execute instalar-omnivoice.bat e aceite as licenças para uso não comercial.")
+        settings = job.get("settings") or {}
+        mode = settings.get("mode", "auto")
+        reference_audio = settings.get("reference_audio", "")
+        reference_text = settings.get("reference_text", "")
+        instruction = settings.get("style", "")
+        if mode == "clone":
+            candidate = Path(reference_audio).resolve()
+            if reference_dir.resolve() not in candidate.parents or not candidate.is_file():
+                raise RuntimeError("O áudio de referência não foi encontrado na pasta segura do Social Sound.")
+            if not reference_text.strip():
+                raise RuntimeError("Informe a transcrição do áudio de referência.")
+            reference_audio = str(candidate)
+        elif mode == "design" and not instruction.strip():
+            raise RuntimeError("Descreva a voz desejada para usar o modo de criação de voz.")
+        segments = []
+        for segment_type, value in parse_text(job["parts"][part_index]["text"]):
+            if segment_type == "pause":
+                segments.append({"type": "pause", "seconds": float(value)})
+            else:
+                for chunk in split_sentences(value):
+                    if chunk.strip():
+                        segments.append({"type": "text", "text": chunk})
+        if not any(item["type"] == "text" for item in segments):
+            raise RuntimeError("Esta parte não contém texto para sintetizar.")
+        request_file = destination.with_name(f".omnivoice_{uuid.uuid4().hex}.json")
+        payload = {"output": str(destination), "mode": mode, "reference_audio": reference_audio,
+                   "reference_text": reference_text, "instruction": instruction, "segments": segments}
+        try:
+            request_file.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+            result = subprocess.run(
+                [str(omnivoice_python()), str(Path(__file__).resolve().parent / "tts_engines" / "omnivoice_worker.py"), str(request_file)],
+                capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=7200,
+                env=os.environ.copy(), check=False)
+            if result.returncode != 0:
+                detail = (result.stderr or result.stdout or "Falha sem detalhes")[-1200:]
+                raise RuntimeError(f"Falha na geração com OmniVoice: {detail}")
+            if not destination.is_file() or destination.stat().st_size < 44:
+                raise RuntimeError("OmniVoice terminou sem criar um arquivo WAV válido.")
+        finally:
+            request_file.unlink(missing_ok=True)
+
     def public_job(job):
         if not job:
             return None
@@ -115,6 +181,9 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
     def render_piece(job, part_index: int, destination: Path):
         if job.get("engine") == "supertonic3":
             render_supertonic_piece(job, part_index, destination)
+            return
+        if job.get("engine") == "omnivoice":
+            render_omnivoice_piece(job, part_index, destination)
             return
         if job.get("engine") != "voxcpm2":
             raise RuntimeError("Motor de narração não reconhecido.")
@@ -211,7 +280,7 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
     @router.get("/engines")
     def list_engines():
         from tts_engine_catalog import public_catalog
-        return {"engines": public_catalog(supertonic_installed=supertonic_ready())}
+        return {"engines": public_catalog(supertonic_installed=supertonic_ready(), omnivoice_installed=omnivoice_ready())}
 
     @router.post("/split")
     def split_text(payload: EnqueueRequest):
@@ -237,6 +306,25 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
         db.set_paused(False)
         return {"paused": False}
 
+    @router.post("/omnivoice/reference")
+    async def upload_omnivoice_reference(file: UploadFile = File(...)):
+        suffix = Path(file.filename or "").suffix.lower()
+        if suffix not in {".wav", ".flac", ".ogg"}:
+            raise HTTPException(400, "Use um arquivo de áudio WAV, FLAC ou OGG.")
+        raw = await file.read(25 * 1024 * 1024 + 1)
+        if len(raw) > 25 * 1024 * 1024:
+            raise HTTPException(413, "O áudio de referência deve ter no máximo 25 MB.")
+        destination = reference_dir / f"{uuid.uuid4().hex}{suffix}"
+        try:
+            destination.write_bytes(raw)
+            info = sf.info(str(destination))
+            if info.frames <= 0 or info.samplerate < 8000 or info.channels > 2:
+                raise ValueError("Áudio inválido ou com formato não suportado.")
+        except Exception as exc:
+            destination.unlink(missing_ok=True)
+            raise HTTPException(400, f"Não foi possível ler o áudio de referência: {exc}")
+        return {"reference_audio": str(destination), "filename": Path(file.filename or "referencia").name}
+
     @router.post("/jobs")
     def enqueue(payload: EnqueueRequest):
         parts = split_for_duration(payload.text, payload.target_seconds, payload.chars_per_minute)
@@ -250,6 +338,17 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
                     raise HTTPException(404, "A voz salva não foi encontrada.")
             else:
                 raise HTTPException(400, "Selecione uma voz válida para o VoxCPM2.")
+        elif payload.engine == "omnivoice":
+            if not omnivoice_ready():
+                raise HTTPException(409, "OmniVoice não está instalado. Execute instalar-omnivoice.bat.")
+            if payload.mode == "clone":
+                candidate = Path(payload.reference_audio).resolve()
+                if reference_dir.resolve() not in candidate.parents or not candidate.is_file():
+                    raise HTTPException(400, "Envie um áudio de referência válido pelo campo próprio do OmniVoice.")
+                if not payload.reference_text.strip():
+                    raise HTTPException(400, "Informe a transcrição do áudio de referência.")
+            elif payload.mode == "design" and not payload.style.strip():
+                raise HTTPException(400, "Descreva a voz desejada para usar o modo de criação de voz.")
         elif payload.engine == "supertonic3":
             if not supertonic_ready():
                 raise HTTPException(409, "Supertonic 3 não está instalado. Execute instalar-supertonic.bat.")
@@ -260,7 +359,8 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
             raise HTTPException(400, "Motor de narração inválido.")
         job = db.enqueue(payload.text, payload.voice, payload.engine, parts,
                          {"style": payload.style, "target_seconds": payload.target_seconds,
-                          "chars_per_minute": payload.chars_per_minute})
+                          "chars_per_minute": payload.chars_per_minute, "mode": payload.mode,
+                          "reference_audio": payload.reference_audio, "reference_text": payload.reference_text})
         return public_job(job)
 
     @router.get("/jobs/{job_id}")

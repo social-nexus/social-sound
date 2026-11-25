@@ -41,6 +41,14 @@ audio{width:100%;height:38px}.candidate{border:1px solid #8b5cf6;border-radius:1
 </div>
 <div class="field" id="styleField"><label for="style">Estilo / direção de voz (opcional)</label><input id="style" maxlength="500" placeholder="Ex.: voz calma, ritmo de documentário, tom acolhedor"></div>
 <p id="stylehint" class="small muted" style="margin:-4px 0 12px">O VoxCPM2 aceita vozes salvas e vozes predefinidas.</p>
+<div id="omnivoiceFields" style="display:none">
+<div class="field" id="omnivoiceReferenceField" style="display:none">
+<label for="omnivoiceReference">Áudio de referência (WAV, FLAC ou OGG, até 25 MB)</label>
+<input id="omnivoiceReference" type="file" accept=".wav,.flac,.ogg,audio/wav,audio/flac,audio/ogg">
+<label for="omnivoiceReferenceText" style="margin-top:10px">Transcrição exata do áudio de referência</label>
+<textarea id="omnivoiceReferenceText" style="min-height:90px" placeholder="Digite exatamente o que é falado no áudio enviado."></textarea>
+</div>
+</div>
 <div class="actions"><button id="preview">Analisar divisão</button><button id="enqueue">Adicionar à fila</button><span id="splitinfo" class="small muted"></span></div>
 <div id="formerror" class="error"></div>
 <div class="note small">A duração é uma estimativa. O tamanho real de cada áudio varia conforme a voz, o ritmo e as pausas. A fila continua automaticamente e é recuperada quando o Social Sound é aberto novamente.</div>
@@ -48,7 +56,7 @@ audio{width:100%;height:38px}.candidate{border:1px solid #8b5cf6;border-radius:1
 <section class="panel">
 <h2>Motores de voz e licenças</h2>
 <div id="engines" class="enginegrid"><div class="small muted">Consultando catálogo de motores...</div></div>
-<p class="small muted" style="margin:14px 0 0">Somente o VoxCPM2 está integrado nesta etapa. Os demais motores aparecem para consulta e serão instalados opcionalmente, em ambientes separados, depois da revisão técnica e de licença.</p>
+<p class="small muted" style="margin:14px 0 0">O VoxCPM2 é o motor padrão. Supertonic 3 e OmniVoice são opcionais e usam ambientes separados. OmniVoice é somente para uso não comercial: os pesos CC-BY-NC e a licença comunitária do tokenizer devem ser respeitados.</p>
 </section>
 <section>
 <div class="jobhead"><h2>Fila e histórico</h2><div class="actions"><span id="queueStatus" class="small muted">Fila ativa</span><button id="toggleQueue" class="secondary">Pausar após a atual</button><button id="refresh" class="secondary">Atualizar</button></div></div>

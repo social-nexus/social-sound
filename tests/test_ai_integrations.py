@@ -144,6 +144,16 @@ def test_tts_engine_catalog_separates_commercial_and_noncommercial_weights():
     assert all(not by_id[name]["installed"] for name in ("supertonic3", "omnivoice", "f5tts"))
 
 
+def test_omnivoice_catalog_is_optional_and_noncommercial():
+    from tts_engine_catalog import public_catalog
+    items = {item["id"]: item for item in public_catalog()}
+    assert items["omnivoice"]["installed"] is False
+    assert items["omnivoice"]["commercial_use"] is False
+    assert items["omnivoice"]["weights_license"] == "CC-BY-NC"
+    installed = {item["id"]: item for item in public_catalog(omnivoice_installed=True)}
+    assert installed["omnivoice"]["installed"] is True
+
+
 def test_local_model_catalog_includes_qwen_and_license_flag_for_gemma():
     qwen = ia_local.MODEL_CATALOG["qwen3-4b-q4km"]
     gemma = ia_local.MODEL_CATALOG["gemma3-4b-it-q4km"]
