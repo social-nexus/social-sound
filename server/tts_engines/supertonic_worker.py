@@ -8,6 +8,7 @@ from __future__ import annotations
 import json
 import os
 import sys
+import uuid
 from pathlib import Path
 
 import numpy as np
@@ -63,7 +64,12 @@ def main() -> int:
     if not chunks:
         raise RuntimeError("O Supertonic não retornou áudio para esta parte.")
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    sf.write(str(output_path), np.concatenate(chunks), tts.sample_rate, subtype="PCM_16")
+    temporary = output_path.with_name(f".{output_path.stem}.{uuid.uuid4().hex}.tmp.wav")
+    try:
+        sf.write(str(temporary), np.concatenate(chunks), tts.sample_rate, subtype="PCM_16")
+        os.replace(temporary, output_path)
+    finally:
+        temporary.unlink(missing_ok=True)
     return 0
 
 
