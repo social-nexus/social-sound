@@ -40,6 +40,7 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
     reference_dir.mkdir(parents=True, exist_ok=True)
     worker_guard = threading.Lock()
     approval_guard = threading.Lock()
+    candidate_guard = threading.Lock()
     worker_started = False
 
     def job_paths(job_id: str):
@@ -580,8 +581,7 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
         except ValueError as exc:
             raise HTTPException(409, str(exc)) from exc
 
-    @router.post("/jobs/{job_id}/parts/{part_index}/regenerate")
-    def regenerate_part(job_id: str, part_index: int):
+    def _regenerate_part(job_id: str, part_index: int):
         job = db.get(job_id)
         if not job:
             raise HTTPException(404, "Narração não encontrada.")
@@ -601,6 +601,13 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
         except Exception as exc:
             candidate_path.unlink(missing_ok=True)
             raise HTTPException(500, f"Não foi possível regenerar a parte: {str(exc)[:400]}") from exc
+
+    @router.post("/jobs/{job_id}/parts/{part_index}/regenerate")
+    def regenerate_part(job_id: str, part_index: int):
+        # Prevent concurrent requests from staging multiple pending candidates
+        # for the same part while preserving approval concurrency separately.
+        with candidate_guard:
+            return _regenerate_part(job_id, part_index)
 
     def _approve_candidate(candidate_id: str):
         candidate = db.candidate(candidate_id)
@@ -658,13 +665,15 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
 
     @router.post("/candidates/{candidate_id}/discard")
     def discard_candidate(candidate_id: str):
-        try:
-            candidate = db.candidate(candidate_id)
-            db.discard_candidate(candidate_id)
-            if candidate:
-                Path(candidate["audio_path"]).unlink(missing_ok=True)
-            return {"ok": True}
-        except KeyError as exc:
-            raise HTTPException(404, "Versão candidata não encontrada ou já analisada.") from exc
+        # Approval and discard must not race over the candidate file or published audio.
+        with approval_guard:
+            try:
+                candidate = db.candidate(candidate_id)
+                db.discard_candidate(candidate_id)
+                if candidate:
+                    Path(candidate["audio_path"]).unlink(missing_ok=True)
+                return {"ok": True}
+            except KeyError as exc:
+                raise HTTPException(404, "Versão candidata não encontrada ou já analisada.") from exc
 
     return router
