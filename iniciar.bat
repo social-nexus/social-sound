@@ -1,5 +1,6 @@
 @echo off
 chcp 65001 >nul
+call "%~dp0config.bat"
 echo Ligando o Social Sound... (a primeira vez demora um pouco)
 REM Servidor local principal (voz, roteiro, dialogo e legendas)
 cd /d "%~dp0server"
