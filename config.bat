@@ -11,7 +11,9 @@ if defined SOCIAL_NEXUS_MODELS_DIR (
   set "HUGGINGFACE_HUB_CACHE=%SOCIAL_NEXUS_MODELS_DIR%\HuggingFace\hub"
   set "TRANSFORMERS_CACHE=%SOCIAL_NEXUS_MODELS_DIR%\HuggingFace\hub"
   set "TORCH_HOME=%SOCIAL_NEXUS_MODELS_DIR%\Torch"
+  set "SUPERTONIC_CACHE_DIR=%SOCIAL_NEXUS_MODELS_DIR%\Narradores\Supertonic3"
 )
+if not defined SUPERTONIC_CACHE_DIR set "SUPERTONIC_CACHE_DIR=%LOCALAPPDATA%\SocialNexus\Models\Narradores\Supertonic3"
 
 REM Alternativa manual para a pasta de GGUF, caso nao use a biblioteca global.
 REM set "SOCIAL_SOUND_MODELS_DIR=D:\IA_MODELS\LLM"
