@@ -409,6 +409,11 @@ ROTEIRO_WEB = BASE / "roteiro_web"
 if ROTEIRO_WEB.is_dir():
     app.mount("/roteiro", StaticFiles(directory=str(ROTEIRO_WEB), html=True), name="roteiro")
 
+# Painel persistente da fila e da divisão inteligente de narrações.
+NARRACOES_WEB = BASE / "narracoes"
+if NARRACOES_WEB.is_dir():
+    app.mount("/narracoes", StaticFiles(directory=str(NARRACOES_WEB), html=True), name="narracoes")
+
 # Aba Legendas: SRT a partir de um áudio pronto e do roteiro (veja legenda.py)
 from legenda import router as legenda_router  # noqa: E402
 
