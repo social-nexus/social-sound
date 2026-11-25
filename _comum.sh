@@ -73,34 +73,28 @@ abrir_janela() {
   fi
 }
 
-# Encerra quem esta escutando na porta $1 (e os processos filhos dele)
-encerrar_porta() {
-  local p="$1" pids="" pid
-  if command -v lsof >/dev/null 2>&1; then
-    pids="$(lsof -ti "tcp:$p" -sTCP:LISTEN 2>/dev/null)"
-  elif command -v ss >/dev/null 2>&1; then
-    pids="$(ss -ltnp "sport = :$p" 2>/dev/null | grep -o 'pid=[0-9]*' | cut -d= -f2)"
-  elif command -v fuser >/dev/null 2>&1; then
-    pids="$(fuser "$p/tcp" 2>/dev/null)"
-  fi
-  for pid in $pids; do
-    pkill -TERM -P "$pid" 2>/dev/null
-    kill -TERM "$pid" 2>/dev/null
-  done
-  if [ -n "$pids" ]; then
-    sleep 2
-    for pid in $pids; do kill -9 "$pid" 2>/dev/null; done
-  fi
-}
-
-# Encerra o processo guardado num arquivo .pid (e os filhos dele)
+# Encerra apenas o processo do Social Sound registrado no PID file.
+# A linha de comando precisa apontar para o server.py desta instalação.
 encerrar_pidfile() {
-  local f="$1" pid
+  local f="$1" esperado="$2" pid cmd
   [ -f "$f" ] || return 0
   pid="$(cat "$f" 2>/dev/null)"
-  if [ -n "$pid" ]; then
-    pkill -TERM -P "$pid" 2>/dev/null
-    kill -TERM "$pid" 2>/dev/null
+  if ! [[ "$pid" =~ ^[0-9]+$ ]]; then
+    echo "PID file invalido; removendo sem encerrar processos."
+    rm -f "$f"
+    return 0
+  fi
+  cmd="$(ps -p "$pid" -o command= 2>/dev/null)"
+  if [ -z "$cmd" ] || [[ "$cmd" != *"$esperado"* ]]; then
+    echo "PID $pid nao corresponde ao server.py desta instalacao; nao sera encerrado."
+    rm -f "$f"
+    return 0
+  fi
+  pkill -TERM -P "$pid" 2>/dev/null
+  kill -TERM "$pid" 2>/dev/null
+  sleep 2
+  if kill -0 "$pid" 2>/dev/null; then
+    kill -9 "$pid" 2>/dev/null
   fi
   rm -f "$f"
 }
