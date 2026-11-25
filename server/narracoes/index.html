@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Fila de Narrações — Social Sound</title>
+<style>
+:root{color-scheme:dark;--bg:#080d1d;--card:#111a2d;--line:#29344a;--text:#f8fafc;--muted:#9aa9bd;--purple:#8b5cf6;--green:#34d399;--amber:#fbbf24;--red:#fb7185}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px system-ui,"Segoe UI",sans-serif}
+main{max-width:1100px;margin:auto;padding:28px 22px 60px}.top{display:flex;align-items:center;gap:14px;margin-bottom:22px}.top img{width:42px;height:42px;object-fit:contain}.top h1{font-size:23px;margin:0}.top p{margin:4px 0 0;color:var(--muted)}
+.panel,.job{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px;margin-bottom:18px}
+h2{font-size:16px;margin:0 0 14px}.grid{display:grid;grid-template-columns:1fr 180px;gap:12px}
+label{display:block;color:var(--muted);font-size:12px;font-weight:700;margin:0 0 6px}
+textarea,input,select{width:100%;border:1px solid var(--line);border-radius:10px;background:#0b1324;color:var(--text);padding:11px;font:inherit;outline:none}
+textarea{min-height:170px;resize:vertical;line-height:1.55}.field{margin-bottom:13px}
+button,.linkbtn{border:0;border-radius:10px;padding:11px 15px;background:var(--purple);color:white;font-weight:800;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+button:disabled{opacity:.45;cursor:not-allowed}.secondary{background:#26334b}.danger{background:#7f1d35}.success{background:#145c48}
+.actions{display:flex;flex-wrap:wrap;gap:9px;align-items:center}.muted{color:var(--muted)}.small{font-size:12px}.note{padding:10px 12px;background:#1c2840;border-radius:10px;color:#cbd5e1;margin:12px 0}
+.status{font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.05em;padding:5px 8px;border-radius:20px;background:#26334b;color:#cbd5e1}
+.status.processing{background:#59420d;color:#fde68a}.status.completed{background:#104c3b;color:#a7f3d0}.status.failed,.status.interrupted{background:#5b2331;color:#fecdd3}
+.jobhead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}.jobhead h3{font-size:15px;margin:0;overflow-wrap:anywhere}
+.progress{height:7px;border-radius:10px;background:#26334b;overflow:hidden;margin:10px 0 14px}.progress span{display:block;height:100%;background:var(--green)}
+.parts{display:grid;gap:10px}.part{padding:12px;border:1px solid var(--line);border-radius:12px;background:#0b1324}
+.parthead{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px}.part p{margin:0 0 8px;line-height:1.5;color:#cbd5e1;white-space:pre-wrap}
+audio{width:100%;height:38px}.candidate{border:1px solid #8b5cf6;border-radius:10px;padding:12px;margin-top:10px;background:#21183b}
+.empty{text-align:center;color:var(--muted);padding:30px}.error{color:#fda4af;margin-top:10px;white-space:pre-wrap}
+@media(max-width:650px){main{padding:18px 12px}.grid{grid-template-columns:1fr}.top h1{font-size:19px}.panel,.job{padding:15px}.jobhead{align-items:flex-start;flex-direction:column}}
+</style>
+</head>
+<body>
+<main>
+<header class="top"><img src="/logo.png" alt=""><div><h1>Divisão Inteligente de Narrações</h1><p>Fila automática, persistente e sequencial — motor atual: VoxCPM2</p></div></header>
+<section class="panel">
+<h2>Adicionar narração à fila</h2>
+<div class="field"><label for="script">Texto da narração</label><textarea id="script" placeholder="Cole aqui uma narração curta ou longa. Textos longos serão divididos automaticamente, respeitando frases e palavras."></textarea></div>
+<div class="actions" style="margin:-3px 0 14px"><label class="linkbtn secondary" for="txtfile">Abrir arquivo TXT</label><input id="txtfile" type="file" accept=".txt,text/plain" hidden><span class="small muted" id="filelabel">Você também pode colar o texto diretamente.</span></div>
+<div class="grid">
+<div class="field"><label for="voice">Voz</label><select id="voice"><option>Carregando vozes...</option></select></div>
+<div class="field"><label for="duration">Duração-alvo por parte</label><select id="duration"><option value="30">30 segundos</option><option value="45">45 segundos</option><option value="60" selected>60 segundos</option><option value="90">90 segundos</option><option value="120">120 segundos</option></select></div>
+</div>
+<div class="field"><label for="style">Estilo / direção de voz (opcional)</label><input id="style" maxlength="500" placeholder="Ex.: voz calma, ritmo de documentário, tom acolhedor"></div>
+<div class="actions"><button id="preview">Analisar divisão</button><button id="enqueue">Adicionar à fila</button><span id="splitinfo" class="small muted"></span></div>
+<div id="formerror" class="error"></div>
+<div class="note small">A duração é uma estimativa. O tamanho real de cada áudio varia conforme a voz, o ritmo e as pausas. A fila continua automaticamente e é recuperada quando o Social Sound é aberto novamente.</div>
+</section>
+<section>
+<div class="jobhead"><h2>Fila e histórico</h2><button id="refresh" class="secondary">Atualizar</button></div>
+<div id="jobs"><div class="empty">Carregando fila...</div></div>
+</section>
+</main>
+<script>
+const API="/api/narration";
+const $=id=>document.getElementById(id);
+let jobs=[];
+const esc=value=>String(value??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
+const statusLabel=s=>({queued:"Na fila",processing:"Em andamento",completed:"Concluída",failed:"Falhou",interrupted:"Interrompida"}[s]||s);
+async function request(url,options={}){const res=await fetch(url,options);if(!res.ok){let msg="Erro "+res.status;try{const d=await res.json();msg=d.detail||msg}catch{}throw new Error(msg)}return res.json()}
+async function loadVoices(){try{const data=await fetch("/voices").then(r=>r.json());const opts=[];data.mine.forEach(v=>opts.push({id:"mine:"+v.name,label:v.name+" — Minha voz"}));data.presets.forEach(v=>opts.push({id:"preset:"+v.id,label:v.label+" — Padrão"}));$("voice").innerHTML=opts.map(v=>'<option value="'+esc(v.id)+'">'+esc(v.label)+'</option>').join("");if(!opts.length)$("voice").innerHTML='<option value="">Nenhuma voz encontrada</option>'}catch(e){$("formerror").textContent="Não foi possível carregar as vozes: "+e.message}}
+async function analyze(){const text=$("script").value.trim();if(!text)throw new Error("Cole ou carregue o texto primeiro.");const result=await request(API+"/split",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text,target_seconds:Number($("duration").value)})});$("splitinfo").textContent=result.parts.length+" parte(s) estimada(s).";return result}
+async function enqueue(){try{$("formerror").textContent="";const text=$("script").value.trim();if(!text)throw new Error("Cole ou carregue o texto primeiro.");const result=await request(API+"/jobs",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text,voice:$("voice").value,style:$("style").value,target_seconds:Number($("duration").value)})});$("script").value="";$("splitinfo").textContent="Adicionada à fila.";await refresh()}catch(e){$("formerror").textContent=e.message}}
+async function refresh(){try{const data=await request(API+"/jobs");jobs=data.jobs||[];const candidates=await Promise.all(jobs.map(async j=>{try{return [j.id,(await request(API+"/jobs/"+j.id+"/candidates")).candidates||[]]}catch{return [j.id,[]]}}));const byJob=Object.fromEntries(candidates);render(byJob)}catch(e){$("jobs").innerHTML='<div class="empty">Não foi possível carregar a fila: '+esc(e.message)+'</div>'}}
+function render(candidates){if(!jobs.length){$("jobs").innerHTML='<div class="panel empty">Nenhuma narração na fila ainda.</div>';return}
+$("jobs").innerHTML=jobs.map(job=>{const done=job.parts.filter(p=>p.status==="completed"||p.status==="approved").length;const pct=job.parts.length?Math.round(done/job.parts.length*100):0;const parts=job.parts.map((part,index)=>{const cand=(candidates[job.id]||[]).filter(c=>c.part_index===index);return '<div class="part"><div class="parthead"><strong>Parte '+(index+1)+' de '+job.parts.length+'</strong><span class="status">'+esc(part.status||"pendente")+'</span></div><p>'+esc(part.text)+'</p>'+(part.audio_url?'<audio controls preload="none" src="'+esc(part.audio_url)+'"></audio>':'')+(job.status==="completed"?'<div class="actions" style="margin-top:8px"><button class="secondary" data-action="regen" data-job="'+job.id+'" data-part="'+index+'">Regenerar esta parte</button></div>':'')+cand.map(c=>'<div class="candidate"><strong>Nova versão — aguardando sua aprovação</strong><audio controls preload="none" src="'+esc(c.audio_url)+'"></audio><div class="actions"><button class="success" data-action="approve" data-id="'+c.id+'">Aprovar e substituir</button><button class="danger" data-action="discard" data-id="'+c.id+'">Descartar</button></div></div>').join("")+'</div>'}).join("");
+return '<article class="job"><div class="jobhead"><h3>Narração '+esc(job.id.slice(0,8))+' · '+job.parts.length+' parte(s)</h3><span class="status '+esc(job.status)+'">'+esc(statusLabel(job.status))+'</span></div><div class="small muted">Voz: '+esc(job.voice)+' · Criada: '+esc(job.created_at)+'</div><div class="progress"><span style="width:'+pct+'%"></span></div><div class="small muted">'+done+' de '+job.parts.length+' partes concluídas</div>'+(job.error?'<p class="error">'+esc(job.error)+'</p>':'')+(job.audio_url?'<div style="margin:12px 0"><strong>Áudio completo</strong><audio controls src="'+esc(job.audio_url)+'"></audio><a class="linkbtn secondary" href="'+esc(job.audio_url)+'" download="social-sound-narracao.wav">Baixar áudio completo</a></div>':'')+'<details style="margin-top:14px"><summary style="cursor:pointer;font-weight:800">Ver partes e versões</summary><div class="parts" style="margin-top:12px">'+parts+'</div></details>'+(["failed","interrupted"].includes(job.status)?'<div class="actions" style="margin-top:12px"><button data-action="requeue" data-job="'+job.id+'">Tentar novamente</button></div>':'')+'</article>'}).join("")}
+$("preview").addEventListener("click",async()=>{try{$("formerror").textContent="";await analyze()}catch(e){$("formerror").textContent=e.message}});
+$("enqueue").addEventListener("click",enqueue);$("refresh").addEventListener("click",refresh);
+$("txtfile").addEventListener("change",async e=>{const file=e.target.files[0];if(file){$("script").value=await file.text();$("filelabel").textContent=file.name;e.target.value=""}});
+$("jobs").addEventListener("click",async e=>{const b=e.target.closest("button[data-action]");if(!b)return;b.disabled=true;try{const action=b.dataset.action;if(action==="regen"){await request(API+"/jobs/"+b.dataset.job+"/parts/"+b.dataset.part+"/regenerate",{method:"POST"});await refresh()}else if(action==="approve"){await request(API+"/candidates/"+b.dataset.id+"/approve",{method:"POST"});await refresh()}else if(action==="discard"){await request(API+"/candidates/"+b.dataset.id+"/discard",{method:"POST"});await refresh()}else if(action==="requeue"){await request(API+"/jobs/"+b.dataset.job+"/requeue",{method:"POST"});await refresh()}}catch(err){alert(err.message);b.disabled=false}});
+loadVoices();refresh();setInterval(refresh,2000);
+</script>
+</body>
+</html>
