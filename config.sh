@@ -1,5 +1,6 @@
 # Optional shared model root. Set SOCIAL_NEXUS_MODELS_DIR in the environment
 # to the same library root used by Social Music Beat.
+# export SOCIAL_NEXUS_MODELS_DIR="$HOME/IA_MODELS"
 if [ -n "${SOCIAL_NEXUS_MODELS_DIR:-}" ]; then
   export SOCIAL_SOUND_MODELS_DIR="${SOCIAL_NEXUS_MODELS_DIR}/LLM"
   export HF_HOME="${SOCIAL_NEXUS_MODELS_DIR}/HuggingFace"
