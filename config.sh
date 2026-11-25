@@ -8,6 +8,10 @@ if [ -n "${SOCIAL_NEXUS_MODELS_DIR:-}" ]; then
   export HUGGINGFACE_HUB_CACHE="${SOCIAL_NEXUS_MODELS_DIR}/HuggingFace/hub"
   export TRANSFORMERS_CACHE="${SOCIAL_NEXUS_MODELS_DIR}/HuggingFace/hub"
   export TORCH_HOME="${SOCIAL_NEXUS_MODELS_DIR}/Torch"
+  export SUPERTONIC_CACHE_DIR="${SOCIAL_NEXUS_MODELS_DIR}/Narradores/Supertonic3"
+fi
+if [ -z "${SUPERTONIC_CACHE_DIR:-}" ]; then
+  export SUPERTONIC_CACHE_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/social-nexus/models/Narradores/Supertonic3"
 fi
 
 # Optional manual GGUF directory when not using the shared library:
