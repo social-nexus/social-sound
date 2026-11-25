@@ -250,3 +250,21 @@ def test_f5_installer_pins_torchcodec_to_pytorch_28_compatible_release():
     assert torch_install < codec_install < f5_install
     assert "assert m.version('torchcodec') == '0.7.0'" in installer
     assert "assert torch.__version__.startswith('2.8.0')" in installer
+
+
+def test_local_runtime_stop_waits_for_lifecycle_lock(monkeypatch):
+    import threading
+    import time
+
+    monkeypatch.setattr(ia_local, "PROCESS", None)
+    finished = threading.Event()
+    ia_local.RUNTIME_LIFECYCLE_LOCK.acquire()
+    try:
+        worker = threading.Thread(target=lambda: (ia_local._stop_runtime(), finished.set()))
+        worker.start()
+        time.sleep(0.05)
+        assert not finished.is_set(), "Runtime stop should serialize with lifecycle operations"
+    finally:
+        ia_local.RUNTIME_LIFECYCLE_LOCK.release()
+    worker.join(timeout=2)
+    assert finished.is_set()
