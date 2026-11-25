@@ -35,7 +35,7 @@ else
   echo "Sem placa NVIDIA: instalando PyTorch para CPU (a narracao fica mais lenta)."
   pip install torch torchaudio || { echo "A instalacao falhou."; exit 1; }
 fi
-pip install voxcpm fastapi "uvicorn[standard]" python-multipart soundfile || { echo "A instalacao falhou."; exit 1; }
+pip install voxcpm fastapi "uvicorn[standard]" python-multipart soundfile httpx "keyring>=25.5,<26" || { echo "A instalacao falhou."; exit 1; }
 
 echo
 echo "[3/6] Instalando os complementos das abas Roteiro e Legendas..."
