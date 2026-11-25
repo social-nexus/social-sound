@@ -389,3 +389,9 @@ def test_concurrent_provider_config_updates_preserve_model_settings(monkeypatch,
     assert config["provider"] in ai_providers.PROVIDERS
     assert config["models"] == {provider: model for provider, model in updates}
     assert not list(tmp_path.glob("provider-config.json.tmp-*"))
+
+
+def test_local_security_middleware_covers_voice_mutation_routes():
+    server_source = (Path(__file__).resolve().parents[1] / "server" / "server.py").read_text(encoding="utf-8")
+    protected_paths = ("/api/ai", "/api/narration", "/voices", "/presets", "/tts")
+    assert "startswith(" + repr(protected_paths) + ")" in server_source
