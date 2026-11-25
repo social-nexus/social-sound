@@ -18,7 +18,13 @@ def cache_dir():
 def load(force_cpu=False):
     device = "cpu" if force_cpu or not torch.cuda.is_available() else "cuda"
     print(f"Carregando F5-TTS PT-BR em {device}...", file=sys.stderr)
-    return F5TTS(device=device, ckpt_file=CHECKPOINT, vocab_file=VOCAB, hf_cache_dir=cache_dir())
+    # F5TTS accepts local checkpoint/vocabulary paths. Resolve hf:// URIs
+    # explicitly; unlike its default model path, custom ckpt_file/vocab_file
+    # values are not resolved by the constructor.
+    checkpoint_path = cached_path(CHECKPOINT, cache_dir=cache_dir())
+    vocab_path = cached_path(VOCAB, cache_dir=cache_dir())
+    return F5TTS(device=device, ckpt_file=str(checkpoint_path),
+                 vocab_file=str(vocab_path), hf_cache_dir=cache_dir())
 
 def main():
     if len(sys.argv) != 2:
