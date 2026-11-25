@@ -10,9 +10,14 @@ if [ ! -x "$AQUI/server/.venv/bin/python" ]; then
 fi
 echo "Ligando o Social Sound... (a primeira vez demora um pouco)"
 if porta_aberta 8000; then
-  echo "O servidor local ja esta ligado."
+  if curl -fsS "http://127.0.0.1:8000/voices" >/dev/null 2>&1; then
+    echo "Social Sound ja esta ligado."
+  else
+    echo "ERRO: a porta 8000 esta sendo usada por outro programa. Social Sound nao sera iniciado."
+    exit 1
+  fi
 else
-  ( cd "$AQUI/server" && nohup .venv/bin/python server.py >"$AQUI/logs/servidor.log" 2>&1 & echo $! >"$AQUI/logs/servidor.pid" )
+  ( cd "$AQUI/server" && nohup .venv/bin/python "$AQUI/server/server.py" >"$AQUI/logs/servidor.log" 2>&1 & echo $! >"$AQUI/logs/servidor.pid" )
 fi
 if esperar_porta 8000 120; then
   abrir_janela "http://localhost:8000/estudio/"
