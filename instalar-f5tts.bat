@@ -58,7 +58,7 @@ if errorlevel 1 goto falha
 
 echo.
 echo [4/4] Verificando instalacao...
-"%F5_PY%" -c "import torch, f5_tts; print('F5-TTS instalado; CUDA disponivel:', torch.cuda.is_available())"
+"%F5_PY%" -c "import importlib.metadata as m, torch, f5_tts; print('F5-TTS instalado; PyTorch:', torch.__version__, '| TorchCodec:', m.version('torchcodec'), '| CUDA disponivel:', torch.cuda.is_available()); assert torch.__version__.startswith('2.8.0'); assert m.version('torchcodec') == '0.7.0'"
 if errorlevel 1 goto falha
 
 echo.
