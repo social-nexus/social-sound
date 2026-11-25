@@ -213,8 +213,6 @@ def test_f5tts_job_reuses_one_worker_and_preserves_completed_parts_on_retry(tmp_
     completed = [part for part in failed["parts"] if part["status"] == "completed"]
     assert len(completed) == 1
     first_audio = Path(completed[0]["audio_path"])
-    first_bytes = first_audio.read_bytes()
-
     # Corrupt a previously completed WAV; retry must validate and regenerate it.
     first_audio.write_bytes(b"broken wav")
     assert client.post(f"/api/narration/jobs/{job_id}/requeue").status_code == 200
@@ -228,7 +226,7 @@ def test_f5tts_job_reuses_one_worker_and_preserves_completed_parts_on_retry(tmp_
     assert len(calls) == 2
     assert len(calls[1]["parts"]) == len(failed["parts"])
     assert first_audio.read_bytes() != b"broken wav"
-    assert first_audio.read_bytes() != first_bytes or len(calls[1]["parts"]) == len(failed["parts"])
+    assert sf.info(str(first_audio)).frames > 0
     assert all(part["status"] == "completed" for part in finished["parts"])
 
 
