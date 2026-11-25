@@ -9,7 +9,7 @@ start "Social Sound - servidor" /min "%~dp0server\.venv\Scripts\python.exe" "%~d
 set /a n=0
 :espera
 timeout /t 2 /nobreak >nul
-curl -s -o nul http://localhost:8000/estudio/
+curl -s http://localhost:8000/voices | findstr /c:"presets" >nul
 if not errorlevel 1 goto abrir
 set /a n+=1
 if %n% LSS 60 goto espera
