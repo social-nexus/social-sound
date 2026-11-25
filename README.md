@@ -114,6 +114,17 @@ Formatos:
 - **Palavra por palavra** (`.srt`): 1, 2 ou 3 palavras por vez, estilo Shorts/Reels. Nunca junta palavras de frases diferentes. Fica mais exata no modo Preciso.
 - **Timestamps** (`.txt`): uma linha por frase com o momento em que ela começa, ex.: `[00:04] Beleza, hoje o treino é esperar.`
 
+### Motores de voz e licenças
+
+O catálogo na aba **Fila de Narrações** separa a licença do código da licença dos pesos do modelo:
+
+- **Uso comercial permitido:** VoxCPM2 (código e pesos Apache-2.0); Supertonic 3 (código MIT e pesos OpenRAIL-M, com restrições de uso que precisam ser respeitadas).
+- **Uso não comercial:** OmniVoice (código Apache-2.0, pesos CC-BY-NC); F5-TTS (código MIT, pesos CC-BY-NC-4.0).
+
+Somente o VoxCPM2 está integrado nesta etapa. Os outros motores aparecem no catálogo para consulta, mas ainda não são instalados nem selecionáveis. A licença dos pesos prevalece para o uso do modelo; ter código MIT ou Apache não torna automaticamente os pesos comerciais.
+
+Fontes oficiais: [VoxCPM2](https://huggingface.co/openbmb/VoxCPM2), [Supertonic 3 e licença](https://huggingface.co/Supertone/supertonic-3), [OmniVoice](https://huggingface.co/k2-fsa/OmniVoice) e [F5-TTS](https://huggingface.co/SWivid/F5-TTS).
+
 ## Estrutura do projeto
 
 ```
