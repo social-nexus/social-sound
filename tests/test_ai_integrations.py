@@ -467,6 +467,8 @@ def test_tts_engines_share_inference_lock():
     assert "ENGINE_INFERENCE_LOCK = threading.Lock()" in server_source
     assert "with ENGINE_INFERENCE_LOCK, _lock:" in server_source
     assert "inference_lock=ENGINE_INFERENCE_LOCK" in server_source
+    assert "lock=ENGINE_INFERENCE_LOCK, run=run_dialogo" in server_source
+    assert "def run_dialogo(fn):" in server_source
     assert "inference_guard = inference_lock or threading.Lock()" in narration_source
 
 
@@ -475,7 +477,7 @@ def test_voice_upload_has_size_limit_atomic_publish_and_rollback():
     assert "sys, threading, uuid" in server_source
     assert "VOICE_UPLOAD_LIMIT = 50 * 1024 * 1024" in server_source
     assert "await file.read(VOICE_UPLOAD_LIMIT + 1)" in server_source
-    assert "with _lock, VOICE_UPLOAD_LOCK:" in server_source
+    assert "with ENGINE_INFERENCE_LOCK, _lock, VOICE_UPLOAD_LOCK:" in server_source
     assert "Serialize deletion with synthesis and upload" in server_source
     assert "os.replace(temp, destination)" in server_source
     assert "Restore both files together" in server_source
