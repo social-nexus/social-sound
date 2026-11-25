@@ -131,7 +131,7 @@ class AILocalSecurityMiddleware:
     def __init__(self, app):
         self.app = app
     async def __call__(self, scope, receive, send):
-        if scope.get("type") != "http" or not scope.get("path", "").startswith(("/api/ai", "/api/narration", "/voices", "/presets", "/tts")):
+        if scope.get("type") != "http" or not scope.get("path", "").startswith(("/api/ai", "/api/narration", "/api/dialogo", "/api/legenda", "/api/roteiro", "/voices", "/presets", "/tts")):
             await self.app(scope, receive, send)
             return
         headers = dict(scope.get("headers", []))
