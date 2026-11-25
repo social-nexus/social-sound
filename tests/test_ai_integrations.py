@@ -500,6 +500,7 @@ def test_voice_audio_object_urls_are_released_and_stale_previews_cancelled():
     assert "URL.revokeObjectURL(url);" in ui_source
     assert "SEGMENTS.delete(url);" in ui_source
     assert "previewAudioRef.current?.pause();" in ui_source
+    assert "previewAudioRef.current.src = \"\";" in ui_source
     assert "URL.revokeObjectURL(removed.url);" in ui_source
 
 
