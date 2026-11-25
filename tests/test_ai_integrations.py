@@ -187,6 +187,7 @@ def test_generic_cloud_generation_works_without_local_runtime(monkeypatch):
 
 def test_f5tts_worker_resolves_custom_huggingface_uris_before_loading(monkeypatch, tmp_path):
     import importlib.util
+    import numpy as np
     import types
 
     resolved = []
