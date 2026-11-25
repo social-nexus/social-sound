@@ -29,7 +29,7 @@ jobs:
         run: bash -n config.sh iniciar-linux.sh instalar-linux.sh
       - name: Build packaged React frontend
         working-directory: web
-        run: npm install --no-audit --no-fund && npm run build
+        run: npm ci --no-audit --no-fund && npm run build
       - name: Upload packaged frontend build
         uses: actions/upload-artifact@v4
         with:
