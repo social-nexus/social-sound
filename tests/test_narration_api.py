@@ -30,6 +30,9 @@ def test_voxcpm_queue_generates_parts_and_requires_candidate_approval(tmp_path):
         ensure_preset=lambda model, preset: tmp_path / "preset.wav",
         preset_by_id=lambda pid: {"id": pid},
         find_mine=lambda name: None,
+        parse_text=lambda text: [("text", text)],
+        split_sentences=lambda text: [text],
+        tighten=lambda wav, sample_rate: wav,
         data_dir=tmp_path / "data",
         output_dir=tmp_path / "audio",
     ))
