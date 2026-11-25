@@ -42,27 +42,37 @@ def main():
         gc.collect()
         if torch.cuda.is_available(): torch.cuda.empty_cache()
         model = load(force_cpu=True)
-    chunks = []
-    for segment in payload["segments"]:
-        if segment["type"] == "pause":
-            chunks.append(np.zeros(int(model.sampling_rate * float(segment["seconds"])), dtype=np.float32))
-            continue
-        item = dict(payload)
-        item["text"] = str(segment.get("text", "")).strip()
-        if not item["text"]: continue
-        try:
-            chunks.append(generate(model, item))
-        except torch.cuda.OutOfMemoryError:
-            if str(model.device).startswith("cpu"): raise
-            del model
-            gc.collect()
-            torch.cuda.empty_cache()
-            model = load(force_cpu=True)
-            chunks.append(generate(model, item))
-    if not chunks: raise RuntimeError("OmniVoice não gerou áudio.")
-    output = Path(payload["output"]).resolve()
-    output.parent.mkdir(parents=True, exist_ok=True)
-    sf.write(str(output), np.concatenate(chunks), model.sampling_rate, subtype="PCM_16")
+    def render_segments(segments, settings):
+        nonlocal model
+        chunks = []
+        for segment in segments:
+            if segment["type"] == "pause":
+                chunks.append(np.zeros(int(model.sampling_rate * float(segment["seconds"])), dtype=np.float32))
+                continue
+            item = dict(settings)
+            item["text"] = str(segment.get("text", "")).strip()
+            if not item["text"]:
+                continue
+            try:
+                chunks.append(generate(model, item))
+            except torch.cuda.OutOfMemoryError:
+                if str(model.device).startswith("cpu"):
+                    raise
+                del model
+                gc.collect()
+                torch.cuda.empty_cache()
+                model = load(force_cpu=True)
+                chunks.append(generate(model, item))
+        if not chunks:
+            raise RuntimeError("OmniVoice não gerou áudio para uma das partes.")
+        return np.concatenate(chunks)
+
+    jobs = payload.get("parts") or [{"output": payload["output"], "segments": payload["segments"]}]
+    for part in jobs:
+        audio = render_segments(part["segments"], payload)
+        output = Path(part["output"]).resolve()
+        output.parent.mkdir(parents=True, exist_ok=True)
+        sf.write(str(output), audio, model.sampling_rate, subtype="PCM_16")
     return 0
 
 if __name__ == "__main__":
