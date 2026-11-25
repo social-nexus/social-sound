@@ -1,6 +1,7 @@
 # Ambiente Python e dependências
 .venv/
 venv/
+.venvs/
 __pycache__/
 *.pyc
 node_modules/
