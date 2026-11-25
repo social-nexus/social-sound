@@ -268,3 +268,32 @@ def test_local_runtime_stop_waits_for_lifecycle_lock(monkeypatch):
         ia_local.RUNTIME_LIFECYCLE_LOCK.release()
     worker.join(timeout=2)
     assert finished.is_set()
+
+
+def test_duplicate_model_download_jobs_serialize_and_reuse_verified_file(monkeypatch, tmp_path):
+    import hashlib
+    import threading
+
+    model_id = "qwen3-4b-q4km"
+    payload = b"verified-model-fixture"
+    digest = hashlib.sha256(payload).hexdigest()
+    monkeypatch.setattr(ia_local, "MODELS_DIR", tmp_path)
+    monkeypatch.setattr(ia_local, "_hf_file_digest", lambda repo, filename: (digest, len(payload)))
+    download_calls = []
+    calls_lock = threading.Lock()
+
+    def fake_download(url, target, size, job_id):
+        with calls_lock:
+            download_calls.append(job_id)
+        target.write_bytes(payload)
+
+    monkeypatch.setattr(ia_local, "_download", fake_download)
+    jobs = [ia_local._job("model"), ia_local._job("model")]
+    threads = [threading.Thread(target=ia_local._download_model_worker, args=(jid, model_id)) for jid in jobs]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join(timeout=3)
+    assert all(not thread.is_alive() for thread in threads)
+    assert len(download_calls) == 1
+    assert all(ia_local.JOBS[jid]["status"] == "done" for jid in jobs)
