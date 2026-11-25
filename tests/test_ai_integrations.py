@@ -25,6 +25,12 @@ def local_request(method="POST", origin="http://localhost:8000", host="localhost
     return Request({"type": "http", "method": method, "headers": headers})
 
 
+def test_shared_local_cors_allowlist_is_exact():
+    from security_config import LOCAL_HOSTS, LOCAL_ORIGINS
+    assert LOCAL_HOSTS == {"localhost:8000", "127.0.0.1:8000"}
+    assert LOCAL_ORIGINS == {"http://localhost:8000", "http://127.0.0.1:8000"}
+
+
 def test_cloud_provider_catalog_has_expected_services():
     expected = {"openai", "anthropic", "gemini", "openrouter", "deepseek", "groq", "mistral"}
     assert expected.issubset(ai_providers.PROVIDERS)
