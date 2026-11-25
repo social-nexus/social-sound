@@ -423,6 +423,14 @@ ESTUDIO = BASE / "estudio"
 if ESTUDIO.is_dir():
     app.mount("/estudio", StaticFiles(directory=str(ESTUDIO), html=True), name="estudio")
 
+AI_ASSETS = BASE / "ai_web"
+if AI_ASSETS.is_dir():
+    app.mount("/ai-assets", StaticFiles(directory=str(AI_ASSETS)), name="ai-assets")
+for route_name in ("ia-roteiros", "ia-prompts"):
+    workspace = BASE / route_name
+    if workspace.is_dir():
+        app.mount("/" + route_name, StaticFiles(directory=str(workspace), html=True), name=route_name)
+
 WEB = BASE / "web"
 if WEB.is_dir():
     app.mount("/", StaticFiles(directory=str(WEB), html=True), name="web")
