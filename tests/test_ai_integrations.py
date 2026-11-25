@@ -472,6 +472,11 @@ def test_tts_engines_share_inference_lock():
     assert "inference_guard = inference_lock or threading.Lock()" in narration_source
 
 
+def test_gitignore_excludes_optional_engine_venvs():
+    gitignore = (Path(__file__).resolve().parents[1] / ".gitignore").read_text(encoding="utf-8")
+    assert ".venvs/" in gitignore
+
+
 def test_linux_installer_reports_optional_download_failures():
     installer = (Path(__file__).resolve().parents[1] / "instalar-linux.sh").read_text(encoding="utf-8")
     assert "pip install --upgrade pip || echo" in installer
