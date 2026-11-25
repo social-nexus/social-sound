@@ -30,6 +30,7 @@ from security_config import LOCAL_HOSTS, LOCAL_ORIGINS
 
 router = APIRouter(prefix="/api/ai", tags=["ia-local"])
 LOCK = threading.RLock()
+RUNTIME_LIFECYCLE_LOCK = threading.RLock()
 JOBS: dict[str, dict] = {}
 PROCESS: subprocess.Popen | None = None
 ACTIVE_MODEL: str | None = None
@@ -376,19 +377,21 @@ def _installed_models():
     return found
 
 def _stop_runtime():
-    global PROCESS, ACTIVE_MODEL, ACTIVE_VARIANT
-    with LOCK:
-        proc = PROCESS
-        PROCESS = None
-        ACTIVE_MODEL = None
-        ACTIVE_VARIANT = None
-    if proc and proc.poll() is None:
-        proc.terminate()
-        try:
-            proc.wait(timeout=8)
-        except subprocess.TimeoutExpired:
-            proc.kill()
-    return True
+    with RUNTIME_LIFECYCLE_LOCK:
+        global PROCESS, ACTIVE_MODEL, ACTIVE_VARIANT
+        with LOCK:
+            proc = PROCESS
+            PROCESS = None
+            ACTIVE_MODEL = None
+            ACTIVE_VARIANT = None
+        if proc and proc.poll() is None:
+            proc.terminate()
+            try:
+                proc.wait(timeout=8)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+        return True
+    
 
 def _runtime_args(binary: Path, model_path: Path, gpu_layers: int = 0) -> list[str]:
     return [str(binary), "--host", "127.0.0.1", "--port", str(PORT),
@@ -398,44 +401,46 @@ def _runtime_args(binary: Path, model_path: Path, gpu_layers: int = 0) -> list[s
 
 
 def _start_runtime(model_id: str, variant: str, gpu_layers: int = 0):
-    global PROCESS, ACTIVE_MODEL, ACTIVE_VARIANT
-    if variant not in RUNTIME_CATALOG or _runtime_binary(variant) is None:
-        raise ValueError("Instale primeiro o runtime escolhido.")
-    if model_id not in {m["id"] for m in _installed_models()}:
-        raise ValueError("Baixe ou importe um modelo GGUF antes de ativá-lo.")
-    model_path = _model_file(model_id) if model_id in MODEL_CATALOG else next(
-        Path(m["path"]) for m in _installed_models() if m["id"] == model_id)
-    if not model_path.is_file() or model_path.suffix.lower() != ".gguf":
-        raise ValueError("Arquivo GGUF inválido.")
-    _stop_runtime()
-    time.sleep(0.25)
-    with socket.socket() as probe:
-        if probe.connect_ex(("127.0.0.1", PORT)) == 0:
-            raise RuntimeError(f"A porta local {PORT} já está sendo usada por outro programa.")
-    binary = _runtime_binary(variant)
-    log = (LOG_DIR / "llama-server.log").open("ab")
-    args = _runtime_args(binary, model_path, gpu_layers)
-    try:
-        proc = subprocess.Popen(args, cwd=str(binary.parent), stdout=log,
-                                stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL)
-    finally:
-        log.close()
-    with LOCK:
-        PROCESS, ACTIVE_MODEL, ACTIVE_VARIANT = proc, model_id, variant
-    deadline = time.time() + 180
-    while time.time() < deadline:
-        if proc.poll() is not None:
-            _stop_runtime()
-            raise RuntimeError("llama-server encerrou durante a inicialização. Consulte logs/llama-server.log.")
+    with RUNTIME_LIFECYCLE_LOCK:
+        global PROCESS, ACTIVE_MODEL, ACTIVE_VARIANT
+        if variant not in RUNTIME_CATALOG or _runtime_binary(variant) is None:
+            raise ValueError("Instale primeiro o runtime escolhido.")
+        if model_id not in {m["id"] for m in _installed_models()}:
+            raise ValueError("Baixe ou importe um modelo GGUF antes de ativá-lo.")
+        model_path = _model_file(model_id) if model_id in MODEL_CATALOG else next(
+            Path(m["path"]) for m in _installed_models() if m["id"] == model_id)
+        if not model_path.is_file() or model_path.suffix.lower() != ".gguf":
+            raise ValueError("Arquivo GGUF inválido.")
+        _stop_runtime()
+        time.sleep(0.25)
+        with socket.socket() as probe:
+            if probe.connect_ex(("127.0.0.1", PORT)) == 0:
+                raise RuntimeError(f"A porta local {PORT} já está sendo usada por outro programa.")
+        binary = _runtime_binary(variant)
+        log = (LOG_DIR / "llama-server.log").open("ab")
+        args = _runtime_args(binary, model_path, gpu_layers)
         try:
-            r = httpx.get(f"http://127.0.0.1:{PORT}/health", timeout=2)
-            if r.status_code == 200:
-                return True
-        except httpx.HTTPError:
-            pass
-        time.sleep(1)
-    _stop_runtime()
-    raise RuntimeError("O modelo demorou demais para iniciar. Verifique memória RAM/VRAM e o log.")
+            proc = subprocess.Popen(args, cwd=str(binary.parent), stdout=log,
+                                    stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL)
+        finally:
+            log.close()
+        with LOCK:
+            PROCESS, ACTIVE_MODEL, ACTIVE_VARIANT = proc, model_id, variant
+        deadline = time.time() + 180
+        while time.time() < deadline:
+            if proc.poll() is not None:
+                _stop_runtime()
+                raise RuntimeError("llama-server encerrou durante a inicialização. Consulte logs/llama-server.log.")
+            try:
+                r = httpx.get(f"http://127.0.0.1:{PORT}/health", timeout=2)
+                if r.status_code == 200:
+                    return True
+            except httpx.HTTPError:
+                pass
+            time.sleep(1)
+        _stop_runtime()
+        raise RuntimeError("O modelo demorou demais para iniciar. Verifique memória RAM/VRAM e o log.")
+    
 
 @router.get("/status")
 def ai_status():
