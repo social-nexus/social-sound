@@ -44,6 +44,8 @@ if errorlevel 1 goto falha
 if errorlevel 1 goto falha
 "%F5_PY%" -m pip install "f5-tts==1.1.22"
 if errorlevel 1 goto falha
+"%F5_PY%" -m pip check
+if errorlevel 1 goto falha
 
 echo.
 echo [3/4] Baixando o checkpoint PT-BR e o vocoder...
