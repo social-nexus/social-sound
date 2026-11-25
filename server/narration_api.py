@@ -17,7 +17,7 @@ from narration_queue import NarrationQueue, split_for_duration
 
 class EnqueueRequest(BaseModel):
     text: str = Field(min_length=1, max_length=200000)
-    voice: str = Field(min_length=1, max_length=180)
+    voice: str = Field(default="preset:narrador-grave", min_length=1, max_length=180)
     style: str = Field(default="", max_length=500)
     target_seconds: int = Field(default=60, ge=15, le=300)
     chars_per_minute: int = Field(default=850, ge=300, le=1500)
@@ -171,8 +171,8 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
         job = db.get(job_id)
         if not job:
             raise HTTPException(404, "Narração não encontrada.")
-        if job["status"] == "processing":
-            raise HTTPException(409, "Aguarde a narração atual terminar antes de regenerar uma parte.")
+        if job["status"] != "completed":
+            raise HTTPException(409, "Conclua a narração antes de regenerar uma parte.")
         if not 0 <= part_index < len(job["parts"]):
             raise HTTPException(404, "Parte não encontrada.")
         candidate_path = job_paths(job_id) / f"candidata_{part_index + 1:03d}_{uuid.uuid4().hex[:8]}.wav"
