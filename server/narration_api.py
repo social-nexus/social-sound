@@ -63,8 +63,8 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
                 raise RuntimeError("Tipo de voz inválido.")
             sample_rate = model.tts_model.sample_rate
             pieces = []
-            for kind, value in parse_text(job["parts"][part_index]["text"]):
-                if kind == "pause":
+            for segment_type, value in parse_text(job["parts"][part_index]["text"]):
+                if segment_type == "pause":
                     pieces.append(np.zeros(int(sample_rate * value), dtype=np.float32))
                     continue
                 for chunk in split_sentences(value):
