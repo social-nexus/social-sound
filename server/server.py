@@ -1,5 +1,5 @@
 """Social Sound - servidor local de voz (VoxCPM2: clonagem + vozes padrão por Voice Design)."""
-import base64, gc, io, os, random, re, threading
+import base64, gc, io, os, random, re, shutil, threading
 from pathlib import Path
 
 import numpy as np
@@ -46,6 +46,7 @@ PRESETS = [
 _model = None
 _device = DEVICE
 _lock = threading.Lock()
+VOICE_UPLOAD_LOCK = threading.Lock()
 
 
 def get_model():
@@ -222,27 +223,49 @@ async def upload_voice(file: UploadFile = File(...), name: str = Form(""), trans
     if len(raw) > VOICE_UPLOAD_LIMIT:
         raise HTTPException(413, "O arquivo de voz deve ter no máximo 50 MB.")
     destination = VOICES_DIR / f"{stem}{ext}"
-    temp = VOICES_DIR / f".{stem}.{uuid.uuid4().hex}.upload"
+    transcript_path = VOICES_DIR / f"{stem}.txt"
+    token = uuid.uuid4().hex
+    temp = VOICES_DIR / f".{stem}.{token}.upload"
+    transcript_temp = VOICES_DIR / f".{stem}.{token}.transcript"
+    audio_backup = VOICES_DIR / f".{stem}.{token}.audio-backup"
+    transcript_backup = VOICES_DIR / f".{stem}.{token}.transcript-backup"
     try:
         temp.write_bytes(raw)
-        os.replace(temp, destination)
-        # Only remove previous variants after the new file is safely published.
-        for old in VOICES_DIR.glob(f"{stem}.*"):
-            if old.is_file() and old != destination and old.suffix.lower() != ".txt":
-                old.unlink()
-        transcript_path = VOICES_DIR / f"{stem}.txt"
         if transcript.strip():
-            transcript_temp = VOICES_DIR / f".{stem}.{uuid.uuid4().hex}.transcript"
+            transcript_temp.write_text(transcript.strip(), encoding="utf-8")
+        with VOICE_UPLOAD_LOCK:
+            audio_existed = destination.is_file()
+            transcript_existed = transcript_path.is_file()
+            if audio_existed:
+                shutil.copy2(destination, audio_backup)
+            if transcript_existed:
+                shutil.copy2(transcript_path, transcript_backup)
             try:
-                transcript_temp.write_text(transcript.strip(), encoding="utf-8")
-                os.replace(transcript_temp, transcript_path)
-            finally:
-                transcript_temp.unlink(missing_ok=True)
-        else:
-            transcript_path.unlink(missing_ok=True)
+                os.replace(temp, destination)
+                if transcript.strip():
+                    os.replace(transcript_temp, transcript_path)
+                else:
+                    transcript_path.unlink(missing_ok=True)
+            except Exception:
+                # Restore both files together if either publication fails.
+                if audio_existed and audio_backup.exists():
+                    os.replace(audio_backup, destination)
+                else:
+                    destination.unlink(missing_ok=True)
+                if transcript_existed and transcript_backup.exists():
+                    os.replace(transcript_backup, transcript_path)
+                else:
+                    transcript_path.unlink(missing_ok=True)
+                raise
+            # Remove previous audio formats only after the audio/transcript pair
+            # has been published successfully.
+            for old in VOICES_DIR.glob(f"{stem}.*"):
+                if old.is_file() and old != destination and old.suffix.lower() != ".txt":
+                    old.unlink()
         return dict(name=stem)
     finally:
-        temp.unlink(missing_ok=True)
+        for leftover in (temp, transcript_temp, audio_backup, transcript_backup):
+            leftover.unlink(missing_ok=True)
 
 
 @app.delete("/voices/{name}")
