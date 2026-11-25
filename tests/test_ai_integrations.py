@@ -64,6 +64,14 @@ def test_api_key_storage_uses_os_credential_service(monkeypatch):
     assert saved == [("SocialSound", "openai", "test-key-value")]
 
 
+def test_llama_runtime_args_disable_web_ui_and_restrict_cors(tmp_path):
+    args = ia_local._runtime_args(Path("llama-server"), tmp_path / "model.gguf", 12)
+    assert args[args.index("--host") + 1] == "127.0.0.1"
+    assert "--no-webui" in args
+    assert args[args.index("--cors-origins") + 1] == "localhost"
+    assert args[args.index("--n-gpu-layers") + 1] == "12"
+
+
 def test_runtime_catalog_urls_and_hashes_are_pinned():
     assert ia_local.RUNTIME_CATALOG
     for runtime in ia_local.RUNTIME_CATALOG.values():
