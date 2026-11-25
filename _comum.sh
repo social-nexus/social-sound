@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Funcoes comuns usadas por instalar.sh, iniciar.sh e parar.sh (nao precisa rodar direto).
+# Funcoes comuns usadas pelos scripts Linux/macOS (nao precisa rodar direto).
 
 OS="$(uname -s)"
 ARCH="$(uname -m)"
