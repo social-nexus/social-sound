@@ -3,6 +3,11 @@
 AQUI="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$AQUI/_comum.sh"
 . "$AQUI/config.sh"
+if [ -n "${SOCIAL_NEXUS_MODELS_DIR:-}" ] && [ ! -d "$SOCIAL_NEXUS_MODELS_DIR" ]; then
+  echo "ERRO: a biblioteca compartilhada de modelos nao esta disponivel: $SOCIAL_NEXUS_MODELS_DIR"
+  echo "Conecte a unidade configurada ou ajuste SOCIAL_NEXUS_MODELS_DIR."
+  exit 1
+fi
 mkdir -p "$AQUI/logs"
 if [ ! -x "$AQUI/server/.venv/bin/python" ]; then
   echo "O Social Sound ainda nao foi instalado. Rode o instalar-linux.sh primeiro."
