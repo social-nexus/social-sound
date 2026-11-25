@@ -121,6 +121,7 @@ def test_voxcpm_queue_generates_parts_and_requires_candidate_approval(tmp_path):
 
 def test_f5tts_job_reuses_one_worker_and_preserves_completed_parts_on_retry(tmp_path, monkeypatch):
     import json
+    import soundfile as sf
     import narration_api
 
     runtime = tmp_path / "f5-runtime"
