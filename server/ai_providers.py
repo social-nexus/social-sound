@@ -176,7 +176,7 @@ async def _request_completion(provider: str, model: str, api_key: str, system: s
                 "https://api.anthropic.com/v1/messages",
                 headers={"x-api-key": api_key, "anthropic-version": "2023-06-01",
                          "content-type": "application/json"},
-                json={"model": model, "max_tokens": 1800,
+                json={"model": model, "max_tokens": max_tokens,
                       "system": system, "messages": [{"role": "user", "content": user}]},
             )
             response.raise_for_status()
@@ -201,6 +201,10 @@ async def _request_completion(provider: str, model: str, api_key: str, system: s
 
 async def generate_with_provider(provider: str, model: str, system: str, user: str, max_tokens: int = 1800) -> str:
     provider = _validate_provider(provider)
+    try:
+        max_tokens = max(256, min(int(max_tokens), 6000))
+    except (TypeError, ValueError):
+        max_tokens = 1800
     key = _get_key(provider)
     if not key:
         raise RuntimeError(f"Cadastre a chave de API de {PROVIDERS[provider]['name']} nas configurações de IA.")
