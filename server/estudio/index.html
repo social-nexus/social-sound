@@ -18,7 +18,7 @@
 </nav><div class="side-foot">Social Sound · ferramentas locais de criação de conteúdo</div></aside>
 <main><div class="panel" id="p-roteiro"></div><div class="panel" id="p-narracao"></div><div class="panel" id="p-dialogo"></div><div class="panel" id="p-legenda"></div><div class="panel" id="p-ia-roteiros"></div><div class="panel" id="p-ia-prompts"></div></main>
 <script>
-var TABS={roteiro:{url:"/roteiro/"},narracao:{url:"/"},dialogo:{url:"/dialogo/"},legenda:{url:"/legenda/"},"ia-roteiros":{url:"/ia-roteiros/",offline:"A área de IA para roteiros está sendo construída."},"ia-prompts":{url:"/ia-prompts/",offline:"A área de IA para prompts visuais está sendo construída."}};
+var TABS={roteiro:{url:"/roteiro/"},narracao:{url:"/"},dialogo:{url:"/dialogo/"},legenda:{url:"/legenda/"},"ia-roteiros":{url:"/ia-roteiros/"},"ia-prompts":{url:"/ia-prompts/"}};
 var loaded={};
 function load(name){var t=TABS[name],panel=document.getElementById("p-"+name);if(t.offline){panel.innerHTML='<div class="msg"><h2>Em desenvolvimento</h2><p>'+t.offline+'</p></div>';loaded[name]=true;return;}var f=document.createElement("iframe");f.src=t.url;f.allow="autoplay; fullscreen; clipboard-write";f.setAttribute("allowfullscreen","");panel.replaceChildren(f);loaded[name]=true;}
 function show(name){Object.keys(TABS).forEach(function(n){document.getElementById("p-"+n).classList.toggle("on",n===name);document.getElementById("t-"+n).classList.toggle("on",n===name);});try{localStorage.setItem("aba",name);}catch(e){}if(!loaded[name])load(name);}
