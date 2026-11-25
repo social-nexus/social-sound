@@ -1,5 +1,5 @@
 """Optional OmniVoice inference worker (non-commercial model weights)."""
-import gc, json, os, sys
+import gc, json, os, sys, uuid
 from pathlib import Path
 import numpy as np
 import soundfile as sf
@@ -72,7 +72,12 @@ def main():
         audio = render_segments(part["segments"], payload)
         output = Path(part["output"]).resolve()
         output.parent.mkdir(parents=True, exist_ok=True)
-        sf.write(str(output), audio, model.sampling_rate, subtype="PCM_16")
+        temporary = output.with_name(f".{output.stem}.{uuid.uuid4().hex}.tmp.wav")
+        try:
+            sf.write(str(temporary), audio, model.sampling_rate, subtype="PCM_16")
+            os.replace(temporary, output)
+        finally:
+            temporary.unlink(missing_ok=True)
     return 0
 
 if __name__ == "__main__":
