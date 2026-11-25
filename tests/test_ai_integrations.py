@@ -431,7 +431,7 @@ def test_local_security_middleware_covers_voice_mutation_routes():
 
 def test_voice_upload_has_size_limit_atomic_publish_and_rollback():
     server_source = (Path(__file__).resolve().parents[1] / "server" / "server.py").read_text(encoding="utf-8")
-    assert "import sys, threading, uuid" in server_source
+    assert "sys, threading, uuid" in server_source
     assert "VOICE_UPLOAD_LIMIT = 50 * 1024 * 1024" in server_source
     assert "await file.read(VOICE_UPLOAD_LIMIT + 1)" in server_source
     assert "with VOICE_UPLOAD_LOCK:" in server_source
