@@ -418,9 +418,9 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
                 continue
             try:
                 folder = job_paths(job["id"])
-                if job.get("engine") != "voxcpm2" and unload_engine is not None:
-                    unload_engine()
                 with inference_guard:
+                    if job.get("engine") != "voxcpm2" and unload_engine is not None:
+                        unload_engine()
                     if job.get("engine") in {"omnivoice", "f5tts"}:
                         render_external_job(job, folder)
                     else:
