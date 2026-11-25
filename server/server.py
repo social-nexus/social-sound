@@ -111,6 +111,7 @@ def find_mine(name):
 
 
 app = FastAPI()
+app.add_middleware(AILocalSecurityMiddleware)
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 
@@ -312,6 +313,78 @@ from ai_providers import router as ai_providers_router
 from ia_local import router as ia_local_router
 app.include_router(ai_providers_router)
 app.include_router(ia_local_router)
+
+# Protege as rotas da IA local contra chamadas de outras origens e limita upload de modelos.
+AI_LOCAL_HOSTS = {b"localhost:8000", b"127.0.0.1:8000"}
+AI_LOCAL_ORIGINS = {b"http://localhost:8000", b"http://127.0.0.1:8000"}
+AI_MAX_UPLOAD = 30 * 1024**3 + 1024 * 1024
+
+class AILocalSecurityMiddleware:
+    def __init__(self, app):
+        self.app = app
+    async def __call__(self, scope, receive, send):
+        if scope.get("type") != "http" or not scope.get("path", "").startswith("/api/ai"):
+            await self.app(scope, receive, send)
+            return
+        headers = dict(scope.get("headers", []))
+        host = headers.get(b"host", b"").lower()
+        origin = headers.get(b"origin")
+        method = scope.get("method", "GET").upper()
+        fetch_site = headers.get(b"sec-fetch-site", b"").lower()
+        if host not in AI_LOCAL_HOSTS or (origin is not None and origin not in AI_LOCAL_ORIGINS):
+            await self._reject(send, 403, "Acesso permitido somente pela interface local.")
+            return
+        if method in {"POST", "PUT", "PATCH", "DELETE"} and origin not in AI_LOCAL_ORIGINS:
+            await self._reject(send, 403, "Origem local não confirmada para alteração.")
+            return
+        if fetch_site and fetch_site not in (b"same-origin", b"none"):
+            await self._reject(send, 403, "Requisição de outra origem não permitida.")
+            return
+        if scope.get("path") != "/api/ai/models/import" or method != "POST":
+            await self.app(scope, receive, send)
+            return
+        length = headers.get(b"content-length")
+        if length:
+            try:
+                if int(length) > AI_MAX_UPLOAD:
+                    await self._reject(send, 413, "O envio excede o limite de 30 GB para modelos GGUF.")
+                    return
+            except ValueError:
+                await self._reject(send, 400, "Content-Length inválido.")
+                return
+        received = 0
+        oversized = False
+        async def limited_receive():
+            nonlocal received, oversized
+            message = await receive()
+            if message.get("type") == "http.request" and not oversized:
+                received += len(message.get("body", b""))
+                if received > AI_MAX_UPLOAD:
+                    oversized = True
+                    return {"type": "http.request", "body": b"", "more_body": False}
+            return message
+        captured = []
+        async def capture_send(message):
+            captured.append(message)
+        try:
+            await self.app(scope, limited_receive, capture_send)
+        except Exception:
+            if not oversized:
+                raise
+        if oversized:
+            await self._reject(send, 413, "O envio excede o limite de 30 GB para modelos GGUF.")
+            return
+        for message in captured:
+            await send(message)
+    @staticmethod
+    async def _reject(send, status, detail):
+        import json
+        body = json.dumps({"detail": detail}, ensure_ascii=False).encode("utf-8")
+        await send({"type": "http.response.start", "status": status,
+                    "headers": [(b"content-type", b"application/json; charset=utf-8"),
+                                (b"content-length", str(len(body)).encode("ascii"))]})
+        await send({"type": "http.response.body", "body": body})
+
 
 # Interface compilada (pasta server/web): aberta em http://localhost:8000
 from fastapi.staticfiles import StaticFiles  # noqa: E402
