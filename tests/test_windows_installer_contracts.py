@@ -15,7 +15,7 @@ def test_main_installer_checks_virtual_environment_and_core_dependencies():
     assert (
         'python -m pip install voxcpm fastapi "uvicorn[standard]" python-multipart '
         'soundfile httpx "keyring>=25.5,<26"\n'
-        "if errorlevel 1 goto falha\npython -m pip check\nif errorlevel 1 goto falha"
+        "if errorlevel 1 goto falha\npython -m python -m pip check\nif errorlevel 1 goto falha"
     ) in installer
 
 
@@ -29,7 +29,7 @@ def test_optional_voice_engines_use_isolated_python_environments():
         installer = read_installer(filename)
         assert environment in installer
         assert "py -3.11 -m venv" in installer
-        assert "-m pip check" in installer
+        assert "-m python -m pip check" in installer
         assert "if errorlevel 1 goto falha" in installer
 
 
