@@ -72,3 +72,9 @@ def test_dialogue_api_rejects_oversized_script_and_detection_payload(tmp_path):
     oversized = "x" * 200001
     assert client.post("/api/dialogo/gerar", json={"texto": oversized}).status_code == 413
     assert client.post("/api/dialogo/detectar", json={"texto": oversized}).status_code == 413
+    invalid_options = client.post("/api/dialogo/gerar", json={
+        "texto": "Narrador: Olá.",
+        "narrador": {"voz": "preset:default"},
+        "pausa_falas": "não é número",
+    })
+    assert invalid_options.status_code == 400
