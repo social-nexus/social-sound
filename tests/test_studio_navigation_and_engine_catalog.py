@@ -86,3 +86,12 @@ def test_narration_queue_translation_does_not_mutate_user_script_text():
     assert "Approve and replace" in js
     assert "esc(part.text)" in js
     assert 'Object.keys(UI_STR.en).reduce((html,pt)' not in js
+
+def test_main_narration_page_supports_english_ui():
+    app = ROOT / "web" / "src" / "App.tsx"
+    source = app.read_text(encoding="utf-8")
+    assert 'get("lang") === "en"' in source
+    assert 'T("Narração e clonagem de voz")' in source
+    assert 'T("Clonar minha voz")' in source
+    assert 'T("GERAR ÁUDIO")' in source
+    assert 'T("Gerar legenda SRT junto com o áudio")' in source
