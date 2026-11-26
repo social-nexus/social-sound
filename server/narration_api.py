@@ -134,6 +134,9 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
     approval_guard = threading.Lock()
     candidate_guard = threading.Lock()
     inference_guard = inference_lock or threading.Lock()
+    # Initialize uninstall state before the queue worker starts to avoid startup races.
+    engine_uninstalling = set()
+    engine_uninstalling_guard = threading.Lock()
     worker_started = False
     worker_stop = threading.Event()
     worker_thread = {"thread": None}
@@ -555,6 +558,18 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
         finally:
             temp.unlink(missing_ok=True)
 
+    def check_job_engine_available(job):
+        engine_id = job.get("engine")
+        with engine_uninstalling_guard:
+            if engine_id in engine_uninstalling:
+                raise RuntimeError("Este motor está sendo desinstalado. A tarefa foi interrompida com segurança.")
+        if engine_id == "supertonic3" and not supertonic_ready():
+            raise RuntimeError("Supertonic 3 não está instalado ou está incompleto.")
+        if engine_id == "omnivoice" and not omnivoice_ready():
+            raise RuntimeError("OmniVoice não está instalado ou está incompleto.")
+        if engine_id == "f5tts" and not f5tts_ready():
+            raise RuntimeError("F5-TTS não está instalado ou está incompleto.")
+
     def worker_loop():
         # Shutdown stops the worker from claiming new jobs; an active job is
         # allowed to finish and remains recoverable if the shutdown wait expires.
@@ -564,8 +579,12 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
                 worker_stop.wait(0.5)
                 continue
             try:
+                # Check both before waiting and after acquiring the shared inference
+                # lock. Uninstall may race a queued job between DB checks and lock.
+                check_job_engine_available(job)
                 folder = job_paths(job["id"])
                 with inference_guard:
+                    check_job_engine_available(job)
                     if job.get("engine") != "voxcpm2" and unload_engine is not None:
                         unload_engine()
                     if job.get("engine") in {"omnivoice", "f5tts"}:
@@ -621,8 +640,6 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
     engine_install_process_guard = threading.Lock()
     engine_install_process = {"process": None}
     engine_install_thread = {"thread": None}
-    engine_uninstalling = set()
-    engine_uninstalling_guard = threading.Lock()
 
     def shutdown_engine_installer():
         # A daemon installer must not leave cmd/pip children running after the API exits.
