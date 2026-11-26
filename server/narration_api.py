@@ -516,6 +516,23 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
     engine_install_lock = threading.Lock()
     engine_install_state = {"job_id": None, "engine": None, "status": "idle", "message": "", "started_at": None, "finished_at": None}
     engine_install_state_guard = threading.Lock()
+    engine_install_shutdown = threading.Event()
+    engine_install_process_guard = threading.Lock()
+    engine_install_process = {"process": None}
+    engine_install_thread = {"thread": None}
+
+    def shutdown_engine_installer():
+        # A daemon installer must not leave cmd/pip children running after the API exits.
+        engine_install_shutdown.set()
+        with engine_install_process_guard:
+            active_process = engine_install_process["process"]
+        if active_process is not None:
+            _terminate_process_tree(active_process)
+        thread = engine_install_thread["thread"]
+        if thread is not None and thread is not threading.current_thread():
+            thread.join(timeout=20)
+
+    router.add_event_handler("shutdown", shutdown_engine_installer)
 
     def run_engine_installer(engine_id: str, job_id: str, license_accepted: bool):
         scripts = {"supertonic3": "instalar-supertonic.bat", "omnivoice": "instalar-omnivoice.bat", "f5tts": "instalar-f5tts.bat"}
@@ -532,9 +549,16 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
             env["SOCIAL_SOUND_LICENSE_ACCEPTED"] = "1" if license_accepted else "0"
             with engine_install_state_guard:
                 engine_install_state.update(status="running", message="Preparando instalador…", log_tail="")
+            if engine_install_shutdown.is_set():
+                raise RuntimeError("Servidor encerrado antes do início da instalação.")
             process = subprocess.Popen(["cmd.exe", "/d", "/c", 'call "' + str(script_path) + '"'], cwd=str(script_path.parent),
                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8",
                 errors="replace", env=env, bufsize=1)
+            with engine_install_process_guard:
+                engine_install_process["process"] = process
+            if engine_install_shutdown.is_set():
+                _terminate_process_tree(process)
+                raise RuntimeError("Instalação interrompida porque o servidor está sendo encerrado.")
             # Monitorar timeout sem bloquear em readline quando o instalador não emite logs.
             output_queue = queue.Queue()
             def read_output():
@@ -548,6 +572,9 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
             deadline = time.monotonic() + 14400
             reader_finished = False
             while process.poll() is None or not output_queue.empty() or not reader_finished:
+                if engine_install_shutdown.is_set():
+                    _terminate_process_tree(process)
+                    raise RuntimeError("Instalação interrompida porque o servidor está sendo encerrado.")
                 if time.monotonic() > deadline:
                     _terminate_process_tree(process)
                     raise RuntimeError("Instalação excedeu o limite de 4 horas e foi interrompida.")
@@ -576,6 +603,9 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
                 engine_install_state.update(status="error", message=str(exc)[:1500], log_tail="\\n".join(output_tail[-40:]), finished_at=time.time())
         finally:
             _terminate_process_tree(process)
+            with engine_install_process_guard:
+                if engine_install_process["process"] is process:
+                    engine_install_process["process"] = None
             engine_install_lock.release()
 
     @router.post("/engines/{engine_id}/install")
@@ -593,6 +623,7 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
         with engine_install_state_guard:
             engine_install_state.update(job_id=job_id, engine=engine_id, status="queued", message="Instalação enfileirada.", started_at=time.time(), finished_at=None)
         installer_thread = threading.Thread(target=run_engine_installer, args=(engine_id, job_id, accepted), daemon=True)
+        engine_install_thread["thread"] = installer_thread
         try:
             installer_thread.start()
         except Exception as exc:
