@@ -184,7 +184,7 @@ def test_f5tts_job_reuses_one_worker_and_preserves_completed_parts_on_retry(tmp_
     monkeypatch.setenv("HF_HUB_CACHE", str(cache))
 
     calls = []
-    def fake_run(command, **kwargs):
+    def fake_worker_process(command, *, timeout, env):
         request = json.loads(Path(command[-1]).read_text(encoding="utf-8"))
         calls.append(request)
         completed = request["parts"] if len(calls) > 1 else request["parts"][:1]
@@ -196,7 +196,7 @@ def test_f5tts_job_reuses_one_worker_and_preserves_completed_parts_on_retry(tmp_
                                stderr="" if len(calls) > 1 else "falha simulada",
                                stdout="")
 
-    monkeypatch.setattr(narration_api.subprocess, "run", fake_run)
+    monkeypatch.setattr(narration_api, "_run_worker_process", fake_worker_process)
     data_dir = tmp_path / "data"
     references = data_dir / "narration_references"
     references.mkdir(parents=True)
