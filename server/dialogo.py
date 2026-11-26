@@ -3,6 +3,7 @@
 Cada linha "Nome: fala" é narrada com a voz escolhida para aquele personagem; linhas sem nome (ou com um nome que
 não foi configurado como personagem) usam a voz do narrador. Tudo é gerado fala por fala e juntado num áudio só.
 """
+import os
 import re
 import threading
 import time
@@ -144,7 +145,6 @@ def _trabalho(ctx, jid, falas, narrador, personagens, opts):
             info_wav = sf.info(str(temp_audio))
             if info_wav.frames <= 0 or info_wav.samplerate < 8000 or info_wav.channels not in (1, 2):
                 raise RuntimeError("O WAV temporário do diálogo não passou na validação.")
-            import os
             os.replace(temp_audio, caminho)
         finally:
             temp_audio.unlink(missing_ok=True)
