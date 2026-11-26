@@ -238,6 +238,13 @@ def test_local_completion_parser_validates_payload(payload, expected):
         ("openai", None, ""),
     ],
 )
+def test_local_generation_endpoint_uses_guarded_response_parser():
+    source = Path(ia_local.__file__).read_text(encoding="utf-8")
+    generation = source.split("async def generate_text(", 1)[1]
+    assert "answer = _extract_local_completion_text(data)" in generation
+    assert 'data["choices"][0]["message"]["content"]' not in generation
+
+
 def test_cloud_provider_response_parser_handles_valid_and_malformed_payloads(kind, payload, expected):
     assert ai_providers._extract_response_text(payload, kind) == expected
 
