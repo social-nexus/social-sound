@@ -166,6 +166,7 @@ def test_humanization_ui_exposes_multilingual_mark_language_selector():
     assert 'id="mark-language"' in page
     assert 'id="mark-language-help"' in page
     assert "Portuguese-focused" in page
+    assert '<option value="en">English</option>' not in page
     assert 'idioma_mark: $("mark-language").value' in page
-    for code in ("pt", "en", "es", "fr", "vi", "ar", "he", "yo"):
+    for code in ("pt", "es", "fr", "vi", "ar", "he", "ht", "yo"):
         assert f'<option value="{code}">' in page
