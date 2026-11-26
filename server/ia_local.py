@@ -134,6 +134,8 @@ RUNTIME_CATALOG = {
 
 MODEL_CATALOG = {
     "qwen3-4b-q4km": {
+        "download_estimate": "2,50 GB (GGUF Q4_K_M)",
+        "disk_estimate": "4 GB livres recomendados",
         "name": "Qwen3 4B Instruct — Q4_K_M",
         "family": "Qwen3", "repo": "Qwen/Qwen3-4B-GGUF",
         "filename": "Qwen3-4B-Q4_K_M.gguf",
@@ -144,6 +146,8 @@ MODEL_CATALOG = {
         "description": "Modelo multilíngue de 4B parâmetros, quantização Q4_K_M. Download direto do repositório oficial Qwen."
     },
     "gemma3-4b-it-q4km": {
+        "download_estimate": "2,49 GB (GGUF Q4_K_M)",
+        "disk_estimate": "4 GB livres recomendados",
         "name": "Gemma 3 4B Instruct — Q4_K_M",
         "family": "Gemma 3", "repo": "ggml-org/gemma-3-4b-it-GGUF",
         "filename": "gemma-3-4b-it-Q4_K_M.gguf",
