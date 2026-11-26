@@ -655,24 +655,31 @@ def ai_job(jid: str):
 def delete_model(model_id: str, request: Request):
     _guard_local_request(request)
     with RUNTIME_LIFECYCLE_LOCK:
+        if model_id in MODEL_CATALOG:
+            folder = MODELS_DIR / model_id
+        elif re.fullmatch(r"imported-[0-9a-f]{10}", model_id):
+            folder = MODELS_DIR / model_id
+        else:
+            raise HTTPException(400, "Modelo inválido.")
+        models_root = MODELS_DIR.resolve()
+        if folder.is_symlink():
+            raise HTTPException(400, "O caminho do modelo é um link simbólico e não será removido por segurança.")
+        resolved_folder = folder.resolve()
+        if resolved_folder == models_root or models_root not in resolved_folder.parents:
+            raise HTTPException(400, "O caminho do modelo está fora da pasta permitida.")
         if model_id == ACTIVE_MODEL and ACTIVE_GENERATIONS:
             raise HTTPException(409, "Este modelo está gerando um roteiro agora. Aguarde a geração terminar antes de desinstalar.")
         if model_id == ACTIVE_MODEL:
             _stop_runtime()
         if model_id in MODEL_CATALOG:
-            folder = MODELS_DIR / model_id
             # Wait for an in-flight download before deleting its directory.
             with LOCK:
                 download_lock = MODEL_DOWNLOAD_LOCKS.setdefault(model_id, threading.Lock())
             with download_lock:
-                if folder.exists():
-                    shutil.rmtree(folder)
-        elif re.fullmatch(r"imported-[0-9a-f]{10}", model_id):
-            folder = MODELS_DIR / model_id
-            if folder.exists():
-                shutil.rmtree(folder)
-        else:
-            raise HTTPException(400, "Modelo inválido.")
+                if resolved_folder.exists():
+                    shutil.rmtree(resolved_folder)
+        elif resolved_folder.exists():
+            shutil.rmtree(resolved_folder)
         return {"ok": True}
 
 @router.post("/generate")
