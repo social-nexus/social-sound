@@ -399,6 +399,10 @@ def _download_model_worker(jid: str, model_id: str):
                     metadata_temp.unlink(missing_ok=True)
                 _update_job(jid, status="done", progress=100, message="Modelo já instalado e verificado.")
                 return
+            # Do not leave a corrupt old file visible as installed if replacement fails.
+            if target.exists():
+                target.unlink(missing_ok=True)
+                (target_dir / "model.json").unlink(missing_ok=True)
             url = f"https://huggingface.co/{meta['repo']}/resolve/main/{meta['filename']}"
             _download(url, target, size, jid)
             _update_job(jid, status="verifying", progress=99, message="Validando SHA-256 do modelo…")
