@@ -254,8 +254,20 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
         vocoder_cache = cache / "models--charactr--vocos-mel-24khz" / "snapshots"
         root = python.parent.parent
         package_dir = root / ("Lib/site-packages/f5_tts" if os.name == "nt" else "lib/python3.11/site-packages/f5_tts")
-        return (python.is_file() and package_dir.is_dir() and model_cache.is_dir()
-                and any(model_cache.iterdir()) and vocoder_cache.is_dir() and any(vocoder_cache.iterdir()))
+        def contains_required_files(snapshot_root, required):
+            if not snapshot_root.is_dir():
+                return False
+            return any(
+                snapshot.is_dir() and all((snapshot / name).is_file() for name in required)
+                for snapshot in snapshot_root.iterdir()
+            )
+
+        return (
+            python.is_file()
+            and package_dir.is_dir()
+            and contains_required_files(model_cache, ("model_last.safetensors", "vocab.txt"))
+            and contains_required_files(vocoder_cache, ("config.yaml", "pytorch_model.bin"))
+        )
 
 
     def external_segments(text: str):
