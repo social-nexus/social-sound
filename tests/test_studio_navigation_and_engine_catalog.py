@@ -95,3 +95,19 @@ def test_main_narration_page_supports_english_ui():
     assert 'T("Clonar minha voz")' in source
     assert "T('GERAR ÁUDIO')" in source
     assert 'T("Gerar legenda SRT junto com o áudio")' in source
+
+
+def test_voice_studio_is_integrated_into_main_navigation_and_mounted():
+    html = STUDIO.read_text(encoding="utf-8")
+    server = SERVER.read_text(encoding="utf-8")
+    page = ROOT / "server" / "estudio_voz" / "index.html"
+    voice_html = page.read_text(encoding="utf-8")
+    assert 'id="t-estudio-voz"' in html
+    assert 'onclick="show(\'estudio-voz\')"' in html
+    assert 'url:"/estudio-voz/"' in html
+    assert 'app.mount("/estudio-voz"' in server
+    assert "getUserMedia" in voice_html
+    assert "PREPARAR E SALVAR VOZ" in voice_html
+    assert "Biblioteca de vozes" in voice_html
+    assert "TRANSCRIBIR AUTOMATICAMENTE" in voice_html
+    assert "PREPARAÇÃO DE ÁUDIO" in voice_html
