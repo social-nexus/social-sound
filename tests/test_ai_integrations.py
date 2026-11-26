@@ -206,6 +206,24 @@ def test_cloud_generation_reports_missing_api_key(monkeypatch):
 
 
 @pytest.mark.parametrize(
+    ("kind", "payload", "expected"),
+    [
+        ("openai", {"choices": [{"message": {"content": "texto"}}]}, "texto"),
+        ("openai", {"choices": [{"message": {"content": [{"text": "parte 1"}, {"text": "parte 2"}]}}]}, "parte 1parte 2"),
+        ("anthropic", {"content": [{"type": "text", "text": "resposta"}]}, "resposta"),
+        ("gemini", {"candidates": [{"content": {"parts": [{"text": "ok"}]}}]}, "ok"),
+        ("openai", {"unexpected": "shape"}, ""),
+        ("anthropic", {"content": "unexpected"}, ""),
+        ("gemini", {"candidates": []}, ""),
+        ("gemini", {"candidates": [{"content": None}]}, ""),
+        ("openai", None, ""),
+    ],
+)
+def test_cloud_provider_response_parser_handles_valid_and_malformed_payloads(kind, payload, expected):
+    assert ai_providers._extract_response_text(payload, kind) == expected
+
+
+@pytest.mark.parametrize(
     ("status", "expected"),
     [
         (401, "A chave foi recusada pelo provedor"),
