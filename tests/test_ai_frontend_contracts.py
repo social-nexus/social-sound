@@ -70,3 +70,12 @@ def test_ai_workspaces_have_visible_language_selector():
     assert "function addAILanguageSelector()" in source
     assert 'select.id="ai-ui-language"' in source
     assert 'url.searchParams.set("lang","en")' in source
+
+
+def test_narration_react_page_has_visible_language_selector():
+    app = (Path(__file__).resolve().parents[1] / "web" / "src" / "App.tsx").read_text(encoding="utf-8")
+    assert 'id="ui-language"' in app
+    assert 'value={UI_LANG}' in app
+    assert 'url.searchParams.set("lang","en")' in app
+    assert 'option value="pt-BR">Português' in app
+    assert 'option value="en">English' in app
