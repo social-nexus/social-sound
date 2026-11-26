@@ -817,3 +817,32 @@ def test_runtime_install_cleans_staging_when_runtime_becomes_active(monkeypatch,
     assert ia_local.JOBS[job_id]["status"] == "error"
     assert not list(runtime_root.glob(f"{variant}.staging-*"))
     assert not (runtime_root / variant).exists()
+
+
+def test_local_runtime_stop_falls_back_to_kill_when_terminate_races(monkeypatch):
+    class FakeProcess:
+        def __init__(self):
+            self.alive = True
+            self.kill_called = False
+        def poll(self):
+            return None if self.alive else 0
+        def terminate(self):
+            raise OSError("process exited during terminate")
+        def wait(self, timeout=None):
+            if self.alive:
+                raise ia_local.subprocess.TimeoutExpired(["llama-server"], timeout)
+            return 0
+        def kill(self):
+            self.kill_called = True
+            self.alive = False
+
+    process = FakeProcess()
+    monkeypatch.setattr(ia_local, "PROCESS", process)
+    monkeypatch.setattr(ia_local, "ACTIVE_MODEL", "test-model")
+    monkeypatch.setattr(ia_local, "ACTIVE_VARIANT", "test-runtime")
+    assert ia_local._stop_runtime() is True
+    assert process.kill_called is True
+    assert process.alive is False
+    assert ia_local.PROCESS is None
+    assert ia_local.ACTIVE_MODEL is None
+    assert ia_local.ACTIVE_VARIANT is None
