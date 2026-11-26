@@ -165,7 +165,9 @@ def test_humanization_ui_exposes_multilingual_mark_language_selector():
     page = (Path(__file__).resolve().parents[1] / "server" / "roteiro_web" / "index.html").read_text(encoding="utf-8")
     assert 'id="mark-language"' in page
     assert 'id="mark-language-help"' in page
+    assert 'id="mark-language-note"' in page
     assert "Portuguese-focused" in page
+    assert "Mark does not support English" in page
     assert '<option value="en">English</option>' not in page
     assert 'idioma_mark: $("mark-language").value' in page
     for code in ("pt", "es", "fr", "vi", "ar", "he", "ht", "yo"):
@@ -182,3 +184,4 @@ def test_mark_language_dropdown_matches_model_supported_languages():
     assert set(options) == set(roteiro.MARK_LANGS)
     assert len(options) == len(roteiro.MARK_LANGS)
     assert options[0] == "pt"
+    assert "en" not in options
