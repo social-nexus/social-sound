@@ -396,6 +396,8 @@ def _download_model_worker(jid: str, model_id: str):
     with LOCK:
         model_lock = MODEL_DOWNLOAD_LOCKS.setdefault(model_id, threading.Lock())
     with model_lock:
+        staged = None
+        metadata_temp = None
         try:
             meta = MODEL_CATALOG[model_id]
             _update_job(jid, status="verifying", message="Consultando hash e tamanho no Hugging Face…")
@@ -403,42 +405,43 @@ def _download_model_worker(jid: str, model_id: str):
             target_dir = MODELS_DIR / model_id
             target_dir.mkdir(parents=True, exist_ok=True)
             target = target_dir / meta["filename"]
-            if target.is_file() and target.stat().st_size == size and _sha256(target).lower() == digest.lower():
-                metadata_path = target_dir / "model.json"
-                metadata_temp = target_dir / (".model.json." + uuid.uuid4().hex + ".tmp")
-                try:
-                    metadata_temp.write_text(json.dumps({
-                        "model_id": model_id, "repo": meta["repo"], "filename": meta["filename"],
-                        "sha256": digest, "license": meta["license"], "installed_at": int(time.time())
-                    }, indent=2), encoding="utf-8")
-                    metadata_temp.replace(metadata_path)
-                finally:
-                    metadata_temp.unlink(missing_ok=True)
-                _update_job(jid, status="done", progress=100, message="Modelo já instalado e verificado.")
-                return
-            # Do not leave a corrupt old file visible as installed if replacement fails.
-            if target.exists():
-                target.unlink(missing_ok=True)
-                (target_dir / "model.json").unlink(missing_ok=True)
-            url = f"https://huggingface.co/{meta['repo']}/resolve/main/{meta['filename']}"
-            _download(url, target, size, jid)
-            _update_job(jid, status="verifying", progress=99, message="Validando SHA-256 do modelo…")
-            if _sha256(target).lower() != digest.lower():
-                target.unlink(missing_ok=True)
-                raise ValueError("Hash SHA-256 do modelo não confere; arquivo removido.")
             metadata_path = target_dir / "model.json"
-            metadata_temp = target_dir / (".model.json." + uuid.uuid4().hex + ".tmp")
-            try:
+            if target.is_file() and target.stat().st_size == size and _sha256(target).lower() == digest.lower():
+                metadata_temp = target_dir / (".model.json." + uuid.uuid4().hex + ".tmp")
                 metadata_temp.write_text(json.dumps({
                     "model_id": model_id, "repo": meta["repo"], "filename": meta["filename"],
                     "sha256": digest, "license": meta["license"], "installed_at": int(time.time())
                 }, indent=2), encoding="utf-8")
                 metadata_temp.replace(metadata_path)
-            finally:
-                metadata_temp.unlink(missing_ok=True)
+                metadata_temp = None
+                _update_job(jid, status="done", progress=100, message="Modelo já instalado e verificado.")
+                return
+            # Download to a staging file; keep the previous model intact until validation passes.
+            staged = target_dir / (".model-download-" + uuid.uuid4().hex + ".gguf")
+            url = f"https://huggingface.co/{meta['repo']}/resolve/main/{meta['filename']}"
+            _download(url, staged, size, jid)
+            _update_job(jid, status="verifying", progress=99, message="Validando SHA-256 do modelo…")
+            if _sha256(staged).lower() != digest.lower():
+                raise ValueError("Hash SHA-256 do modelo não confere; arquivo temporário removido.")
+            metadata_temp = target_dir / (".model.json." + uuid.uuid4().hex + ".tmp")
+            metadata_temp.write_text(json.dumps({
+                "model_id": model_id, "repo": meta["repo"], "filename": meta["filename"],
+                "sha256": digest, "license": meta["license"], "installed_at": int(time.time())
+            }, indent=2), encoding="utf-8")
+            # Atomic publish: replace the old model only after the staged download is complete.
+            staged.replace(target)
+            staged = None
+            metadata_temp.replace(metadata_path)
+            metadata_temp = None
             _update_job(jid, status="done", progress=100, message="Modelo baixado e verificado.")
         except Exception as exc:
             _update_job(jid, status="error", message=str(exc)[:350])
+        finally:
+            if staged is not None:
+                staged.unlink(missing_ok=True)
+            if metadata_temp is not None:
+                metadata_temp.unlink(missing_ok=True)
+
 
 def _installed_models():
     found = []
