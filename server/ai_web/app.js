@@ -27,7 +27,9 @@ for(const m of models){
 const item=document.createElement("div");item.className="model-item";
 const name=document.createElement("strong");name.textContent=m.name;item.appendChild(name);
 const description=document.createElement("div");description.className="small";description.textContent=m.description||"Modelo importado";item.appendChild(description);
-const licenseLine=document.createElement("div");licenseLine.className="small";licenseLine.textContent="Licença: "+(m.license||"Licença do modelo")+" · "+(m.approx_size_gb?m.approx_size_gb+" GB aproximados":"arquivo importado");item.appendChild(licenseLine);
+const licenseLine=document.createElement("div");licenseLine.className="small";licenseLine.textContent="Licença: "+(m.license||"Licença do modelo");item.appendChild(licenseLine);
+const sizeLine=document.createElement("div");sizeLine.className="small";sizeLine.textContent="Peso estimado do arquivo: "+(m.download_estimate|| (m.approx_size_gb?m.approx_size_gb+" GB (aprox.)":"arquivo importado"));item.appendChild(sizeLine);
+const diskLine=document.createElement("div");diskLine.className="small";diskLine.textContent="Espaço livre recomendado: "+(m.disk_estimate|| (m.approx_size_gb?Math.ceil(m.approx_size_gb*1.5)+" GB":"não estimado"));item.appendChild(diskLine);
 if(m.requires_license_acceptance){
 const label=document.createElement("label");label.className="small inline";
 const check=document.createElement("input");check.type="checkbox";
