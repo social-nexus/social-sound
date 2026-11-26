@@ -30,3 +30,16 @@ def test_voice_engines_page_displays_catalog_and_size_estimates():
 def test_voice_engines_page_is_mounted_by_server():
     source = SERVER.read_text(encoding="utf-8")
     assert 'app.mount("/motores"' in source
+
+
+def test_main_studio_language_selector_persists_and_translates_shell():
+    html = STUDIO.read_text(encoding="utf-8")
+    assert 'id="app-language"' in html
+    assert 'value="en">English' in html
+    assert 'localStorage.setItem("social-sound-language",APP_LANG)' in html
+    assert 'localStorage.getItem("social-sound-language")' in html
+    assert '"Script / Humanization"' in html
+    assert '"Narration Queue"' in html
+    assert '"AI Settings"' in html
+    assert 'encodeURIComponent(APP_LANG)' in html
+    assert 'lang="en"' in html or 'document.documentElement.lang=APP_LANG==="en"?"en":"pt-BR"' in html
