@@ -63,3 +63,10 @@ def test_ai_workspace_supports_english_static_and_dynamic_ui():
     assert 'T("Desinstalar e excluir")' in source
     assert 'T("Gerando…")' in source
     assert 'T("Local AI (llama.cpp)")' in source or 'UI_LANG==="en"?"Local AI (llama.cpp)"' in source
+
+
+def test_ai_workspaces_have_visible_language_selector():
+    source = APP_JS.read_text(encoding="utf-8")
+    assert "function addAILanguageSelector()" in source
+    assert 'select.id="ai-ui-language"' in source
+    assert 'url.searchParams.set("lang","en")' in source
