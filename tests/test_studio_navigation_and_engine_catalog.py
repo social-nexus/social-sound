@@ -109,7 +109,7 @@ def test_voice_studio_is_integrated_into_main_navigation_and_mounted():
     assert "getUserMedia" in voice_html
     assert "PREPARAR E SALVAR VOZ" in voice_html
     assert "Biblioteca de vozes" in voice_html
-    assert "TRANSCRIBER AUTOMATICAMENTE" in voice_html
+    assert "TRANSCREVER AUTOMATICAMENTE" in voice_html
     assert "PREPARAÇÃO DE ÁUDIO" in voice_html
     assert "view.setUint8(offset+i,str.charCodeAt(i));" in voice_html
     assert "function wavBlob(samples,sr)" in voice_html
