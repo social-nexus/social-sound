@@ -8,6 +8,7 @@ Três etapas, todas revisáveis na tela:
 import json
 import re
 import threading
+import time
 import unicodedata
 import urllib.request
 from importlib.util import find_spec
@@ -686,6 +687,40 @@ def rota_status():
     }
 
 
+def _baixar_arquivo(url: str, tmp: Path, base_progresso: int, tentativas: int = 4):
+    """Baixa para arquivo temporário, valida tamanho e repete falhas transitórias."""
+    ultimo_erro = None
+    total_contabilizado = False
+    for tentativa in range(1, tentativas + 1):
+        tmp.unlink(missing_ok=True)
+        atual = 0
+        try:
+            with urllib.request.urlopen(url, timeout=60) as r, open(tmp, "wb") as f:
+                esperado = int(r.headers.get("Content-Length") or 0)
+                if esperado and not total_contabilizado:
+                    DOWNLOAD["total"] += esperado
+                    total_contabilizado = True
+                while True:
+                    bloco = r.read(1 << 20)
+                    if not bloco:
+                        break
+                    f.write(bloco)
+                    atual += len(bloco)
+                    DOWNLOAD["baixado"] = base_progresso + atual
+            if esperado and atual != esperado:
+                raise IOError(f"download incompleto: {atual} de {esperado} bytes")
+            if atual == 0:
+                raise IOError("download vazio")
+            return atual
+        except Exception as e:  # noqa: BLE001
+            ultimo_erro = e
+            tmp.unlink(missing_ok=True)
+            DOWNLOAD["baixado"] = base_progresso
+            if tentativa < tentativas:
+                time.sleep(min(2 ** tentativa, 8))
+    raise ultimo_erro
+
+
 def _baixar(refazer: bool = False):
     DOWNLOAD.update(rodando=True, baixado=0, total=0, erro=None)
     try:
@@ -696,16 +731,11 @@ def _baixar(refazer: bool = False):
         for nome, url in MARK_URLS.items():
             destino = MARK_DIR / nome
             if destino.exists():
+                DOWNLOAD["baixado"] += destino.stat().st_size
                 continue
             tmp = destino.with_name(nome + ".baixando")
-            with urllib.request.urlopen(url, timeout=60) as r, open(tmp, "wb") as f:
-                DOWNLOAD["total"] += int(r.headers.get("Content-Length") or 0)
-                while True:
-                    bloco = r.read(1 << 20)
-                    if not bloco:
-                        break
-                    f.write(bloco)
-                    DOWNLOAD["baixado"] += len(bloco)
+            base_progresso = DOWNLOAD["baixado"]
+            _baixar_arquivo(url, tmp, base_progresso)
             tmp.replace(destino)
         MARK.resetar()
     except Exception as e:  # noqa: BLE001
