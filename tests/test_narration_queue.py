@@ -146,6 +146,7 @@ def test_concurrent_enqueue_allocates_queue_order_without_collisions(tmp_path):
     import threading
 
     path = tmp_path / "concurrent-queue.sqlite3"
+    NarrationQueue(path)  # Initialize the schema before concurrent submissions.
     count = 12
     barrier = threading.Barrier(count)
     created = []
