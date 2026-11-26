@@ -103,6 +103,8 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
     candidate_guard = threading.Lock()
     inference_guard = inference_lock or threading.Lock()
     worker_started = False
+    worker_stop = threading.Event()
+    worker_thread = {"thread": None}
 
     def job_paths(job_id: str):
         folder = output_dir / job_id
@@ -522,10 +524,12 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
             temp.unlink(missing_ok=True)
 
     def worker_loop():
-        while True:
+        # Shutdown stops the worker from claiming new jobs; an active job is
+        # allowed to finish and remains recoverable if the shutdown wait expires.
+        while not worker_stop.is_set():
             job = db.claim_next()
             if job is None:
-                time.sleep(0.5)
+                worker_stop.wait(0.5)
                 continue
             try:
                 folder = job_paths(job["id"])
@@ -557,7 +561,19 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
         with worker_guard:
             if not worker_started:
                 worker_started = True
-                threading.Thread(target=worker_loop, name="social-sound-narration-queue", daemon=True).start()
+                thread = threading.Thread(target=worker_loop, name="social-sound-narration-queue", daemon=True)
+                worker_thread["thread"] = thread
+                thread.start()
+
+    def shutdown_narration_worker():
+        worker_stop.set()
+        thread = worker_thread["thread"]
+        if thread is not None and thread is not threading.current_thread():
+            # Don't claim an active inference was cancelled: it may finish or be
+            # recovered as interrupted on next startup after this bounded wait.
+            thread.join(timeout=30)
+
+    router.add_event_handler("shutdown", shutdown_narration_worker)
 
     # A running job from a previous process is not silently resumed.
     db.recover_interrupted()
