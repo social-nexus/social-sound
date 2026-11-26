@@ -522,6 +522,10 @@ ESTUDIO = BASE / "estudio"
 if ESTUDIO.is_dir():
     app.mount("/estudio", StaticFiles(directory=str(ESTUDIO), html=True), name="estudio")
 
+VOICE_STUDIO = BASE / "estudio_voz"
+if VOICE_STUDIO.is_dir():
+    app.mount("/estudio-voz", StaticFiles(directory=str(VOICE_STUDIO), html=True), name="estudio-voz")
+
 AI_ASSETS = BASE / "ai_web"
 if AI_ASSETS.is_dir():
     app.mount("/ai-assets", StaticFiles(directory=str(AI_ASSETS)), name="ai-assets")
