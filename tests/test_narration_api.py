@@ -663,6 +663,7 @@ def test_optional_engine_uninstall_can_remove_only_selected_shared_hf_repositori
 
 
 def test_engine_installer_shutdown_handler_is_registered(tmp_path):
+    existing_threads = {thread.ident for thread in threading.enumerate()}
     app = FastAPI()
     router = create_narration_router(
         lock=threading.Lock(),
@@ -681,7 +682,7 @@ def test_engine_installer_shutdown_handler_is_registered(tmp_path):
     assert any(callable(handler) for handler in router.on_shutdown)
     queue_thread = next(
         thread for thread in threading.enumerate()
-        if thread.name == "social-sound-narration-queue"
+        if thread.name == "social-sound-narration-queue" and thread.ident not in existing_threads
     )
     for handler in router.on_shutdown:
         handler()
