@@ -702,12 +702,24 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
             server_dir = Path(__file__).resolve().parent
             venv_root = server_dir / ".venvs"
             # Only remove the environment created by this application's installer.
-            runtime_root = venv_root / engine_id.replace("3", "") if engine_id == "supertonic3" else venv_root / engine_id
-            # Supertonic's installer uses the folder name 'supertonic'.
-            if engine_id == "supertonic3":
-                runtime_root = venv_root / "supertonic"
-            removed_bytes = _safe_remove_directory(runtime_root, venv_root) if runtime_root.exists() else 0
+            runtime_root = venv_root / ("supertonic" if engine_id == "supertonic3" else engine_id)
+            configured_var = {
+                "supertonic3": "SOCIAL_SOUND_SUPERTONIC_PYTHON",
+                "omnivoice": "SOCIAL_SOUND_OMNIVOICE_PYTHON",
+                "f5tts": "SOCIAL_SOUND_F5TTS_PYTHON",
+            }[engine_id]
+            configured_python = os.environ.get(configured_var)
+            removed_bytes = 0
             preserved = []
+            if configured_python:
+                custom_python = Path(configured_python).expanduser().resolve()
+                managed_root = runtime_root.resolve()
+                if managed_root not in custom_python.parents:
+                    preserved.append("ambiente Python personalizado fora da pasta gerenciada; preservado por segurança")
+                elif runtime_root.exists():
+                    removed_bytes += _safe_remove_directory(runtime_root, venv_root)
+            elif runtime_root.exists():
+                removed_bytes += _safe_remove_directory(runtime_root, venv_root)
             if engine_id == "supertonic3":
                 cache = supertonic_cache()
                 expected_suffix = Path("Narradores") / "Supertonic3"
