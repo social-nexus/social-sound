@@ -869,3 +869,22 @@ def test_shutdown_terminates_tracked_external_worker_process(monkeypatch):
     with narration_api._ACTIVE_WORKER_PROCESSES_LOCK:
         narration_api._ACTIVE_WORKER_PROCESSES.clear()
         narration_api._WORKER_SHUTDOWN_REQUESTED = False
+
+
+def test_process_tree_terminates_posix_group_even_when_parent_exited(monkeypatch):
+    calls = []
+    class ExitedProcess:
+        pid = 123456
+        _social_sound_new_session = True
+        def poll(self):
+            return 0
+        def wait(self, timeout=None):
+            return 0
+
+    fake_os = SimpleNamespace(name="posix")
+    monkeypatch.setattr(narration_api, "os", fake_os)
+    monkeypatch.setattr(narration_api, "subprocess", subprocess)
+    import signal
+    monkeypatch.setattr(os, "killpg", lambda pgid, sig: calls.append((pgid, sig)))
+    narration_api._terminate_process_tree(ExitedProcess())
+    assert calls == [(123456, signal.SIGKILL)]
