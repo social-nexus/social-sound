@@ -871,3 +871,27 @@ def test_local_ai_status_and_catalog_require_local_host():
         with pytest.raises(HTTPException) as exc:
             endpoint(local_request(method="GET", host="untrusted.example"))
         assert exc.value.status_code == 403
+
+
+def test_local_ai_generate_route_dispatches_to_generation_handler(monkeypatch):
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+
+    async def fake_provider(provider, model, system, prompt, *, max_tokens):
+        assert provider == "openai"
+        assert model == "test-model"
+        assert prompt == "Test prompt"
+        return "Generated response"
+
+    monkeypatch.setattr(ia_local, "generate_with_provider", fake_provider)
+    app = FastAPI()
+    app.include_router(ia_local.router)
+    client = TestClient(app)
+    response = client.post("/api/ai/generate", headers={
+        "host": "localhost:8000", "origin": "http://localhost:8000",
+    }, json={"provider": "openai", "provider_model": "test-model",
+             "prompt": "Test prompt", "system_prompt": "System"})
+    assert response.status_code == 200, response.text
+    assert response.json() == {
+        "text": "Generated response", "model": "openai/test-model", "provider": "openai"
+    }
