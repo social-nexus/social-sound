@@ -7,6 +7,7 @@ Três etapas, todas revisáveis na tela:
 """
 import json
 import re
+import shutil
 import threading
 import time
 import unicodedata
