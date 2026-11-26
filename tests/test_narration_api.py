@@ -518,6 +518,74 @@ def test_process_tree_termination_does_not_signal_exited_parent(monkeypatch):
     narration_api._terminate_process_tree(ExitedProcess())
     assert calls == []
 
+def test_optional_engine_uninstall_removes_only_its_owned_files(tmp_path, monkeypatch):
+    import narration_api
+
+    server_dir = tmp_path / "server"
+    (server_dir / ".venvs" / "omnivoice").mkdir(parents=True)
+    (server_dir / ".venvs" / "omnivoice" / "marker.txt").write_text("venv")
+    monkeypatch.setattr(narration_api, "__file__", str(server_dir / "narration_api.py"))
+    hf_cache = tmp_path / "shared-hf" / "hub"
+    model_cache = hf_cache / "models--k2-fsa--OmniVoice"
+    tokenizer_cache = hf_cache / "models--bosonai--higgs-audio-v2-tokenizer"
+    unrelated_cache = hf_cache / "models--another-app--model"
+    for folder in (model_cache, tokenizer_cache, unrelated_cache):
+        folder.mkdir(parents=True)
+        (folder / "marker.bin").write_bytes(b"model")
+    monkeypatch.setenv("HF_HUB_CACHE", str(hf_cache))
+
+    app = FastAPI()
+    app.include_router(create_narration_router(
+        lock=threading.Lock(), run=lambda fn: fn(SimpleNamespace(tts_model=SimpleNamespace(sample_rate=24000))),
+        synth=lambda *args, **kwargs: np.zeros(2400, dtype=np.float32),
+        ensure_preset=lambda *args: tmp_path / "preset.wav", preset_by_id=lambda pid: {"id": pid},
+        find_mine=lambda name: None, parse_text=lambda text: [("text", text)],
+        split_sentences=lambda text: [text], tighten=lambda wav, sample_rate: wav,
+        data_dir=tmp_path / "data", output_dir=tmp_path / "audio",
+    ))
+    client = TestClient(app)
+    response = client.request("DELETE", "/api/narration/engines/omnivoice", json={})
+    assert response.status_code == 200, response.text
+    result = response.json()
+    assert result["removed_bytes"] > 0
+    assert result["preserved"]
+    assert not (server_dir / ".venvs" / "omnivoice").exists()
+    assert model_cache.exists() and tokenizer_cache.exists()
+    assert unrelated_cache.exists()
+
+
+def test_optional_engine_uninstall_can_remove_only_selected_shared_hf_repositories(tmp_path, monkeypatch):
+    import narration_api
+
+    server_dir = tmp_path / "server"
+    (server_dir / ".venvs" / "f5tts").mkdir(parents=True)
+    monkeypatch.setattr(narration_api, "__file__", str(server_dir / "narration_api.py"))
+    hf_cache = tmp_path / "shared-hf" / "hub"
+    model_cache = hf_cache / "models--Cataldir--F5-TTS-pt-br"
+    vocoder_cache = hf_cache / "models--charactr--vocos-mel-24khz"
+    unrelated_cache = hf_cache / "models--other--shared"
+    for folder in (model_cache, vocoder_cache, unrelated_cache):
+        folder.mkdir(parents=True)
+        (folder / "marker.bin").write_bytes(b"model")
+    monkeypatch.setenv("HF_HUB_CACHE", str(hf_cache))
+
+    app = FastAPI()
+    app.include_router(create_narration_router(
+        lock=threading.Lock(), run=lambda fn: fn(SimpleNamespace(tts_model=SimpleNamespace(sample_rate=24000))),
+        synth=lambda *args, **kwargs: np.zeros(2400, dtype=np.float32),
+        ensure_preset=lambda *args: tmp_path / "preset.wav", preset_by_id=lambda pid: {"id": pid},
+        find_mine=lambda name: None, parse_text=lambda text: [("text", text)],
+        split_sentences=lambda text: [text], tighten=lambda wav, sample_rate: wav,
+        data_dir=tmp_path / "data", output_dir=tmp_path / "audio",
+    ))
+    client = TestClient(app)
+    response = client.request("DELETE", "/api/narration/engines/f5tts", json={"delete_shared_cache": True})
+    assert response.status_code == 200, response.text
+    assert response.json()["shared_cache_deleted"] is True
+    assert not model_cache.exists() and not vocoder_cache.exists()
+    assert unrelated_cache.exists()
+
+
 def test_engine_installer_shutdown_handler_is_registered(tmp_path):
     app = FastAPI()
     router = create_narration_router(
