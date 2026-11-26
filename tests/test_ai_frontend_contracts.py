@@ -56,6 +56,7 @@ def test_model_delete_confirmation_matches_generation_conflict_behavior():
 def test_ai_workspace_supports_english_static_and_dynamic_ui():
     source = APP_JS.read_text(encoding="utf-8")
     assert 'get("lang")==="en"' in source
+    assert source.index("const UI_LANG=") < source.index("const providerNames=")
     assert '"AI — Scripts & Narration"' in source
     assert 'applyAIEnglish();' in source
     assert 'T("Baixar modelo")' in source
