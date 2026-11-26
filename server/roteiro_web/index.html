@@ -162,12 +162,12 @@
     try {
       var s = await (await fetch("/api/roteiro/status")).json(), el = $("estadoMark"), actions = $("estadoMarkActions");
       actions.innerHTML = "";
-      if (s.mark_baixado) {
+      if (s.mark_baixado || s.mark_files_present) {
         var remove = document.createElement("button"); remove.className = "link"; remove.textContent = "Excluir modelo Mark";
         remove.onclick = async function () {
           if (!confirm("Excluir os arquivos do modelo Mark? O dicionário, os números por extenso, seus roteiros e os demais recursos serão preservados.")) return;
           remove.disabled = true; remove.textContent = "Excluindo...";
-          try { var response = await fetch("/api/roteiro/modelo", { method: "DELETE" }); if (!response.ok) { var detail = await response.json().catch(function(){return {};}); throw new Error(detail.detail || "Falha ao excluir o modelo."); } await status(); }
+          try { var response = await fetch("/api/roteiro/modelo", { method: "DELETE" }); if (!response.ok) { var detail = await response.json().catch(function(){return {};}); throw new Error(detail.detail || "Falha ao excluir o modelo."); } var result = await response.json(); await status(); actions.appendChild(document.createTextNode(" Espaço liberado: " + (Number(result.removed_bytes || 0) / 1024 / 1024).toFixed(1) + " MB.")); }
           catch (error) { actions.appendChild(document.createTextNode(" Não foi possível excluir: " + error.message)); remove.disabled = false; remove.textContent = "Tentar excluir novamente"; }
         };
         actions.appendChild(remove);
