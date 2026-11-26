@@ -189,6 +189,48 @@ def test_voxcpm_queue_generates_parts_and_requires_candidate_approval(tmp_path, 
     monkeypatch.setattr(pathlib.Path, "unlink", original_unlink)
 
 
+def test_f5tts_readiness_rejects_empty_and_partial_cache_artifacts(tmp_path, monkeypatch):
+    runtime = tmp_path / "f5-runtime"
+    python = runtime / "Scripts" / "python.exe"
+    python.parent.mkdir(parents=True)
+    python.write_bytes(b"fake python")
+    (runtime / "Lib" / "site-packages" / "f5_tts").mkdir(parents=True)
+    cache = tmp_path / "hf-cache"
+    model = cache / "models--Cataldir--F5-TTS-pt-br" / "snapshots" / "model"
+    vocoder = cache / "models--charactr--vocos-mel-24khz" / "snapshots" / "vocoder"
+    model.mkdir(parents=True)
+    vocoder.mkdir(parents=True)
+    monkeypatch.setenv("SOCIAL_SOUND_F5TTS_PYTHON", str(python))
+    monkeypatch.setenv("HF_HUB_CACHE", str(cache))
+
+    app = FastAPI()
+    app.include_router(create_narration_router(
+        lock=threading.Lock(),
+        run=lambda fn: fn(SimpleNamespace(tts_model=SimpleNamespace(sample_rate=24000))),
+        synth=lambda *args, **kwargs: np.zeros(2400, dtype=np.float32),
+        ensure_preset=lambda *args: tmp_path / "preset.wav",
+        preset_by_id=lambda pid: {"id": pid},
+        find_mine=lambda name: None,
+        parse_text=lambda text: [("text", text)],
+        split_sentences=lambda text: [text],
+        tighten=lambda wav, sample_rate: wav,
+        data_dir=tmp_path / "data",
+        output_dir=tmp_path / "audio",
+    ))
+    client = TestClient(app)
+    def installed():
+        return next(engine for engine in client.get("/api/narration/engines").json()["engines"] if engine["id"] == "f5tts")["installed"]
+
+    (model / "model_last.safetensors").write_bytes(b"weights")
+    assert installed() is False  # missing vocab and vocoder artifacts
+    (model / "vocab.txt").write_text("vocab", encoding="utf-8")
+    (vocoder / "config.yaml").write_text("config", encoding="utf-8")
+    (vocoder / "pytorch_model.bin").write_bytes(b"vocoder")
+    assert installed() is True
+    (vocoder / "pytorch_model.bin").write_bytes(b"")
+    assert installed() is False  # empty artifact should not count as installed
+
+
 def test_f5tts_job_reuses_one_worker_and_preserves_completed_parts_on_retry(tmp_path, monkeypatch):
     import json
     import soundfile as sf
