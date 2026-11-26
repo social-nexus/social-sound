@@ -351,3 +351,80 @@ def test_concurrent_regeneration_requests_only_create_one_pending_candidate(tmp_
     pending = client.get(f"/api/narration/jobs/{job_id}/candidates").json()["candidates"]
     assert len(pending) == 1
     assert pending[0]["id"] == first_response.json()["candidate_id"]
+
+
+
+def test_installer_termination_kills_windows_process_tree(monkeypatch):
+    import narration_api
+
+    class FakeProcess:
+        pid = 4321
+
+        def __init__(self):
+            self.alive = True
+            self.killed = False
+            self.waited = False
+
+        def poll(self):
+            return None if self.alive else 0
+
+        def kill(self):
+            self.killed = True
+            self.alive = False
+
+        def wait(self, timeout=None):
+            self.waited = True
+            return 0
+
+    process = FakeProcess()
+    calls = []
+
+    def fake_run(command, **kwargs):
+        calls.append((command, kwargs))
+        process.alive = False
+        return SimpleNamespace(returncode=0)
+
+    monkeypatch.setattr(narration_api.os, "name", "nt")
+    monkeypatch.setattr(narration_api.subprocess, "run", fake_run)
+    narration_api._terminate_process_tree(process)
+
+    assert calls
+    assert calls[0][0] == ["taskkill", "/PID", "4321", "/T", "/F"]
+    assert calls[0][1]["timeout"] == 15
+    assert process.waited
+    assert not process.killed
+
+
+def test_installer_termination_falls_back_to_killing_parent(monkeypatch):
+    import narration_api
+
+    class FakeProcess:
+        pid = 9876
+
+        def __init__(self):
+            self.alive = True
+            self.killed = False
+            self.waited = False
+
+        def poll(self):
+            return None if self.alive else 0
+
+        def kill(self):
+            self.killed = True
+            self.alive = False
+
+        def wait(self, timeout=None):
+            self.waited = True
+            return 0
+
+    process = FakeProcess()
+    monkeypatch.setattr(narration_api.os, "name", "nt")
+
+    def failed_taskkill(*args, **kwargs):
+        raise OSError("taskkill indisponível")
+
+    monkeypatch.setattr(narration_api.subprocess, "run", failed_taskkill)
+    narration_api._terminate_process_tree(process)
+
+    assert process.killed
+    assert process.waited
