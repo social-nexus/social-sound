@@ -76,6 +76,16 @@ def test_optional_voice_engines_have_safe_uninstall_controls():
 def test_narration_workspace_also_exposes_optional_engine_uninstall():
     source = (ROOT / "server" / "narracoes" / "app.js").read_text(encoding="utf-8")
     assert "data-uninstall-engine=\"'+esc(e.id)+'\"" in source
+    assert '"voxcpm2"].includes(e.id)' in source
     assert 'async function uninstallEngine(id)' in source
     assert 'API+"/engines/"+id' in source
     assert 'delete_shared_cache:deleteShared' in source
+
+
+def test_voxcpm2_weight_cleanup_is_available_in_both_voice_workspaces():
+    motor = (ROOT / "server" / "motores" / "index.html").read_text(encoding="utf-8")
+    narration = (ROOT / "server" / "narracoes" / "app.js").read_text(encoding="utf-8")
+    assert 'Liberar pesos baixados' in motor
+    assert 'Liberar pesos baixados' in narration
+    assert 'O motor continuará integrado' in narration
+    assert 'O motor continuará integrado' not in motor or 'Descarregar o VoxCPM2' in motor
