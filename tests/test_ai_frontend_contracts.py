@@ -89,4 +89,4 @@ def test_narration_queue_static_ui_localizes_to_english():
     assert 'get("lang")==="en"' in source
     assert "function applyStaticEnglish()" in source
     assert '"Divisão Inteligente de Narrações":"Smart Narration Splitter"' in source
-    assert "applyStaticEnglish();" in source
+    assert "applyStaticEnglish();" in source\n    assert 'T("Fila ativa")' in source\n    assert 'T("Pausar após a atual")' in source\n    assert 'T("Adicionada à fila.")' in source
