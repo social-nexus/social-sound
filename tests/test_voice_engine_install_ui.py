@@ -64,6 +64,8 @@ def test_optional_voice_engines_have_safe_uninstall_controls():
     assert 'inference_guard.acquire(blocking=False)' in api
     assert 'job.get("status") in {"queued", "processing"}' in api
     assert 'delete_shared_cache' in api
+    assert 'engine_uninstalling_guard' in api
+    assert 'engine_uninstalling.add(engine_id)' in api
     assert 'models--k2-fsa--OmniVoice' in api
     assert 'models--Cataldir--F5-TTS-pt-br' in api
     assert "data-engine=\"'+esc(e.id)+'\">Desinstalar e excluir" in page
