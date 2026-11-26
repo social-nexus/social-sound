@@ -472,11 +472,23 @@ def _stop_runtime():
             ACTIVE_MODEL = None
             ACTIVE_VARIANT = None
         if proc and proc.poll() is None:
-            proc.terminate()
+            try:
+                proc.terminate()
+            except OSError:
+                # The process may have exited between poll() and terminate().
+                pass
             try:
                 proc.wait(timeout=8)
             except subprocess.TimeoutExpired:
-                proc.kill()
+                try:
+                    proc.kill()
+                except OSError:
+                    pass
+                try:
+                    proc.wait(timeout=5)
+                except (subprocess.TimeoutExpired, OSError):
+                    # Shutdown is best-effort; state is already cleared above.
+                    pass
         return True
     
 
