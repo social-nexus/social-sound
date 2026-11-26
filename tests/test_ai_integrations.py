@@ -860,3 +860,14 @@ def test_local_ai_job_status_endpoint_checks_local_host(monkeypatch):
     with pytest.raises(HTTPException) as exc:
         ia_local.ai_job(job_id, local_request(method="GET", host="evil.example"))
     assert exc.value.status_code == 403
+
+
+def test_local_ai_status_and_catalog_require_local_host():
+    from fastapi import HTTPException
+
+    assert "runtime_installed" in ia_local.ai_status(local_request(method="GET"))
+    assert "models" in ia_local.ai_catalog(local_request(method="GET"))
+    for endpoint in (ia_local.ai_status, ia_local.ai_catalog):
+        with pytest.raises(HTTPException) as exc:
+            endpoint(local_request(method="GET", host="untrusted.example"))
+        assert exc.value.status_code == 403
