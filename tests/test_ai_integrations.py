@@ -473,7 +473,7 @@ def test_runtime_uninstall_refuses_while_generation_is_active(monkeypatch, tmp_p
 def test_local_ai_ui_offers_runtime_uninstall_with_confirmation():
     source = (Path(__file__).resolve().parents[1] / "server" / "ai_web" / "app.js").read_text(encoding="utf-8")
     assert "async function uninstallRuntime(runtime)" in source
-    assert "Desinstalar o runtime" in source
+    assert 'T("Desinstalar runtime ")' in source
     assert "Desinstalar runtime e excluir arquivos" in source
     for path in ("ia-roteiros/index.html", "ia-prompts/index.html"):
         page = (Path(__file__).resolve().parents[1] / "server" / path).read_text(encoding="utf-8")
