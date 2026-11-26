@@ -165,7 +165,10 @@ def criar_router(ctx):
 
     @router.post("/api/dialogo/detectar")
     def rota_detectar(dados: dict):
-        return {"personagens": detectar_personagens(str(dados.get("texto", "")))}
+        texto = str(dados.get("texto", ""))
+        if len(texto) > 200000:
+            raise HTTPException(413, "O roteiro excede o limite de 200.000 caracteres.")
+        return {"personagens": detectar_personagens(texto)}
 
     @router.post("/api/dialogo/gerar")
     def rota_gerar(dados: dict):
@@ -173,6 +176,10 @@ def criar_router(ctx):
         narr = dados.get("narrador") or {}
         if not texto.strip():
             raise HTTPException(400, "Escreva o roteiro.")
+        if len(texto) > 200000:
+            raise HTTPException(413, "O roteiro excede o limite de 200.000 caracteres.")
+        if len(texto.splitlines()) > 2000:
+            raise HTTPException(413, "O roteiro excede o limite de 2.000 linhas.")
         if not narr.get("voz"):
             raise HTTPException(400, "Escolha a voz do narrador (linhas sem nome).")
         narrador = {"voz": str(narr["voz"]), "estilo": str(narr.get("estilo", "")).strip()}
@@ -180,6 +187,8 @@ def criar_router(ctx):
         for p in dados.get("personagens", []):
             if p.get("nome") and p.get("voz"):
                 personagens[chave(str(p["nome"]))] = {"voz": str(p["voz"]), "estilo": str(p.get("estilo", "")).strip()}
+        if len(personagens) > 100:
+            raise HTTPException(413, "O diálogo excede o limite de 100 personagens configurados.")
         for cfg in [narrador, *personagens.values()]:  # confere as vozes antes de começar
             tipo, _, nome = cfg["voz"].partition(":")
             if tipo == "mine" and not ctx["find_mine"](nome):
@@ -191,10 +200,16 @@ def criar_router(ctx):
         falas = parse_roteiro(texto, set(personagens))
         if not falas:
             raise HTTPException(400, "Não encontrei nenhuma fala.")
+        try:
+            pausa_falas = float(dados.get("pausa_falas", 0.5))
+            para_pause = float(dados.get("para_pause", 0.8))
+            max_chars = int(dados.get("srt_chars", 42))
+        except (TypeError, ValueError):
+            raise HTTPException(400, "As opções de pausa e legenda precisam ser números válidos.")
         opts = {
-            "pausa_falas": max(0.0, min(float(dados.get("pausa_falas", 0.5)), 5.0)),
-            "para_pause": max(0.0, min(float(dados.get("para_pause", 0.8)), 5.0)),
-            "max_chars": max(15, min(int(dados.get("srt_chars", 42)), 120)),
+            "pausa_falas": max(0.0, min(pausa_falas, 5.0)),
+            "para_pause": max(0.0, min(para_pause, 5.0)),
+            "max_chars": max(15, min(max_chars, 120)),
             "nome_na_legenda": bool(dados.get("nome_na_legenda", True)),
         }
         limpar_jobs()
