@@ -61,8 +61,6 @@ def test_ai_workspace_supports_english_static_and_dynamic_ui():
     assert 'applyAIEnglish();' in source
     assert 'T("Baixar modelo")' in source
     assert 'T("Desinstalar e excluir")' in source
-    assert "esc(T(e.notes))" in source
-    assert "non-commercial" in source
     assert 'T("Gerando…")' in source
     assert 'T("Geração concluída usando ")' in source
     assert 'T("Texto copiado para a área de transferência.")' in source
@@ -98,6 +96,8 @@ def test_narration_queue_static_ui_localizes_to_english():
     assert 'T("Motores com uso comercial permitido")' in source
     assert 'T("Liberar pesos baixados")' in source
     assert 'T("Desinstalar e excluir")' in source
+    assert "esc(T(e.notes))" in source
+    assert "non-commercial" in source
 
 
 def test_narration_queue_standalone_language_selector_is_not_duplicated_in_shell():
