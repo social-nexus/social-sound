@@ -728,12 +728,12 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
                 removed_bytes += _safe_remove_directory(runtime_root, venv_root)
             if engine_id == "supertonic3":
                 cache = supertonic_cache()
-                expected_suffix = Path("Narradores") / "Supertonic3"
-                if cache.exists() and cache.resolve().parts[-2:] == expected_suffix.parts:
-                    models_root = cache.resolve().parents[1]
+                managed_cache = (data_dir / "models" / "Narradores" / "Supertonic3").resolve()
+                if cache.exists() and cache.resolve() == managed_cache:
+                    models_root = (data_dir / "models").resolve()
                     removed_bytes += _safe_remove_directory(cache, models_root)
                 elif cache.exists():
-                    preserved.append("cache Supertonic configurado fora da pasta gerenciada; preservado por segurança")
+                    preserved.append("cache Supertonic personalizado; preservado por segurança")
             else:
                 hf_cache = Path(os.environ.get(
                     "HF_HUB_CACHE",
