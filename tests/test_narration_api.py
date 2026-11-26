@@ -882,10 +882,14 @@ def test_process_tree_terminates_posix_group_even_when_parent_exited(monkeypatch
             return 0
 
     import signal
+    # Windows Python does not expose SIGKILL; simulate the POSIX constant so
+    # the platform-independent group-kill branch can still be unit-tested.
+    kill_signal = getattr(signal, "SIGKILL", signal.SIGTERM)
+    monkeypatch.setattr(signal, "SIGKILL", kill_signal, raising=False)
     fake_os = SimpleNamespace(
         name="posix",
         killpg=lambda pgid, sig: calls.append((pgid, sig)),
     )
     monkeypatch.setattr(narration_api, "os", fake_os)
     narration_api._terminate_process_tree(ExitedProcess())
-    assert calls == [(123456, signal.SIGKILL)]
+    assert calls == [(123456, kill_signal)]
