@@ -93,5 +93,5 @@ def test_main_narration_page_supports_english_ui():
     assert 'get("lang") === "en"' in source
     assert 'T("Narração e clonagem de voz")' in source
     assert 'T("Clonar minha voz")' in source
-    assert 'T("GERAR ÁUDIO")' in source
+    assert "T('GERAR ÁUDIO')" in source
     assert 'T("Gerar legenda SRT junto com o áudio")' in source
