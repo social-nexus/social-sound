@@ -72,7 +72,7 @@ function addAILanguageSelector(){
  select.value=UI_LANG;select.addEventListener("change",()=>{const url=new URL(location.href);if(select.value==="en")url.searchParams.set("lang","en");else url.searchParams.delete("lang");location.href=url.toString();});
  box.append(label,select);header.appendChild(box);
 }
-addAILanguageSelector();
+if(window.self===window.top)addAILanguageSelector();
 applyAIEnglish();
 
 let cfg=null,catalog=null,aiStatus=null,selectedProvider="local",modelChoices=[],pollTimer=null;
