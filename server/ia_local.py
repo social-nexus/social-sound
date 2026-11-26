@@ -587,13 +587,15 @@ def uninstall_runtime(variant: str, request: Request):
             targets = [RUNTIME_DIR / variant]
             targets.extend(RUNTIME_DIR.glob(variant + ".staging-*"))
             targets.extend(RUNTIME_DIR.glob(variant + ".backup-*"))
-            removed_bytes = 0
+            # Validate every path before deleting any file to avoid partial removal.
             for target in targets:
                 if target.is_symlink():
                     raise HTTPException(400, "Um caminho de runtime é link simbólico e foi preservado por segurança.")
                 resolved = target.resolve()
                 if resolved == root or root not in resolved.parents:
                     raise HTTPException(400, "O caminho de runtime está fora da pasta permitida.")
+            removed_bytes = 0
+            for target in targets:
                 if not target.exists():
                     continue
                 removed_bytes += sum(
