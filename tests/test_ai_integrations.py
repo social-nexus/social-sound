@@ -138,6 +138,7 @@ def test_tts_engine_catalog_separates_commercial_and_noncommercial_weights():
     assert by_id["supertonic3"]["weights_license"] == "OpenRAIL-M"
     assert by_id["omnivoice"]["commercial_use"] is False
     assert by_id["omnivoice"]["weights_license"] == "CC-BY-NC"
+    assert by_id["omnivoice"]["tokenizer_url"] == "https://huggingface.co/bosonai/higgs-audio-v2-tokenizer"
     assert by_id["f5tts"]["commercial_use"] is False
     assert by_id["f5tts"]["weights_license"] == "CC-BY-NC-4.0"
     assert by_id["voxcpm2"]["installed"] is True
