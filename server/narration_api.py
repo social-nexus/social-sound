@@ -20,6 +20,33 @@ from pydantic import BaseModel, Field
 from narration_queue import NarrationQueue, split_for_duration
 
 
+def _terminate_process_tree(process):
+    """Stop an installer and its descendants; batch files may spawn pip/Python children."""
+    if process is None or process.poll() is not None:
+        return
+    if os.name == "nt":
+        try:
+            subprocess.run(
+                ["taskkill", "/PID", str(process.pid), "/T", "/F"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                check=False,
+                timeout=15,
+                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+            )
+        except Exception:
+            pass
+    if process.poll() is None:
+        try:
+            process.kill()
+        except Exception:
+            pass
+    try:
+        process.wait(timeout=10)
+    except Exception:
+        pass
+
+
 class EnqueueRequest(BaseModel):
     text: str = Field(min_length=1, max_length=200000)
     voice: str = Field(default="preset:narrador-grave", min_length=1, max_length=180)
@@ -494,8 +521,7 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
             reader_finished = False
             while process.poll() is None or not output_queue.empty() or not reader_finished:
                 if time.monotonic() > deadline:
-                    process.kill()
-                    process.wait(timeout=10)
+                    _terminate_process_tree(process)
                     raise RuntimeError("Instalação excedeu o limite de 4 horas e foi interrompida.")
                 try:
                     line = output_queue.get(timeout=0.2)
@@ -521,12 +547,7 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
             with engine_install_state_guard:
                 engine_install_state.update(status="error", message=str(exc)[:1500], log_tail="\\n".join(output_tail[-40:]), finished_at=time.time())
         finally:
-            if process is not None and process.poll() is None:
-                try:
-                    process.kill()
-                    process.wait(timeout=10)
-                except Exception:
-                    pass
+            _terminate_process_tree(process)
             engine_install_lock.release()
 
     @router.post("/engines/{engine_id}/install")
