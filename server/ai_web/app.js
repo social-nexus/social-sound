@@ -62,6 +62,16 @@ let node;while((node=walker.nextNode())){const key=node.nodeValue.trim();if(AI_E
 document.querySelectorAll("option").forEach(o=>{const key=o.textContent.trim();if(AI_EN[key])o.textContent=AI_EN[key];});
 document.querySelectorAll("[placeholder]").forEach(el=>{const key=el.placeholder.trim();if(AI_EN[key])el.placeholder=AI_EN[key];});
 }
+function addAILanguageSelector(){
+ const header=document.querySelector("header");if(!header||header.querySelector("#ai-ui-language"))return;
+ const box=document.createElement("div");box.style.cssText="display:flex;justify-content:flex-end;align-items:center;gap:8px;margin:8px 0";
+ const label=document.createElement("label");label.htmlFor="ai-ui-language";label.textContent=UI_LANG==="en"?"Language":"Idioma";
+ const select=document.createElement("select");select.id="ai-ui-language";select.style.cssText="background:#101827;color:inherit;border:1px solid #354156;border-radius:8px;padding:6px 10px";
+ for(const [value,text] of [["pt-BR","Português"],["en","English"]]){const o=document.createElement("option");o.value=value;o.textContent=text;select.appendChild(o);}
+ select.value=UI_LANG;select.addEventListener("change",()=>{const url=new URL(location.href);if(select.value==="en")url.searchParams.set("lang","en");else url.searchParams.delete("lang");location.href=url.toString();});
+ box.append(label,select);header.appendChild(box);
+}
+addAILanguageSelector();
 applyAIEnglish();
 
 let cfg=null,catalog=null,aiStatus=null,selectedProvider="local",modelChoices=[],pollTimer=null;
