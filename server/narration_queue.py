@@ -136,6 +136,8 @@ class NarrationQueue:
             raise ValueError("A non-empty narration and at least one part are required")
         job_id = str(uuid.uuid4())
         with self._connect() as db:
+            # Serialize order allocation with concurrent submissions/requeues.
+            db.execute("BEGIN IMMEDIATE")
             next_order = db.execute(
                 "SELECT COALESCE(MAX(queue_order), -1) + 1 FROM narration_jobs"
             ).fetchone()[0]
@@ -148,6 +150,7 @@ class NarrationQueue:
                  json.dumps([{"text": p, "status": "pending", "audio_path": None}
                              for p in parts], ensure_ascii=False), next_order)
             )
+            db.commit()
         return self.get(job_id)
 
     def get(self, job_id: str) -> dict | None:
@@ -236,6 +239,7 @@ class NarrationQueue:
 
     def requeue(self, job_id: str) -> dict:
         with self._connect() as db:
+            db.execute("BEGIN IMMEDIATE")
             next_order = db.execute(
                 "SELECT COALESCE(MAX(queue_order), -1) + 1 FROM narration_jobs"
             ).fetchone()[0]
@@ -245,7 +249,9 @@ class NarrationQueue:
                 (next_order, job_id)
             )
             if not cur.rowcount:
+                db.rollback()
                 raise ValueError("Only interrupted or failed jobs can be requeued")
+            db.commit()
         return self.get(job_id)
 
     def remove_queued(self, job_id: str) -> bool:
