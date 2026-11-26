@@ -536,3 +536,31 @@ def test_gguf_import_is_staged_and_published_after_validation():
     assert 'temporary.replace(target)' in import_block
     assert 'check.read(4) != b"GGUF"' in import_block
     assert 'shutil.rmtree(folder, ignore_errors=True)' in import_block
+
+
+def test_corrupted_existing_local_model_is_repaired_and_metadata_published_atomically(monkeypatch, tmp_path):
+    import hashlib
+    import json
+
+    model_id = "qwen3-4b-q4km"
+    payload = b"valid-model-fixture"
+    digest = hashlib.sha256(payload).hexdigest()
+    monkeypatch.setattr(ia_local, "MODELS_DIR", tmp_path)
+    target_dir = tmp_path / model_id
+    target_dir.mkdir()
+    target = target_dir / ia_local.MODEL_CATALOG[model_id]["filename"]
+    target.write_bytes(b"corrupted-old-model")
+    monkeypatch.setattr(ia_local, "_hf_file_digest", lambda repo, filename: (digest, len(payload)))
+
+    def fake_download(url, destination, size, job_id):
+        destination.write_bytes(payload)
+
+    monkeypatch.setattr(ia_local, "_download", fake_download)
+    jid = ia_local._job("model")
+    ia_local._download_model_worker(jid, model_id)
+
+    assert ia_local.JOBS[jid]["status"] == "done"
+    assert target.read_bytes() == payload
+    metadata = json.loads((target_dir / "model.json").read_text(encoding="utf-8"))
+    assert metadata["sha256"] == digest
+    assert not list(target_dir.glob(".model.json.*.tmp"))
