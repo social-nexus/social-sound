@@ -296,7 +296,7 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
             if not snapshot_root.is_dir():
                 return False
             return any(
-                snapshot.is_dir() and all((snapshot / name).is_file() for name in required)
+                snapshot.is_dir() and all((snapshot / name).is_file() and (snapshot / name).stat().st_size > 0 for name in required)
                 for snapshot in snapshot_root.iterdir()
             )
 
