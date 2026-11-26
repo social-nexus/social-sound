@@ -13,6 +13,7 @@ def test_optional_engine_install_api_is_allowlisted_and_license_gated():
     assert 'engine_id in {"omnivoice", "f5tts"}' in source
     assert 'if not engine_install_lock.acquire(blocking=False)' in source
     assert 'router.get("/engines/install/{job_id}")' in source
+    assert "import queue" in source  # installer output reader uses queue.Queue()
 
 
 def test_engine_catalog_ui_calls_install_api_and_requires_acknowledgments():
