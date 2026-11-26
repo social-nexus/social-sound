@@ -3,6 +3,59 @@ const $=id=>document.getElementById(id);
 const api="/api/ai",providersApi="/api/ai/providers";
 const workspace=document.body.dataset.workspace;
 const providerNames={local:"IA local (llama.cpp)",openai:"OpenAI",anthropic:"Anthropic Claude",gemini:"Google Gemini",openrouter:"OpenRouter",deepseek:"DeepSeek",groq:"Groq",mistral:"Mistral AI"};
+const UI_LANG=new URLSearchParams(location.search).get("lang")==="en"?"en":"pt-BR";
+const AI_EN={
+"IA — Roteiros e Narração":"AI — Scripts & Narration","Crie, revise, adapte e prepare textos para narrar.":"Create, revise, adapt and prepare scripts for narration.",
+"Preparação do roteiro":"Script preparation","Tema ou título (opcional)":"Topic or title (optional)","Tema principal do vídeo":"Main video topic",
+"Formato":"Format","Shorts / Reels / TikTok":"Shorts / Reels / TikTok","Vídeo longo":"Long video","Formato livre":"Flexible format",
+"Duração":"Duration","60–70 segundos":"60–70 seconds","30 segundos":"30 seconds","90 segundos":"90 seconds","3 minutos":"3 minutes","5 minutos":"5 minutes","10 minutos":"10 minutes","15 minutos":"15 minutes",
+"Tom e estilo":"Tone and style","Natural, humano e envolvente":"Natural, human and engaging","Comédia":"Comedy","Documentário sério":"Serious documentary","Emocionante e reflexivo":"Emotional and reflective","Educativo e didático":"Educational and instructional","Suspense":"Suspense","Marketing e vendas":"Marketing and sales","Personalizado":"Custom",
+"Público":"Audience","Texto base, ideia ou informações que devem ser mantidas":"Base text, idea or information to retain","Cole o texto, rascunho, tópicos ou contexto do roteiro.":"Paste the text, draft, bullet points or script context.","Instruções extras":"Extra instructions",
+"Gerar com IA":"Generate with AI","Resultado do roteiro":"Script result","O roteiro gerado aparecerá aqui. Você pode editar antes de enviar para narração.":"The generated script will appear here. You can edit it before sending to narration.",
+"Copiar":"Copy","Salvar TXT":"Save TXT","Enviar para Narração":"Send to Narration",
+"Provedor de IA":"AI Provider","IA selecionada":"Selected AI","Modelo API":"API model","Digite ou escolha o identificador do modelo":"Type or select the model ID",
+"Chave API (se for cadastrar ou atualizar)":"API key (when adding or updating)","Cole sua chave API":"Paste your API key",
+"Salvar chave segura":"Save secure key","Testar conexão":"Test connection","Remover chave salva":"Remove saved key","Salvar provedor/modelo":"Save provider/model",
+"Chaves API ficam no cofre de credenciais do sistema operacional, não no arquivo de configuração.":"API keys are stored in the operating system credential vault, not in the configuration file.",
+"IA local — Modelos e Runtime":"Local AI — Models & Runtime","Consultando estado do gerenciador local…":"Checking local manager status…",
+"Runtime compatível com seu sistema":"Runtime compatible with your system","Instalar llama.cpp":"Install llama.cpp","Atualizar estado":"Refresh status",
+"Camadas de modelo na GPU (0 = CPU)":"GPU model layers (0 = CPU)","Se a GPU tiver pouca VRAM, comece com 0 (CPU) e aumente gradualmente. O modelo Qwen 4B quantizado é uma opção relativamente compacta.":"If your GPU has limited VRAM, start at 0 (CPU) and increase gradually. Quantized Qwen 4B is a relatively compact option.",
+"Importar modelo GGUF (opcional)":"Import GGUF model (optional)","Importar GGUF":"Import GGUF","Catálogo e modelos instalados":"Catalog and installed models",
+"Ex.: público geral, crianças, fãs de histórias…":"e.g. general audience, children, story fans…","Ex.: curiosidades sobre o espaço, história bíblica, humor cotidiano…":"e.g. space facts, biblical history, everyday comedy…",
+"Modelo importado":"Imported model","Licença: ":"License: ","Espaço ocupado: ":"Space used: ","Peso estimado do arquivo: ":"Estimated file size: ","Espaço livre recomendado: ":"Recommended free space: ","não estimado":"not estimated",
+"Li e aceito os termos de licença":"I have read and accept the license terms","Abrir licença":"Open license","Baixar modelo":"Download model","Modelo ativo":"Model active","Ativar modelo":"Activate model","Desinstalar e excluir":"Uninstall and delete",
+"Gerando…":"Generating…","Enviando pedido para ":"Sending request to ","Geração concluída usando ":"Generation completed using ","Informe um tema ou cole um texto base antes de gerar.":"Enter a topic or paste base text before generating.",
+"Cole um roteiro, ideia ou descrição de cena antes de gerar.":"Paste a script, idea or scene description before generating.","Selecione ou digite o modelo API.":"Select or enter the API model.",
+"Modelos locais disponíveis após baixar e ativar um modelo GGUF.":"Local models are available after downloading and activating a GGUF model.",
+"Uma chave já está salva no cofre seguro. Para substituir, digite uma nova chave.":"A key is already saved in the secure vault. Enter a new key to replace it.",
+"A chave será salva no cofre de credenciais do sistema, não em arquivo.":"The key will be saved in the system credential vault, not in a file.",
+"Sugestões: ":"Suggestions: "," (também pode digitar outro modelo suportado).":" (you can also type another supported model).",
+"Ative um modelo local antes de testar.":"Activate a local model before testing.","Teste local: ":"Local test: ","Teste concluído: ":"Test completed: ",
+"Uma chave já está salva":"A key is already saved","Chave removida do cofre seguro. Nenhuma conta ou dado do provedor foi excluído.":"Key removed from the secure vault. No provider account or data was deleted.",
+"Runtime ativo · modelo ":"Runtime active · model "," · variante ":" · variant ","Runtime instalado, não está ativo.":"Runtime installed but inactive.","Runtime llama.cpp ainda não instalado.":"llama.cpp runtime is not installed yet.",
+"Runtime ativo — será desligado ao desinstalar.":"Runtime active — will be stopped during uninstall.","Runtime instalado.":"Runtime installed.",
+"Desinstalar runtime e excluir arquivos":"Uninstall runtime and delete files","Nenhum runtime compatível encontrado":"No compatible runtime found",
+"Nenhum modelo no catálogo. Verifique a conexão com o gerenciador de IA.":"No models in catalog. Check the connection to the AI manager.",
+"Importar modelo GGUF":"Import GGUF model","Modelo importado: ":"Model imported: ","Importando modelo GGUF…":"Importing GGUF model…",
+"Escolha um arquivo .gguf para importar.":"Choose a .gguf file to import.","Importar este arquivo GGUF? A licença do modelo não será verificada automaticamente.":"Import this GGUF file? The model license will not be checked automatically.",
+"Desinstalar runtime ":"Uninstall runtime "," e excluir seus arquivos baixados?":" and delete its downloaded files?"," O runtime ativo será desligado antes da remoção.":" The active runtime will be stopped before removal.",
+"Runtime removido. Espaço liberado: ":"Runtime removed. Space freed: "," GB.":" GB.",
+"Desinstalar e excluir ":"Uninstall and delete ","? Os pesos deste modelo serão removidos. Se ele estiver ativo, será desligado antes da exclusão. Se houver uma geração em andamento, a exclusão será bloqueada e você precisará tentar novamente quando terminar. O llama.cpp instalado, os outros modelos, seus roteiros e projetos serão preservados.":"? The model weights will be removed. If active, it will be stopped first. Deletion is blocked during generation. Installed llama.cpp, other models, scripts and projects will be preserved.",
+"Modelo ":"Model "," removido. Espaço liberado: ":" removed. Space freed: "," O llama.cpp instalado e os demais modelos foram preservados.":" Installed llama.cpp and other models were preserved.",
+"Não consegui consultar o gerenciador de IA: ":"Could not query the AI manager: ","A tarefa começou. Aguarde…":"Task started. Please wait…","A tarefa falhou.":"The task failed.",
+"Gerar com IA":"Generate with AI","Gerar diálogo":"Generate dialogue","Gerar roteiro":"Generate script"
+};
+const T=value=>UI_LANG==="en"?(AI_EN[value]||value):value;
+function applyAIEnglish(){
+if(UI_LANG!=="en")return;
+document.documentElement.lang="en";
+const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
+let node;while((node=walker.nextNode())){const key=node.nodeValue.trim();if(AI_EN[key])node.nodeValue=node.nodeValue.replace(key,AI_EN[key]);}
+document.querySelectorAll("option").forEach(o=>{const key=o.textContent.trim();if(AI_EN[key])o.textContent=AI_EN[key];});
+document.querySelectorAll("[placeholder]").forEach(el=>{const key=el.placeholder.trim();if(AI_EN[key])el.placeholder=AI_EN[key];});
+}
+applyAIEnglish();
+
 let cfg=null,catalog=null,aiStatus=null,selectedProvider="local",modelChoices=[],pollTimer=null;
 const msg=(id,text,type="")=>{const el=$(id);if(!el)return;el.className="status "+type;el.textContent=text;};
 async function apiFetch(url,opts={}){const res=await fetch(url,opts);let data={};try{data=await res.json()}catch{}if(!res.ok)throw new Error(data.detail||data.message||"Falha na solicitação.");return data;}
