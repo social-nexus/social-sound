@@ -387,10 +387,16 @@ def _download_model_worker(jid: str, model_id: str):
             target_dir.mkdir(parents=True, exist_ok=True)
             target = target_dir / meta["filename"]
             if target.is_file() and target.stat().st_size == size and _sha256(target).lower() == digest.lower():
-                (target_dir / "model.json").write_text(json.dumps({
-                    "model_id": model_id, "repo": meta["repo"], "filename": meta["filename"],
-                    "sha256": digest, "license": meta["license"], "installed_at": int(time.time())
-                }, indent=2), encoding="utf-8")
+                metadata_path = target_dir / "model.json"
+                metadata_temp = target_dir / (".model.json." + uuid.uuid4().hex + ".tmp")
+                try:
+                    metadata_temp.write_text(json.dumps({
+                        "model_id": model_id, "repo": meta["repo"], "filename": meta["filename"],
+                        "sha256": digest, "license": meta["license"], "installed_at": int(time.time())
+                    }, indent=2), encoding="utf-8")
+                    metadata_temp.replace(metadata_path)
+                finally:
+                    metadata_temp.unlink(missing_ok=True)
                 _update_job(jid, status="done", progress=100, message="Modelo já instalado e verificado.")
                 return
             url = f"https://huggingface.co/{meta['repo']}/resolve/main/{meta['filename']}"
@@ -399,10 +405,16 @@ def _download_model_worker(jid: str, model_id: str):
             if _sha256(target).lower() != digest.lower():
                 target.unlink(missing_ok=True)
                 raise ValueError("Hash SHA-256 do modelo não confere; arquivo removido.")
-            (target_dir / "model.json").write_text(json.dumps({
-                "model_id": model_id, "repo": meta["repo"], "filename": meta["filename"],
-                "sha256": digest, "license": meta["license"], "installed_at": int(time.time())
-            }, indent=2), encoding="utf-8")
+            metadata_path = target_dir / "model.json"
+            metadata_temp = target_dir / (".model.json." + uuid.uuid4().hex + ".tmp")
+            try:
+                metadata_temp.write_text(json.dumps({
+                    "model_id": model_id, "repo": meta["repo"], "filename": meta["filename"],
+                    "sha256": digest, "license": meta["license"], "installed_at": int(time.time())
+                }, indent=2), encoding="utf-8")
+                metadata_temp.replace(metadata_path)
+            finally:
+                metadata_temp.unlink(missing_ok=True)
             _update_job(jid, status="done", progress=100, message="Modelo baixado e verificado.")
         except Exception as exc:
             _update_job(jid, status="error", message=str(exc)[:350])
@@ -531,8 +543,7 @@ def download_model(payload: dict, request: Request):
         raise HTTPException(400, "Modelo não permitido pelo catálogo.")
     if MODEL_CATALOG[model_id].get("requires_license_acceptance") and payload.get("accept_license") is not True:
         raise HTTPException(400, "Leia e aceite os termos de uso do modelo antes de baixar.")
-    if _model_file(model_id).is_file():
-        return {"installed": True}
+    # Existing files are verified by the worker; corrupted models are repaired.
     jid = _job("model")
     threading.Thread(target=_download_model_worker, args=(jid, model_id), daemon=True).start()
     return {"job_id": jid}
