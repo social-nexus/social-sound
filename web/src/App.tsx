@@ -75,6 +75,9 @@ const App = () => {
   const [regenId, setRegenId] = useState(null);
   const refInputRef = useRef(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generationSeconds, setGenerationSeconds] = useState(0);
+  useEffect(() => { if (!isGenerating) return; setGenerationSeconds(0); const started = Date.now(); const timer = setInterval(() => setGenerationSeconds(Math.floor((Date.now()-started)/1000)), 1000); return () => clearInterval(timer); }, [isGenerating]);
+  const generationClock = String(Math.floor(generationSeconds/60)).padStart(2,"0") + ":" + String(generationSeconds%60).padStart(2,"0");
   const [audioUrl, setAudioUrl] = useState(null);
   const [error, setError] = useState(null);
   const [currentTone, setCurrentTone] = useState(TONES[0]);
@@ -663,7 +666,7 @@ const App = () => {
                   <Loader2 className="animate-spin" size={20} />
                 ) : (enableSplit && text.length > charLimit) ? <Files size={20} /> : <Play size={20} fill="currentColor" />}
                 
-                {(enableSplit && text.length > charLimit) ? 'ENVIAR PARA FILA (DIVIDIDO)' : 'GERAR ÁUDIO'}
+                {(enableSplit && text.length > charLimit) ? 'ENVIAR PARA FILA (DIVIDIDO)' : 'GERAR ÁUDIO'} {isGenerating && <span className="font-mono text-xs opacity-90">⏱ {generationClock}</span>}
               </button>
             </div>
           </div>
