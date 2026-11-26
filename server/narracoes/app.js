@@ -35,19 +35,19 @@ function refreshVoiceOptions(){
  if(engine==="supertonic3"){
   opts=["M1","M2","M3","M4","M5","F1","F2","F3","F4","F5"].map(v=>({id:"supertonic:"+v,label:v+" — "+T("Voz predefinida")}));
   $("styleField").style.display="none";$("omnivoiceFields").style.display="none";
-  $("stylehint").textContent="Supertonic 3 usa 10 vozes predefinidas. Clonagem de áudio não está disponível.";
+  $("stylehint").textContent=T("Supertonic 3 usa 10 vozes predefinidas. Clonagem de áudio não está disponível.");
  }else if(engine==="omnivoice"){
   opts=[{id:"omnivoice:auto",label:T("Voz automática")},{id:"omnivoice:clone",label:T("Clonar voz com áudio de referência")},{id:"omnivoice:design",label:T("Criar voz por descrição")}];
   $("omnivoiceFields").style.display="block";$("styleField").style.display="none";
-  $("stylehint").textContent="OmniVoice é somente para uso não comercial. Use apenas sua voz ou uma voz com autorização.";
+  $("stylehint").textContent=T("OmniVoice é somente para uso não comercial. Use apenas sua voz ou uma voz com autorização.");
  }else if(engine==="f5tts"){
-  opts=[{id:"f5tts:clone",label:"Clonar voz com áudio de referência"}];
+  opts=[{id:"f5tts:clone",label:T("Clonar voz com áudio de referência")}];
   $("omnivoiceFields").style.display="block";$("styleField").style.display="none";
-  $("stylehint").textContent="F5-TTS PT-BR é um modelo comunitário experimental e somente para uso não comercial. Use uma voz autorizada.";
+  $("stylehint").textContent=T("F5-TTS PT-BR é um modelo comunitário experimental e somente para uso não comercial. Use uma voz autorizada.");
  }else{
   if(voicesData){voicesData.mine.forEach(v=>opts.push({id:"mine:"+v.name,label:v.name+" — "+T("Minha voz")}));voicesData.presets.forEach(v=>opts.push({id:"preset:"+v.id,label:v.label+" — "+T("Padrão")}))}
   $("styleField").style.display="block";$("omnivoiceFields").style.display="none";
-  $("stylehint").textContent="O VoxCPM2 aceita vozes salvas e vozes predefinidas.";
+  $("stylehint").textContent=T("O VoxCPM2 aceita vozes salvas e vozes predefinidas.");
  }
  $("voice").innerHTML=opts.map(v=>'<option value="'+esc(v.id)+'">'+esc(v.label)+'</option>').join("")||'<option value="">'+T("Nenhuma voz encontrada")+'</option>';
  if(engine==="omnivoice"||engine==="f5tts")refreshOmniMode();
