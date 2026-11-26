@@ -139,3 +139,41 @@ def test_queue_migrates_existing_database_without_losing_jobs(tmp_path):
     assert [item["id"] for item in jobs] == ["legacy-a", "legacy-b"]
     assert [item["queue_order"] for item in jobs] == [0, 1]
     assert queue.claim_next()["id"] == "legacy-a"
+
+
+
+def test_concurrent_enqueue_allocates_queue_order_without_collisions(tmp_path):
+    import threading
+
+    path = tmp_path / "concurrent-queue.sqlite3"
+    count = 12
+    barrier = threading.Barrier(count)
+    created = []
+    errors = []
+    guard = threading.Lock()
+
+    def submit(index):
+        try:
+            queue = NarrationQueue(path)
+            barrier.wait(timeout=10)
+            job = queue.enqueue(f"Texto {index}", "voz", "voxcpm2", [f"Parte {index}"])
+            with guard:
+                created.append(job)
+        except Exception as exc:
+            with guard:
+                errors.append(exc)
+
+    threads = [threading.Thread(target=submit, args=(index,)) for index in range(count)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join(timeout=20)
+
+    assert not errors
+    assert all(not thread.is_alive() for thread in threads)
+    queue = NarrationQueue(path)
+    jobs = queue.list_jobs()
+    assert len(jobs) == count
+    orders = [job["queue_order"] for job in jobs]
+    assert sorted(orders) == list(range(count))
+    assert len({job["id"] for job in jobs}) == count
