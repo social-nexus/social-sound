@@ -544,7 +544,8 @@ def _start_runtime(model_id: str, variant: str, gpu_layers: int = 0):
     
 
 @router.get("/status")
-def ai_status():
+def ai_status(request: Request):
+    _guard_local_request(request)
     proc = PROCESS
     running = bool(proc and proc.poll() is None)
     return {"runtime_installed": any(_runtime_binary(k) for k in RUNTIME_CATALOG),
@@ -554,7 +555,8 @@ def ai_status():
             "jobs": list(JOBS.values())[-8:]}
 
 @router.get("/catalog")
-def ai_catalog():
+def ai_catalog(request: Request):
+    _guard_local_request(request)
     system, machine = platform.system(), platform.machine().lower()
     runtimes = [{"id": k, "label": v["label"], "backend": v["backend"],
                  "size_bytes": v["size"] + sum(x["size"] for x in v.get("extras", [])), "installed": _runtime_binary(k) is not None,
