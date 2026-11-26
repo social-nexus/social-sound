@@ -153,12 +153,12 @@ class Mark:
         with self._lock:
             self.sess, self.tags, self.erro = None, None, None
 
-    def _previsoes(self, bloco: str, margem: float):
+    def _previsoes(self, bloco: str, margem: float, language: str = "pt"):
         b = bloco.encode("utf-8")
         n = min(len(b), 512)
         ids = np.zeros((1, 512), dtype=np.int64)
         ids[0, :n] = np.frombuffer(b[:n], dtype=np.uint8)
-        lang = np.array([LANG_PT], dtype=np.int64)
+        lang = np.array([MARK_LANGS.index(language) if language in MARK_LANGS else LANG_PT], dtype=np.int64)
         logits = self.sess.run(["logits"], {"input_ids": ids, "lang_ids": lang})[0][0][:n]
         if margem > 0 and logits.shape[1] > 1:
             melhor = 1 + logits[:, 1:].argmax(axis=1)
@@ -183,22 +183,29 @@ class Mark:
 
     @staticmethod
     def _validar(bloco: str, pecas) -> str:
-        """Aceita só mudanças de acento do português, caractere por caractere; o resto fica como estava."""
+        """Accept only a diacritic added to the same ASCII letter; never allow substitutions."""
         saida = []
         for c, o in zip(bloco, pecas):
-            saida.append(o if (ord(c) < 128 and o != c and o in ACENTOS_PT.get(c, "")) else c)
+            if ord(c) < 128 and o != c:
+                decomp = unicodedata.normalize("NFD", o)
+                if decomp and decomp[0] == c and all(unicodedata.category(ch) == "Mn" for ch in decomp[1:]):
+                    saida.append(o)
+                    continue
+            saida.append(c)
         return "".join(saida)
 
-    def _bloco(self, bloco: str, margem: float) -> str:
-        prev, _ = self._previsoes(bloco, margem)
+    def _bloco(self, bloco: str, margem: float, language: str = "pt") -> str:
+        prev, _ = self._previsoes(bloco, margem, language)
         return self._validar(bloco, decodificar_lista(bloco, prev, self.tags))
 
-    def _restaurar(self, texto: str, margem: float) -> str:
-        return "".join(self._bloco(b, margem) for b in dividir_bytes(texto))
+    def _restaurar(self, texto: str, margem: float, language: str = "pt") -> str:
+        return "".join(self._bloco(b, margem, language) for b in dividir_bytes(texto))
 
-    def restaurar(self, texto: str, margem: float = 0.0) -> str:
+    def restaurar(self, texto: str, margem: float = 0.0, language: str = "pt") -> str:
+        if language not in MARK_LANGS:
+            language = "pt"
         with self._lock:
-            return self._restaurar(texto, margem)
+            return self._restaurar(texto, margem, language)
 
 
 MARK = Mark()
@@ -342,12 +349,12 @@ def acentuar_dicionario(texto: str) -> str:
     return "".join(saida)
 
 
-def acentuar(texto: str, motor: str, margem: float):
+def acentuar(texto: str, motor: str, margem: float, idioma_mark: str = "pt"):
     """Devolve (texto_com_acentos, motor_usado, aviso). O tamanho do texto nunca muda."""
     aviso = None
     if motor in ("auto", "mark"):
         if MARK.carregar():
-            novo = MARK.restaurar(texto, margem)
+            novo = MARK.restaurar(texto, margem, idioma_mark)
             if len(novo) == len(texto):
                 return novo, "mark", None
         elif motor == "mark":
@@ -617,11 +624,11 @@ def texto_do_resultado(itens, desfeitos=()):
     return "".join(partes)
 
 
-def humanizar(texto, acentos=True, motor="auto", margem=0.0, numeros=True, virgulas=True, max_palavras=14):
+def humanizar(texto, acentos=True, motor="auto", margem=0.0, numeros=True, virgulas=True, max_palavras=14, idioma_mark="pt"):
     avisos, motor_usado = [], None
     t1 = texto
     if acentos:
-        t1, motor_usado, av = acentuar(texto, motor, margem)
+        t1, motor_usado, av = acentuar(texto, motor, margem, idioma_mark)
         if av:
             avisos.append(av)
     spans = []
@@ -668,11 +675,12 @@ class Pedido(BaseModel):
     numeros: bool = True
     virgulas: bool = True
     max_palavras: int = 14
+    idioma_mark: str = "pt"
 
 
 @router.post("/api/roteiro/humanizar")
 def rota_humanizar(p: Pedido):
-    return humanizar(p.texto, p.acentos, p.motor, max(0.0, min(p.margem, 5.0)), p.numeros, p.virgulas, p.max_palavras)
+    return humanizar(p.texto, p.acentos, p.motor, max(0.0, min(p.margem, 5.0)), p.numeros, p.virgulas, p.max_palavras, p.idioma_mark if p.idioma_mark in MARK_LANGS else "pt")
 
 
 @router.get("/api/roteiro/status")
