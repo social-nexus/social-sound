@@ -14,17 +14,22 @@ echo publicidade, servicos pagos ou outras atividades comerciais.
 echo Modelo PT-BR: https://huggingface.co/Cataldir/F5-TTS-pt-br
 echo Codigo: https://github.com/SWivid/F5-TTS
 echo.
-set "CONFIRM="
-set /p "CONFIRM=Voce leu e aceita a licenca CC-BY-NC-4.0 e usara somente para fins nao comerciais? (S/N): "
-if /i not "%CONFIRM%"=="S" (
-  echo Instalacao cancelada. Nenhuma alteracao foi feita.
-  pause
-  exit /b 0
+if not "%SOCIAL_SOUND_INSTALL_FROM_UI%"=="1" (
+  set "CONFIRM="
+  set /p "CONFIRM=Voce leu e aceita a licenca CC-BY-NC-4.0 e usara somente para fins nao comerciais? (S/N): "
+  if /i not "%CONFIRM%"=="S" (
+    echo Instalacao cancelada. Nenhuma alteracao foi feita.
+    if not "%SOCIAL_SOUND_INSTALL_FROM_UI%"=="1" if not "%SOCIAL_SOUND_INSTALL_FROM_UI%"=="1" pause
+    exit /b 0
+  )
+) else if not "%SOCIAL_SOUND_LICENSE_ACCEPTED%"=="1" (
+  echo ERRO: aceite da licenca nao foi confirmado pela interface.
+  exit /b 1
 )
 
 if defined SOCIAL_NEXUS_MODELS_DIR if not exist "%SOCIAL_NEXUS_MODELS_DIR%" (
   echo ERRO: a biblioteca compartilhada nao esta disponivel: %SOCIAL_NEXUS_MODELS_DIR%
-  pause
+  if not "%SOCIAL_SOUND_INSTALL_FROM_UI%"=="1" if not "%SOCIAL_SOUND_INSTALL_FROM_UI%"=="1" pause
   exit /b 1
 )
 cd /d "%~dp0server"
@@ -64,17 +69,17 @@ if errorlevel 1 goto falha
 echo.
 echo F5-TTS PT-BR instalado. O ambiente VoxCPM2 nao foi alterado.
 echo Reinicie o Social Sound para atualizar o catalogo de motores.
-pause
+if not "%SOCIAL_SOUND_INSTALL_FROM_UI%"=="1" pause
 exit /b 0
 
 :sem_python
 echo Python 3.11 nao encontrado. Instale Python 3.11 e tente novamente.
-pause
+if not "%SOCIAL_SOUND_INSTALL_FROM_UI%"=="1" pause
 exit /b 1
 
 :falha
 echo.
 echo A instalacao do F5-TTS falhou. O VoxCPM2 permanece intacto.
 echo Verifique a mensagem acima e tente executar este arquivo novamente.
-pause
+if not "%SOCIAL_SOUND_INSTALL_FROM_UI%"=="1" pause
 exit /b 1
