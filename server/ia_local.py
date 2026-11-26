@@ -671,16 +671,25 @@ def delete_model(model_id: str, request: Request):
             raise HTTPException(409, "Este modelo está gerando um roteiro agora. Aguarde a geração terminar antes de desinstalar.")
         if model_id == ACTIVE_MODEL:
             _stop_runtime()
+        removed_bytes = 0
         if model_id in MODEL_CATALOG:
             # Wait for an in-flight download before deleting its directory.
             with LOCK:
                 download_lock = MODEL_DOWNLOAD_LOCKS.setdefault(model_id, threading.Lock())
             with download_lock:
                 if resolved_folder.exists():
+                    removed_bytes = sum(
+                        item.stat().st_size for item in resolved_folder.rglob("*")
+                        if item.is_file() and not item.is_symlink()
+                    )
                     shutil.rmtree(resolved_folder)
         elif resolved_folder.exists():
+            removed_bytes = sum(
+                item.stat().st_size for item in resolved_folder.rglob("*")
+                if item.is_file() and not item.is_symlink()
+            )
             shutil.rmtree(resolved_folder)
-        return {"ok": True}
+        return {"ok": True, "removed_bytes": removed_bytes}
 
 @router.post("/generate")
 def _extract_local_completion_text(data: Any) -> str:
