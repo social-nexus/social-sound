@@ -18,10 +18,10 @@ const UI_STR={"en":{
 "Clonar voz com áudio de referência":"Clone voice from reference audio",
 "Criar voz por descrição":"Create voice from description",
 "Minha voz":"My voice","Padrão":"Preset",
-T("Supertonic 3 usa 10 vozes predefinidas. Clonagem de áudio não está disponível."):"Supertonic 3 has 10 preset voices. Audio cloning is not available.",
-T("OmniVoice é somente para uso não comercial. Use apenas sua voz ou uma voz com autorização."):"OmniVoice is non-commercial only. Use only your own voice or a voice you have permission to use.",
-T("F5-TTS PT-BR é um modelo comunitário experimental e somente para uso não comercial. Use uma voz autorizada."):"F5-TTS Brazilian Portuguese is an experimental community model for non-commercial use only. Use an authorized voice.",
-T("O VoxCPM2 aceita vozes salvas e vozes predefinidas."):"VoxCPM2 supports saved and preset voices.",
+"Supertonic 3 usa 10 vozes predefinidas. Clonagem de áudio não está disponível.":"Supertonic 3 has 10 preset voices. Audio cloning is not available.",
+"OmniVoice é somente para uso não comercial. Use apenas sua voz ou uma voz com autorização.":"OmniVoice is non-commercial only. Use only your own voice or a voice you have permission to use.",
+"F5-TTS PT-BR é um modelo comunitário experimental e somente para uso não comercial. Use uma voz autorizada.":"F5-TTS Brazilian Portuguese is an experimental community model for non-commercial use only. Use an authorized voice.",
+"O VoxCPM2 aceita vozes salvas e vozes predefinidas.":"VoxCPM2 supports saved and preset voices.",
 "Erro ":"Error ","Não foi possível carregar a fila: ":"Could not load queue: "
 }};
 const T=value=>UI_LANG==="en"?(UI_STR.en[value]||value):value;
