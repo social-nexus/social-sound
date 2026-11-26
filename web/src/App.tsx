@@ -35,9 +35,35 @@ import {
 // Configurações do App
 // Servidor local de voz (VoxCPM2) - veja server/server.py
 const API = "http://localhost:8000";
+const UI_LANG = new URLSearchParams(window.location.search).get("lang") === "en" ? "en" : "pt-BR";
+const EN = {
+"Carregando vozes...":"Loading voices...","Aguardando o servidor":"Waiting for server",
+"Natural":"Natural","Animado":"Excited","Sério":"Serious","Sussurro":"Whisper","Calmo":"Calm","Dramático":"Dramatic","Business":"Business","Anunciante":"Announcer","História":"Storytelling","Urgente":"Urgent","Épico":"Epic",
+"Pausa Curta":"Short pause","Pausa 1s":"1-second pause","Pausa Longa":"Long pause",
+"Narração e clonagem de voz":"Narration & voice cloning","Escreva ou carregue um TXT/SRT, escolha a voz e o tom e gere o áudio já com a legenda.":"Write or load a TXT/SRT, choose a voice and tone, and generate audio with subtitles.",
+"Divisão Ativa":"Split enabled","Entrada de Texto & Personalização":"Text input & customization","Inserir Direções de Atuação":"Insert acting directions",
+"Digite o texto aqui. Use os botões acima para inserir pausas. O tom e o estilo extra ficam no painel ao lado.":"Enter text here. Use the buttons above to insert pauses. Tone and extra style are in the side panel.",
+"ENVIAR PARA FILA (DIVIDIDO)":"SEND TO QUEUE (SPLIT)","GERAR ÁUDIO":"GENERATE AUDIO","Fila de Geração":"Generation queue","pendentes":"pending",
+"Um único SRT para todos os itens concluídos, na ordem da fila":"A single SRT for all completed items, in queue order",
+"Narração Pronta":"Narration ready","BAIXAR":"DOWNLOAD","BAIXAR SRT":"DOWNLOAD SRT",
+"Diretriz de Tom Global":"Global tone guidance","Isto define o contexto e a personalidade base da narração.":"Sets the context and base personality of the narration.",
+"Estilo extra opcional (ex.: slightly faster, cheerful)":"Optional extra style (e.g. slightly faster, cheerful)",
+"Pausa entre parágrafos (segundos)":"Pause between paragraphs (seconds)","Gerar legenda SRT junto com o áudio":"Generate SRT subtitles with audio",
+"Máx. de caracteres por legenda":"Maximum characters per subtitle","Clonar minha voz":"Clone my voice",
+"Use apenas a sua própria voz, ou a de alguém que autorizou. Envie um áudio limpo de 10 a 30 segundos, só com a fala. WAV ou MP3.":"Use only your own voice or a voice you have permission to use. Upload clean speech audio, 10–30 seconds long. WAV or MP3.",
+"Nome da voz":"Voice name","Transcrição exata do áudio (opcional, mas melhora muito a semelhança)":"Exact audio transcript (optional, but greatly improves similarity)",
+"Com transcrição a clonagem é máxima, mas o campo de estilo/tom é ignorado nessa voz. Sem transcrição, o tom e o estilo funcionam.":"With a transcript, cloning fidelity is highest, but tone/style is ignored for that voice. Without a transcript, tone and style work.",
+"Vozes (padrão e a sua)":"Voices (presets and yours)","Buscar voz...":"Search voices...","Remover esta voz":"Remove this voice",
+"Gerar outra versão desta voz (o resultado varia a cada vez)":"Generate another version of this voice (results vary each time)","Ouvir amostra de voz":"Play voice sample",
+"Escolher arquivo TXT/SRT":"Choose TXT/SRT file","Carregar arquivo":"Load file","Dividir texto":"Split text",
+"Cancelar":"Cancel","Adicionar à fila":"Add to queue","Remover":"Remove","Concluído":"Completed","Erro":"Error",
+"Voz excluída":"Voice deleted","Falha ao gerar áudio":"Audio generation failed","Falha ao carregar vozes":"Failed to load voices"
+};
+const T = value => UI_LANG === "en" ? (EN[value] || value) : value;
+
 const SEGMENTS = new Map(); // url do áudio -> { cues, duration }, usado para montar o SRT
 
-const EMPTY_VOICE = { id: "", label: "Carregando vozes...", gender: "Fem", type: "Aguardando o servidor" };
+const EMPTY_VOICE = { id: "", label: T("Carregando vozes..."), gender: "Fem", type: T("Aguardando o servidor") };
 
 const TONES = [
   { id: "natural", label: "Natural", icon: <Waves size={14} />, prompt: "" },
@@ -55,9 +81,9 @@ const TONES = [
 
 // Tags suportadas: apenas pausas (o VoxCPM2 não interpreta risadas, suspiros etc.)
 const VOICE_COMMANDS = [
-  { label: "Pausa Curta", tag: "<short pause>", icon: <Clock size={12} /> },
-  { label: "Pausa 1s", tag: "<pause 1s>", icon: <Clock size={12} /> },
-  { label: "Pausa Longa", tag: "<long pause>", icon: <Clock size={12} /> },
+  { label: T("Pausa Curta"), tag: "<short pause>", icon: <Clock size={12} /> },
+  { label: T("Pausa 1s"), tag: "<pause 1s>", icon: <Clock size={12} /> },
+  { label: T("Pausa Longa"), tag: "<long pause>", icon: <Clock size={12} /> },
 ];
 
 const App = () => {
@@ -557,8 +583,8 @@ const App = () => {
           <div className="flex items-center gap-3.5">
             <img src="/icone.png?v=2" alt="" className="w-11 h-11 object-contain shrink-0" />
             <div>
-              <h1 className="text-[22px] leading-[1.2] font-black tracking-[-0.02em] text-nx-text mb-0.5">Narração e clonagem de voz</h1>
-              <p className="text-sm text-nx-muted">Escreva ou carregue um TXT/SRT, escolha a voz e o tom e gere o áudio já com a legenda.</p>
+              <h1 className="text-[22px] leading-[1.2] font-black tracking-[-0.02em] text-nx-text mb-0.5">{T("Narração e clonagem de voz")}</h1>
+              <p className="text-sm text-nx-muted">{T("Escreva ou carregue um TXT/SRT, escolha a voz e o tom e gere o áudio já com a legenda.")}</p>
             </div>
           </div>
           <div className="hidden sm:flex items-center gap-4 shrink-0">
@@ -626,7 +652,7 @@ const App = () => {
             {/* Barra de Comandos de Voz */}
             <div className="mb-4 bg-nx-bg border border-nx-line rounded-xl p-3">
               <p className="text-[10px] font-bold text-nx-muted uppercase tracking-wider mb-2 flex items-center gap-1">
-                <Command size={12}/> Inserir Direções de Atuação
+                <Command size={12}/>{T("Inserir Direções de Atuação")}
               </p>
               <div className="flex flex-wrap gap-2">
                 {VOICE_COMMANDS.map((cmd, idx) => (
@@ -645,7 +671,7 @@ const App = () => {
             <textarea
               ref={textareaRef}
               className="w-full h-40 p-5 rounded-2xl border-2 border-nx-line bg-nx-bg focus:ring-4 focus:ring-nx-purple/20 focus:border-nx-purple/60 transition-all outline-none resize-none text-base leading-relaxed text-nx-text placeholder:text-nx-muted/60"
-              placeholder="Digite o texto aqui. Use os botões acima para inserir pausas. O tom e o estilo extra ficam no painel ao lado."
+              placeholder={T("Digite o texto aqui. Use os botões acima para inserir pausas. O tom e o estilo extra ficam no painel ao lado.")}
               value={text}
               onChange={(e) => setText(e.target.value)}
             />
@@ -666,7 +692,7 @@ const App = () => {
                   <Loader2 className="animate-spin" size={20} />
                 ) : (enableSplit && text.length > charLimit) ? <Files size={20} /> : <Play size={20} fill="currentColor" />}
                 
-                {(enableSplit && text.length > charLimit) ? 'ENVIAR PARA FILA (DIVIDIDO)' : 'GERAR ÁUDIO'} {isGenerating && <span className="font-mono text-xs opacity-90">⏱ {generationClock}</span>}
+                {(enableSplit && text.length > charLimit) ? T('ENVIAR PARA FILA (DIVIDIDO)') : T('GERAR ÁUDIO')} {isGenerating && <span className="font-mono text-xs opacity-90">⏱ {generationClock}</span>}
               </button>
             </div>
           </div>
@@ -677,11 +703,11 @@ const App = () => {
               <div className="p-4 sm:p-6 bg-nx-bg border-b border-nx-line flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-2 font-bold text-nx-text">
                   <Files size={20} className="text-nx-purple-soft" />
-                  <span>Fila de Geração ({batchQueue.filter(q => q.status !== 'done').length} pendentes)</span>
+                  <span>{T("Fila de Geração")} ({batchQueue.filter(q => q.status !== 'done').length} pendentes)</span>
                 </div>
                 <div className="flex gap-2">
                     {makeSrt && (
-                      <button onClick={downloadCombinedSrt} className="px-4 py-2 text-xs font-bold text-nx-purple-soft bg-transparent border border-nx-purple/40 rounded-xl hover:bg-nx-purple/10 transition-colors" title="Um único SRT para todos os itens concluídos, na ordem da fila">
+                      <button onClick={downloadCombinedSrt} className="px-4 py-2 text-xs font-bold text-nx-purple-soft bg-transparent border border-nx-purple/40 rounded-xl hover:bg-nx-purple/10 transition-colors" title={T("Um único SRT para todos os itens concluídos, na ordem da fila")}>
                         SRT ÚNICO
                       </button>
                     )}
@@ -736,7 +762,7 @@ const App = () => {
           {audioUrl && !enableSplit && (
             <div className="bg-nx-card rounded-3xl shadow-2xl shadow-black/40 border-2 border-emerald-500/25 p-6 animate-in zoom-in-95 duration-300">
               <div className="flex items-center gap-2 text-emerald-400 font-bold mb-4 text-sm uppercase tracking-wider">
-                <CheckCircle size={18} /> Narração Pronta
+                <CheckCircle size={18} /> {T("Narração Pronta")}
               </div>
               <div className="flex flex-col sm:flex-row items-center gap-4">
                 <div className="flex-1 w-full bg-nx-bg p-2 rounded-2xl">
@@ -767,19 +793,19 @@ const App = () => {
           {/* Estilos Globais */}
           <div className="bg-nx-card rounded-3xl shadow-sm border border-nx-line p-6">
             <h3 className="text-xs font-black text-nx-muted uppercase tracking-widest mb-4 flex items-center gap-2">
-              <Settings size={14} className="text-nx-purple-soft" /> Diretriz de Tom Global
+              <Settings size={14} className="text-nx-purple-soft" /> {T("Diretriz de Tom Global")}
             </h3>
-            <p className="text-xs text-nx-muted mb-3">Isto define o contexto e a personalidade base da narração.</p>
+            <p className="text-xs text-nx-muted mb-3">{T("Isto define o contexto e a personalidade base da narração.")}</p>
             <input
               type="text"
-              placeholder="Estilo extra opcional (ex.: slightly faster, cheerful)"
+              placeholder={T("Estilo extra opcional (ex.: slightly faster, cheerful)")}
               value={extraStyle}
               onChange={(e) => setExtraStyle(e.target.value)}
               className="w-full mb-4 px-3 py-2.5 bg-nx-bg border border-nx-line rounded-xl text-xs outline-none focus:ring-2 focus:ring-nx-purple/30"
             />
             <div className="mb-4 p-3 bg-nx-bg border border-nx-line rounded-xl space-y-2">
               <div className="flex items-center gap-2 text-xs text-nx-muted">
-                <span>Pausa entre parágrafos (segundos)</span>
+                <span>{T("Pausa entre parágrafos (segundos)")}</span>
                 <input
                   type="number" min={0} max={5} step={0.1} value={paraPause}
                   onChange={(e) => setParaPause(Math.max(0, Number(e.target.value) || 0))}
@@ -787,11 +813,11 @@ const App = () => {
                 />
               </div>
               <label className="flex items-center gap-2 text-xs font-bold text-nx-text cursor-pointer">
-                <input type="checkbox" className="accent-nx-purple" checked={makeSrt} onChange={(e) => setMakeSrt(e.target.checked)} /> Gerar legenda SRT junto com o áudio
+                <input type="checkbox" className="accent-nx-purple" checked={makeSrt} onChange={(e) => setMakeSrt(e.target.checked)} /> {T("Gerar legenda SRT junto com o áudio")}
               </label>
               {makeSrt && (
                 <div className="flex items-center gap-2 text-xs text-nx-muted">
-                  <span>Máx. de caracteres por legenda</span>
+                  <span>{T("Máx. de caracteres por legenda")}</span>
                   <input
                     type="number" min={15} max={120} value={srtChars}
                     onChange={(e) => setSrtChars(Number(e.target.value) || 42)}
@@ -821,12 +847,12 @@ const App = () => {
           {/* Clonar minha voz */}
           <div className="bg-nx-card rounded-3xl shadow-sm border border-nx-line p-6 space-y-3">
             <h3 className="text-xs font-black text-nx-muted uppercase tracking-widest flex items-center gap-2">
-              <Mic size={14} className="text-nx-purple-soft" /> Clonar minha voz
+              <Mic size={14} className="text-nx-purple-soft" /> {T("Clonar minha voz")}
             </h3>
-            <p className="text-xs text-nx-muted">Use apenas a sua própria voz, ou a de alguém que autorizou. Envie um áudio limpo de 10 a 30 segundos, só com a fala. WAV ou MP3.</p>
+            <p className="text-xs text-nx-muted">{T("Use apenas a sua própria voz, ou a de alguém que autorizou. Envie um áudio limpo de 10 a 30 segundos, só com a fala. WAV ou MP3.")}</p>
             <input
               type="text"
-              placeholder="Nome da voz"
+              placeholder={T("Nome da voz")}
               value={voiceName}
               onChange={(e) => setVoiceName(e.target.value)}
               className="w-full px-3 py-2.5 bg-nx-bg border border-nx-line rounded-xl text-sm outline-none focus:ring-2 focus:ring-nx-purple/30"
@@ -839,7 +865,7 @@ const App = () => {
             </button>
             <input type="file" ref={refInputRef} accept="audio/*" className="hidden" onChange={(e) => setRefFile(e.target.files[0] || null)} />
             <textarea
-              placeholder="Transcrição exata do áudio (opcional, mas melhora muito a semelhança)"
+              placeholder={T("Transcrição exata do áudio (opcional, mas melhora muito a semelhança)")}
               value={voiceTranscript}
               onChange={(e) => setVoiceTranscript(e.target.value)}
               rows={3}
@@ -852,17 +878,17 @@ const App = () => {
             >
               {uploadingVoice ? "ENVIANDO..." : "SALVAR MINHA VOZ"}
             </button>
-            <p className="text-[11px] text-nx-muted">Com transcrição a clonagem é máxima, mas o campo de estilo/tom é ignorado nessa voz. Sem transcrição, o tom e o estilo funcionam.</p>
+            <p className="text-[11px] text-nx-muted">{T("Com transcrição a clonagem é máxima, mas o campo de estilo/tom é ignorado nessa voz. Sem transcrição, o tom e o estilo funcionam.")}</p>
           </div>
 
           {/* Vozes */}
           <div className="bg-nx-card rounded-3xl shadow-sm border border-nx-line p-6 flex flex-col h-[520px]">
             <div className="mb-4">
-              <h3 className="text-xs font-black text-nx-muted uppercase tracking-widest mb-3">Vozes (padrão e a sua)</h3>
+              <h3 className="text-xs font-black text-nx-muted uppercase tracking-widest mb-3">{T("Vozes (padrão e a sua)")}</h3>
               <div className="relative">
                 <input 
                   type="text" 
-                  placeholder="Buscar voz..."
+                  placeholder={T("Buscar voz...")}
                   className="w-full pl-9 pr-4 py-2.5 bg-nx-bg border border-nx-line rounded-xl text-sm outline-none focus:ring-2 focus:ring-nx-purple/30 transition-all"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -904,12 +930,12 @@ const App = () => {
                         {voice.gender}
                       </div>
                       {voice.mine && (
-                        <button onClick={(e) => deleteVoice(e, voice)} className="p-1.5 rounded-full bg-white/5 text-nx-muted/60 hover:text-red-400" title="Remover esta voz">
+                        <button onClick={(e) => deleteVoice(e, voice)} className="p-1.5 rounded-full bg-white/5 text-nx-muted/60 hover:text-red-400" title={T("Remover esta voz")}>
                           <Trash2 size={14} />
                         </button>
                       )}
                       {voice.preset && (
-                        <button onClick={(e) => regeneratePreset(e, voice)} className="px-2 py-1 rounded-full bg-white/5 text-nx-muted hover:text-nx-purple-soft text-xs font-bold" title="Gerar outra versão desta voz (o resultado varia a cada vez)">
+                        <button onClick={(e) => regeneratePreset(e, voice)} className="px-2 py-1 rounded-full bg-white/5 text-nx-muted hover:text-nx-purple-soft text-xs font-bold" title={T("Gerar outra versão desta voz (o resultado varia a cada vez)")}>
                           {regenId === voice.id ? "..." : "↻"}
                         </button>
                       )}
@@ -920,7 +946,7 @@ const App = () => {
                             ? 'bg-nx-purple/20 text-nx-purple-soft shadow-sm' 
                             : 'bg-white/5 text-nx-muted hover:bg-white/10 hover:text-nx-purple-soft'
                         }`}
-                        title="Ouvir amostra de voz"
+                        title={T("Ouvir amostra de voz")}
                       >
                         {previewState.id === voice.id && previewState.status === 'loading' ? (
                           <Loader2 size={14} className="animate-spin" />
