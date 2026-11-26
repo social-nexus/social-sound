@@ -235,8 +235,7 @@ async def _request_completion(provider: str, model: str, api_key: str, system: s
                       "system": system, "messages": [{"role": "user", "content": user}]},
             )
             response.raise_for_status()
-            result = "".join(part.get("text", "") for part in response.json().get("content", [])
-                             if part.get("type") == "text")
+            result = _extract_response_text(response.json(), "anthropic")
         else:
             response = await client.post(
                 f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
@@ -246,9 +245,7 @@ async def _request_completion(provider: str, model: str, api_key: str, system: s
                       "generationConfig": {"temperature": 0.7, "maxOutputTokens": max_tokens}},
             )
             response.raise_for_status()
-            candidates = response.json().get("candidates", [])
-            result = "".join(p.get("text", "") for p in candidates[0].get("content", {}).get("parts", [])
-                             if "text" in p) if candidates else ""
+            result = _extract_response_text(response.json(), "gemini")
     if not isinstance(result, str) or not result.strip():
         raise ValueError("O provedor retornou uma resposta vazia.")
     return result.strip()
