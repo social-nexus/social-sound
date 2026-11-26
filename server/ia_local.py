@@ -195,6 +195,16 @@ def _update_job(jid: str, **values):
         if jid in JOBS:
             JOBS[jid].update(values)
 
+def _start_background_job(jid: str, target, args: tuple):
+    """Start worker and mark the job failed if the thread cannot be created."""
+    try:
+        thread = threading.Thread(target=target, args=args, daemon=True)
+        thread.start()
+    except Exception as exc:
+        _update_job(jid, status="error", message=f"Não foi possível iniciar a tarefa: {str(exc)[:250]}")
+        raise HTTPException(500, "Não foi possível iniciar a tarefa em segundo plano.") from exc
+
+
 def _sha256(path: Path) -> str:
     h = hashlib.sha256()
     with path.open("rb") as f:
@@ -543,7 +553,7 @@ def install_runtime(payload: dict, request: Request):
     if _runtime_binary(variant):
         return {"installed": True, "message": "Runtime já instalado."}
     jid = _job("runtime")
-    threading.Thread(target=_install_runtime_worker, args=(jid, variant), daemon=True).start()
+    _start_background_job(jid, _install_runtime_worker, (jid, variant))
     return {"job_id": jid}
 
 @router.post("/models/download")
@@ -556,7 +566,7 @@ def download_model(payload: dict, request: Request):
         raise HTTPException(400, "Leia e aceite os termos de uso do modelo antes de baixar.")
     # Existing files are verified by the worker; corrupted models are repaired.
     jid = _job("model")
-    threading.Thread(target=_download_model_worker, args=(jid, model_id), daemon=True).start()
+    _start_background_job(jid, _download_model_worker, (jid, model_id))
     return {"job_id": jid}
 
 @router.post("/models/import")
