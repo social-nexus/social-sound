@@ -46,6 +46,29 @@ def test_voxcpm_queue_generates_parts_and_requires_candidate_approval(tmp_path, 
     assert engines["supertonic3"]["installed"] is False
     assert engines["omnivoice"]["installed"] is False
     assert engines["f5tts"]["installed"] is False
+
+    # The readiness check must reject incomplete ONNX caches, then accept the
+    # complete required model/config files plus a valid voice-style JSON.
+    super_python = tmp_path / "fake-supertonic-python"
+    super_python.write_bytes(b"python")
+    super_cache = tmp_path / "supertonic-cache"
+    onnx = super_cache / "onnx"
+    styles = super_cache / "voice_styles"
+    onnx.mkdir(parents=True)
+    styles.mkdir()
+    monkeypatch.setenv("SOCIAL_SOUND_SUPERTONIC_PYTHON", str(super_python))
+    monkeypatch.setenv("SUPERTONIC_CACHE_DIR", str(super_cache))
+    (onnx / "duration_predictor.onnx").write_bytes(b"fake")
+    incomplete = client.get("/api/narration/engines").json()["engines"]
+    assert next(e for e in incomplete if e["id"] == "supertonic3")["installed"] is False
+    for name in ("text_encoder.onnx", "vector_estimator.onnx", "vocoder.onnx", "tts.json", "unicode_indexer.json"):
+        (onnx / name).write_bytes(b"fake")
+    (styles / "voice.json").write_text('{"style": "fake"}', encoding="utf-8")
+    complete = client.get("/api/narration/engines").json()["engines"]
+    assert next(e for e in complete if e["id"] == "supertonic3")["installed"] is True
+    (onnx / "vocoder.onnx").unlink()
+    incomplete_again = client.get("/api/narration/engines").json()["engines"]
+    assert next(e for e in incomplete_again if e["id"] == "supertonic3")["installed"] is False
     unavailable = client.post("/api/narration/jobs", json={
         "text": "Teste Supertonic.",
         "engine": "supertonic3",
