@@ -204,7 +204,7 @@
     $("erros").innerHTML = ""; $("info").textContent = ""; $("srt").value = ""; $("player").style.display = "none"; $("baixarAudio").style.display = "none";
     $("baixarSrt").disabled = $("copiar").disabled = true;
     if (!$("roteiro").value.trim()) { mostrarErro("Escreva o roteiro."); return; }
-    if ($("roteiro").value.split(/\\r?\\n/).length > 2000) { mostrarErro("O roteiro excede o limite de 2.000 linhas."); return; }
+    if ($("roteiro").value.split(/\r?\n/).length > 2000) { mostrarErro("O roteiro excede o limite de 2.000 linhas."); return; }
     if (!narrador.voz) { mostrarErro("Escolha a voz do Narrador."); return; }
     $("gerar").disabled = true; $("gerar").textContent = "Gerando..."; $("prog").style.display = "block"; $("progTxt").textContent = "Começando..."; $("barra").style.width = "0";
     inicio = Date.now();
