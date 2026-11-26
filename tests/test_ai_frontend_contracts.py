@@ -96,3 +96,10 @@ def test_narration_queue_static_ui_localizes_to_english():
     assert 'T("Motores com uso comercial permitido")' in source
     assert 'T("Liberar pesos baixados")' in source
     assert 'T("Desinstalar e excluir")' in source
+
+
+def test_narration_queue_standalone_language_selector_is_not_duplicated_in_shell():
+    source = (Path(__file__).resolve().parents[1] / "server" / "narracoes" / "app.js").read_text(encoding="utf-8")
+    assert "function addQueueLanguageSelector()" in source
+    assert 'select.id="queue-ui-language"' in source
+    assert "if(window.self!==window.top)return;" in source
