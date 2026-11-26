@@ -768,7 +768,23 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
         # File publication and SQLite approval must not interleave across requests.
         # The lock is process-local; SQLite still validates the candidate state.
         with approval_guard:
-            return _approve_candidate(candidate_id)
+            candidate = db.candidate(candidate_id)
+            if not candidate or candidate["status"] != "awaiting_approval":
+                raise HTTPException(404, "Versão candidata não encontrada ou já analisada.")
+            siblings = db.list_candidates(candidate["job_id"])
+            approved = _approve_candidate(candidate_id)
+            # Approval discards sibling candidates in SQLite; remove their files too.
+            job_folder = job_paths(candidate["job_id"]).resolve()
+            for sibling in siblings:
+                if sibling["id"] == candidate_id:
+                    continue
+                try:
+                    stale_path = Path(sibling["audio_path"]).resolve()
+                    if stale_path.parent == job_folder and stale_path.is_file():
+                        stale_path.unlink(missing_ok=True)
+                except OSError as cleanup_error:
+                    print(f"Warning: stale candidate cleanup failed: {cleanup_error}", file=sys.stderr)
+            return approved
 
     @router.post("/candidates/{candidate_id}/discard")
     def discard_candidate(candidate_id: str):
