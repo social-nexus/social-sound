@@ -779,8 +779,8 @@ def test_local_runtime_cannot_switch_models_during_generation(monkeypatch, tmp_p
     model_file = tmp_path / "model.gguf"
     model_file.write_bytes(b"gguf")
     monkeypatch.setitem(ia_local.RUNTIME_CATALOG, "test-cpu", {
-        "label": "Test CPU", "system": platform.system(),
-        "machine": platform.machine(), "backend": "cpu",
+        "label": "Test CPU", "system": ia_local.platform.system(),
+        "machine": ia_local.platform.machine(), "backend": "cpu",
         "url": "https://example.invalid/runtime.zip", "sha256": "0" * 64,
         "size": 1, "archive": "zip", "binary": "llama-server",
     })
