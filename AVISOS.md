@@ -42,6 +42,26 @@ Nada abaixo está dentro deste repositório. O instalador baixa direto das fonte
 
 **Interface** (já compilada em `server/web`): React (MIT), Vite (MIT), Tailwind CSS (MIT), lucide-react (ISC).
 
+**Motores de voz opcionais** (instalados separadamente pela aba Motores de Voz; ambientes Python isolados):
+
+| Item | Código / pesos | Observação |
+|---|---|---|
+| Supertonic 3 | Código MIT; pesos OpenRAIL-M | Uso comercial sujeito às restrições OpenRAIL-M; SDK Python arquivado, sem novas correções/suporte. |
+| OmniVoice | Código Apache-2.0; pesos CC-BY-NC | Pesos somente não comerciais; tokenizer Higgs Audio V2 possui licença comunitária separada. |
+| F5-TTS PT-BR | Código MIT; checkpoint CC-BY-NC-4.0 | Checkpoint comunitário, somente uso não comercial; não é mantido pelo projeto oficial F5-TTS. |
+
+Leia os termos dos modelos e dos componentes auxiliares antes de instalar ou usar. Links: [Supertonic 3](https://huggingface.co/Supertone/supertonic-3), [OmniVoice](https://huggingface.co/k2-fsa/OmniVoice), [tokenizer Higgs Audio V2](https://huggingface.co/bosonai/higgs-audio-v2-tokenizer), [F5-TTS PT-BR](https://huggingface.co/Cataldir/F5-TTS-pt-br).
+
+**IA local e runtime** (instalados sob demanda; não fazem parte do instalador base):
+
+| Item | Licença | Fonte |
+|---|---|---|
+| llama.cpp | MIT | github.com/ggml-org/llama.cpp |
+| Qwen3 4B Instruct Q4_K_M | Apache-2.0 | huggingface.co/Qwen/Qwen3-4B-GGUF |
+| Gemma 3 4B Instruct Q4_K_M | Gemma Terms of Use | ai.google.dev/gemma/terms |
+
+Os modelos GGUF importados pelo usuário não têm licença verificada pelo Social Sound. Confirme os termos e a procedência antes do uso. Os provedores de IA externos (OpenAI, Anthropic, Google, OpenRouter, DeepSeek, Groq e Mistral) são serviços de terceiros; suas próprias políticas, custos e termos se aplicam. As chaves API são guardadas no cofre de credenciais do sistema operacional.
+
 **Editor de vídeo:** não faz parte do Social Sound. O projeto de edição de vídeo é separado e possui documentação e licença próprias.
 
 ## 3. Uso responsável
