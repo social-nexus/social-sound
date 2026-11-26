@@ -161,7 +161,20 @@
   async function status() {
     try {
       var s = await (await fetch("/api/roteiro/status")).json(), el = $("estadoMark");
-      if (s.mark_pronto) { el.textContent = "Modelo Mark pronto ✔ (roda no seu computador, na CPU)"; return; }
+      if (s.mark_pronto) { el.textContent = "Modelo Mark pronto ✔ (roda no seu computador, na CPU)"; }
+      else if (!s.mark_baixado && !s.onnxruntime) { el.textContent = "Para usar o modelo Mark, rode o instalar.bat de novo (uma vez). Enquanto isso o dicionário simples é usado."; }
+      if (s.mark_baixado) {
+        var remove = document.createElement("button"); remove.className = "link"; remove.textContent = "Excluir modelo Mark";
+        remove.onclick = async function () {
+          if (!confirm("Excluir os arquivos do modelo Mark? O dicionário, os números por extenso, seus roteiros e os demais recursos serão preservados.")) return;
+          remove.disabled = true; remove.textContent = "Excluindo...";
+          try { var response = await fetch("/api/roteiro/modelo", { method: "DELETE" }); if (!response.ok) { var detail = await response.json().catch(function(){return {};}); throw new Error(detail.detail || "Falha ao excluir o modelo."); } await status(); }
+          catch (error) { el.appendChild(document.createTextNode(" Não foi possível excluir: " + error.message)); remove.disabled = false; remove.textContent = "Tentar excluir novamente"; }
+        };
+        el.appendChild(document.createTextNode(" "));
+        el.appendChild(remove);
+      }
+      if (s.mark_pronto) return;
       if (!s.onnxruntime) { el.innerHTML = "Para usar o modelo Mark, rode o <b>instalar.bat</b> de novo (uma vez). Enquanto isso o dicionário simples é usado."; return; }
       if (s.download.rodando) {
         var mb = function (n) { return (n / 1048576).toFixed(0); };
