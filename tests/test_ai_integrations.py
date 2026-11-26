@@ -527,3 +527,12 @@ def test_voice_upload_has_size_limit_atomic_publish_and_rollback():
     assert "shutil.copy2(transcript_path, transcript_backup)" in server_source
     assert "for leftover in (temp, transcript_temp):" in server_source
     assert "leftover.unlink(missing_ok=True)" in server_source
+
+
+def test_gguf_import_is_staged_and_published_after_validation():
+    source = (Path(__file__).resolve().parents[1] / "server" / "ia_local.py").read_text(encoding="utf-8")
+    import_block = source[source.index('@router.post("/models/import")'):source.index('@router.post("/models/activate")')]
+    assert 'temporary = folder /' in import_block and '.part' in import_block
+    assert 'temporary.replace(target)' in import_block
+    assert 'check.read(4) != b"GGUF"' in import_block
+    assert 'shutil.rmtree(folder, ignore_errors=True)' in import_block
