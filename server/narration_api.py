@@ -467,15 +467,31 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
             env["SOCIAL_SOUND_LICENSE_ACCEPTED"] = "1" if license_accepted else "0"
             with engine_install_state_guard:
                 engine_install_state.update(status="running", message="Preparando instalador…")
-            result = subprocess.run(["cmd.exe", "/c", str(script_path)], cwd=str(script_path.parent),
-                capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=14400,
-                env=env, check=False)
-            output = (result.stdout or "") + "\n" + (result.stderr or "")
-            if result.returncode != 0:
-                detail = output.strip()[-1500:] or f"Instalador terminou com código {result.returncode}"
+            process = subprocess.Popen(["cmd.exe", "/c", str(script_path)], cwd=str(script_path.parent),
+                stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8",
+                errors="replace", env=env, bufsize=1)
+            output_tail = []
+            deadline = time.monotonic() + 14400
+            while True:
+                line = process.stdout.readline() if process.stdout else ""
+                if line:
+                    clean = line.strip()
+                    if clean:
+                        output_tail.append(clean)
+                        output_tail = output_tail[-40:]
+                        with engine_install_state_guard:
+                            engine_install_state.update(message=clean[:500], log_tail="\n".join(output_tail))
+                if process.poll() is not None:
+                    break
+                if time.monotonic() > deadline:
+                    process.kill()
+                    raise RuntimeError("Instalação excedeu o limite de 4 horas e foi interrompida.")
+            code = process.wait()
+            if code != 0:
+                detail = "\n".join(output_tail[-12:]) or f"Instalador terminou com código {code}"
                 raise RuntimeError(detail)
             with engine_install_state_guard:
-                engine_install_state.update(status="completed", message="Instalação concluída e verificada.", finished_at=time.time())
+                engine_install_state.update(status="completed", message="Instalação concluída e verificada.", log_tail="\n".join(output_tail), finished_at=time.time())
         except Exception as exc:
             with engine_install_state_guard:
                 engine_install_state.update(status="error", message=str(exc)[:1500], finished_at=time.time())
