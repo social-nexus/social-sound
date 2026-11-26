@@ -58,6 +58,15 @@ const EN = {
 "Escolher arquivo TXT/SRT":"Choose TXT/SRT file","Carregar arquivo":"Load file","Dividir texto":"Split text",
 "Cancelar":"Cancel","Adicionar à fila":"Add to queue","Remover":"Remove","Concluído":"Completed","Erro":"Error",
 "Voz excluída":"Voice deleted","Falha ao gerar áudio":"Audio generation failed","Falha ao carregar vozes":"Failed to load voices"
+"SRT ÚNICO":"SINGLE SRT",
+"LIMPAR":"CLEAR",
+"INICIAR TUDO":"START ALL",
+"Aguardando":"Queued",
+"Gerando...":"Generating...",
+"Falha":"Failed",
+"chars":"characters",
+"Limite de Caracteres":"Character limit",
+"Insere a tag":"Inserts the tag",
 };
 const T = value => UI_LANG === "en" ? (EN[value] || value) : value;
 
@@ -632,7 +641,7 @@ const App = () => {
                                   value={charLimit}
                                   onChange={(e) => setCharLimit(parseInt(e.target.value) || 500)}
                                   className="w-16 bg-nx-card border border-nx-line rounded px-2 py-1 text-xs text-center outline-none focus:border-nx-purple/60"
-                                  title="Limite de Caracteres"
+                                  title={T("Limite de Caracteres")}
                               />
                           </div>
                       )}
@@ -660,7 +669,7 @@ const App = () => {
                     key={idx}
                     onClick={() => insertCommand(cmd.tag)}
                     className="flex items-center gap-1.5 px-3 py-1.5 bg-nx-card border border-nx-line text-nx-text text-[11px] font-semibold rounded-lg hover:border-nx-purple/50 hover:text-nx-purple-soft transition-colors shadow-sm"
-                    title={`Insere a tag ${cmd.tag} no texto`}
+                    title={UI_LANG==="en"?`Insert the ${cmd.tag} tag in the text`:`Insere a tag ${cmd.tag} no texto`}
                   >
                     {cmd.icon} {cmd.label}
                   </button>
@@ -703,16 +712,16 @@ const App = () => {
               <div className="p-4 sm:p-6 bg-nx-bg border-b border-nx-line flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-2 font-bold text-nx-text">
                   <Files size={20} className="text-nx-purple-soft" />
-                  <span>{T("Fila de Geração")} ({batchQueue.filter(q => q.status !== 'done').length} pendentes)</span>
+                  <span>{T("Fila de Geração")} ({batchQueue.filter(q => q.status !== 'done').length} {T("pendentes")})</span>
                 </div>
                 <div className="flex gap-2">
                     {makeSrt && (
                       <button onClick={downloadCombinedSrt} className="px-4 py-2 text-xs font-bold text-nx-purple-soft bg-transparent border border-nx-purple/40 rounded-xl hover:bg-nx-purple/10 transition-colors" title={T("Um único SRT para todos os itens concluídos, na ordem da fila")}>
-                        SRT ÚNICO
+                        {T("SRT ÚNICO")}
                       </button>
                     )}
                     <button onClick={clearDoneFromQueue} disabled={isGenerating} className="px-4 py-2 text-xs font-bold text-nx-muted bg-transparent border border-nx-line rounded-xl hover:bg-white/5 hover:text-nx-text transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
-                        LIMPAR
+                        {T("LIMPAR")}
                     </button>
                     <button 
                       onClick={processBatch}
@@ -720,7 +729,7 @@ const App = () => {
                       className="bg-nx-purple text-white px-6 py-2 rounded-xl text-sm font-black hover:bg-nx-purple-dark transition-all shadow-md shadow-nx-purple/30 flex items-center gap-2 disabled:opacity-50"
                     >
                     {isGenerating && batchQueue.some(q => q.status === 'processing') ? <Loader2 className="animate-spin" size={16} /> : <Zap size={16} fill="currentColor" />}
-                    INICIAR TUDO
+                    {T("INICIAR TUDO")}
                     </button>
                 </div>
               </div>
@@ -733,12 +742,12 @@ const App = () => {
                         <p className="text-sm font-bold text-nx-text truncate w-full" title={item.name}>{item.name}</p>
                         <div className="flex items-center gap-2 mt-1">
                             <span className="text-[10px] text-nx-muted uppercase font-bold tracking-tight">
-                              {item.status === 'pending' && 'Aguardando'}
-                              {item.status === 'processing' && 'Gerando...'}
-                              {item.status === 'done' && 'Concluído'}
-                              {item.status === 'error' && 'Falha'}
+                              {item.status === 'pending' && T('Aguardando')}
+                              {item.status === 'processing' && T('Gerando...')}
+                              {item.status === 'done' && T('Concluído')}
+                              {item.status === 'error' && T('Falha')}
                             </span>
-                            <span className="text-[9px] bg-white/5 text-nx-muted px-1.5 rounded">{item.content.length} chars</span>
+                            <span className="text-[9px] bg-white/5 text-nx-muted px-1.5 rounded">{item.content.length} {T("chars")}</span>
                         </div>
                       </div>
                     </div>
@@ -772,14 +781,14 @@ const App = () => {
                   onClick={() => triggerDownload(audioUrl, `narracao-${selectedVoice.label || selectedVoice.id}.wav`)}
                   className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 bg-nx-blue text-white rounded-2xl font-bold hover:bg-nx-blue-dark transition-all shrink-0 shadow-lg"
                 >
-                  <Download size={18} /> BAIXAR
+                  <Download size={18} /> {T("BAIXAR")}
                 </button>
                 {makeSrt && SEGMENTS.get(audioUrl) && (
                   <button
                     onClick={() => downloadSrt(buildSrt(SEGMENTS.get(audioUrl).cues), `narracao-${selectedVoice.label || selectedVoice.id}.srt`)}
                     className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 bg-nx-purple text-white rounded-2xl font-bold hover:bg-nx-purple-dark transition-all shrink-0 shadow-lg"
                   >
-                    <Download size={18} /> BAIXAR SRT
+                    <Download size={18} /> {T("BAIXAR SRT")}
                   </button>
                 )}
               </div>
