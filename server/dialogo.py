@@ -18,6 +18,29 @@ from legenda import montar_srt, sem_acentos
 # (assim "10:30" e "http://site" não viram personagem).
 RE_FALA = re.compile(r"^\s*([^\W\d_][\w .'\-]{0,29}?)\s*:\s+(\S.*)$", re.UNICODE)
 JOBS = {}
+JOBS_LOCK = threading.Lock()
+
+
+def _job_update(jid: str, **values):
+    with JOBS_LOCK:
+        job = JOBS.get(jid)
+        if job is not None:
+            job.update(values)
+
+
+def limpar_jobs(max_finished: int = 100, max_age_seconds: int = 86400):
+    """Keep active jobs intact, prune finished jobs older than a day and cap history."""
+    agora = time.time()
+    with JOBS_LOCK:
+        finished = [(jid, job) for jid, job in JOBS.items() if job.get("status") != "rodando"]
+        for jid, job in finished:
+            if agora - float(job.get("t", agora)) > max_age_seconds:
+                JOBS.pop(jid, None)
+        finished = [(jid, job) for jid, job in JOBS.items() if job.get("status") != "rodando"]
+        if len(finished) > max_finished:
+            finished.sort(key=lambda pair: float(pair[1].get("t", 0)))
+            for jid, _ in finished[:len(finished) - max_finished]:
+                JOBS.pop(jid, None)
 
 
 def chave(nome: str) -> str:
@@ -71,16 +94,15 @@ def _referencia(ctx, model, voz, cache):
 
 
 def _trabalho(ctx, jid, falas, narrador, personagens, opts):
-    job = JOBS[jid]
     try:
         n = len(falas)
-        job["total"] = n
+        _job_update(jid, total=n)
 
         def work(model):
             sr = model.tts_model.sample_rate
             cache, pecas, cues, info, pos = {}, [], [], [], 0.0
             for i, f in enumerate(falas):
-                job.update(atual=i, msg=f"Fala {i + 1} de {n}: {f['nome'] or 'Narrador'}")
+                _job_update(jid, atual=i, msg=f"Fala {i + 1} de {n}: {f['nome'] or 'Narrador'}")
                 cfg = personagens.get(chave(f["nome"])) if f["nome"] else None
                 cfg = cfg or narrador
                 ref, transcript = _referencia(ctx, model, cfg["voz"], cache)
@@ -119,11 +141,11 @@ def _trabalho(ctx, jid, falas, narrador, personagens, opts):
         sf.write(str(caminho), saida, sr, subtype="PCM_16")
         duracao = len(saida) / sr
         srt = montar_srt([{"texto": c["text"]} for c in cues], [c["start"] for c in cues], [c["end"] for c in cues], duracao)
-        job.update(status="pronto", atual=n, msg="Pronto.", audio=f"/saidas/{jid}.wav", srt=srt, falas=info, duracao=round(duracao, 1))
+        _job_update(jid, status="pronto", atual=n, msg="Pronto.", audio=f"/saidas/{jid}.wav", srt=srt, falas=info, duracao=round(duracao, 1))
     except HTTPException as e:
-        job.update(status="erro", msg=str(e.detail)[:400])
+        _job_update(jid, status="erro", msg=str(e.detail)[:400])
     except Exception as e:  # noqa: BLE001
-        job.update(status="erro", msg=f"{type(e).__name__}: {e}"[:400])
+        _job_update(jid, status="erro", msg=f"{type(e).__name__}: {e}"[:400])
 
 
 def limpar_antigas(pasta, dias=14):
@@ -175,15 +197,19 @@ def criar_router(ctx):
             "max_chars": max(15, min(int(dados.get("srt_chars", 42)), 120)),
             "nome_na_legenda": bool(dados.get("nome_na_legenda", True)),
         }
+        limpar_jobs()
         jid = uuid.uuid4().hex[:8]
-        JOBS[jid] = {"status": "rodando", "msg": "Começando...", "atual": 0, "total": len(falas), "t": time.time()}
+        with JOBS_LOCK:
+            JOBS[jid] = {"status": "rodando", "msg": "Começando...", "atual": 0, "total": len(falas), "t": time.time()}
         threading.Thread(target=_trabalho, args=(ctx, jid, falas, narrador, personagens, opts), daemon=True).start()
         return {"job": jid}
 
     @router.get("/api/dialogo/job/{jid}")
     def rota_job(jid: str):
-        if jid not in JOBS:
-            raise HTTPException(404, "Tarefa não encontrada.")
-        return JOBS[jid]
+        with JOBS_LOCK:
+            job = JOBS.get(jid)
+            if job is None:
+                raise HTTPException(404, "Tarefa não encontrada.")
+            return dict(job)
 
     return router
