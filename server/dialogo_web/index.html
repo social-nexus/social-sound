@@ -106,6 +106,44 @@
 </div>
 
 <script>
+
+  var UI_LANG=new URLSearchParams(location.search).get("lang")==="en"?"en":"pt-BR";
+  var UI_DIALOGUE_EN={
+    "Diálogo com várias vozes":"Multi-voice dialogue",
+    "Escreva as falas como":"Write dialogue as",
+    "Nome: fala": "Name: line",
+    ", escolha uma voz para cada personagem e gere um áudio só (com a legenda).":", choose a voice for each character and generate a single audio file (with subtitles).",
+    "Roteiro com falas":"Dialogue script",
+    "Uma fala por linha, no formato":"One line per speaker, in the format",
+    "Nome: fala": "Name: line",
+    ". Linhas sem nome usam a voz do Narrador. Uma linha em branco separa os blocos (pausa maior). Pausas: <pause 1s>. Limite: 200.000 caracteres e 2.000 linhas.":". Lines without a name use the Narrator voice. A blank line separates blocks (longer pause). Pauses: <pause 1s>. Limit: 200,000 characters and 2,000 lines.",
+    "Inserir um exemplo":"Insert example",
+    "Vozes":"Voices",
+    "O tom só funciona em vozes sem transcrição (as vozes padrão e as suas clonadas sem transcrição). Personagens sem a marca \"é personagem\" ficam como texto comum, lido pelo Narrador.":"Tone works only with voices without transcripts (preset voices and your cloned voices without transcripts). Characters without the \"is a character\" marker are treated as plain text and read by the Narrator.",
+    "Opções":"Options",
+    "Pausa entre as falas":"Pause between lines",
+    "Pausa entre blocos (linha em branco)":"Pause between blocks (blank line)",
+    "Máx. de caracteres por legenda":"Max characters per subtitle",
+    "Mostrar o nome de quem fala na legenda":"Show speaker name in subtitles",
+    "Gerar diálogo":"Generate dialogue",
+    "Resultado":"Result",
+    "Baixar áudio (.wav)":"Download audio (.wav)",
+    "Baixar .srt":"Download .srt",
+    "Copiar legenda":"Copy subtitles",
+    "Natural":"Natural","Animado":"Excited","Sério":"Serious","Sussurro":"Whisper","Calmo":"Calm","Dramático":"Dramatic","Bravo":"Angry","Triste":"Sad","Alegre":"Cheerful",
+    "Escreva o roteiro.":"Enter the script.","O roteiro excede o limite de 2.000 linhas.":"The script exceeds the 2,000-line limit.",
+    "Escolha a voz do Narrador.":"Choose the Narrator voice.","Gerando...":"Generating...","Começando...":"Starting...",
+    "Trabalhando...":"Working...","Copiado ✔":"Copied ✔","falas • ":"lines • "
+  };
+  function applyDialogueEnglish(){
+    if(UI_LANG!=="en")return;
+    document.documentElement.lang="en";
+    var walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
+    var node;while((node=walker.nextNode())){var original=node.nodeValue;var trimmed=original.trim();if(UI_DIALOGUE_EN[trimmed])node.nodeValue=original.replace(trimmed,UI_DIALOGUE_EN[trimmed]);}
+    document.querySelectorAll("option").forEach(function(o){var t=o.textContent.trim();if(UI_DIALOGUE_EN[t])o.textContent=UI_DIALOGUE_EN[t];});
+    document.querySelectorAll("[placeholder]").forEach(function(el){var t=el.placeholder.trim();if(UI_DIALOGUE_EN[t])el.placeholder=UI_DIALOGUE_EN[t];});
+  }
+
   var $ = function (id) { return document.getElementById(id); };
   var TONS = [["", "Natural"], ["high energy, excited", "Animado"], ["serious, formal", "Sério"], ["whispering", "Sussurro"],
               ["very calm and soothing", "Calmo"], ["dramatic, lots of emotion", "Dramático"], ["angry, intense", "Bravo"],
@@ -203,12 +241,12 @@
   async function gerar() {
     $("erros").innerHTML = ""; $("info").textContent = ""; $("srt").value = ""; $("player").style.display = "none"; $("baixarAudio").style.display = "none";
     $("baixarSrt").disabled = $("copiar").disabled = true;
-    if (!$("roteiro").value.trim()) { mostrarErro("Escreva o roteiro."); return; }
-    if ($("roteiro").value.split(/\r?\n/).length > 2000) { mostrarErro("O roteiro excede o limite de 2.000 linhas."); return; }
-    if (!narrador.voz) { mostrarErro("Escolha a voz do Narrador."); return; }
-    $("gerar").disabled = true; $("gerar").textContent = "Gerando..."; $("prog").style.display = "block"; $("progTxt").textContent = "Começando..."; $("barra").style.width = "0";
+    if (!$("roteiro").value.trim()) { mostrarErro(UI_LANG==="en"?"Enter the script.":"Escreva o roteiro."); return; }
+    if ($("roteiro").value.split(/\r?\n/).length > 2000) { mostrarErro(UI_LANG==="en"?"The script exceeds the 2,000-line limit.":"O roteiro excede o limite de 2.000 linhas."); return; }
+    if (!narrador.voz) { mostrarErro(UI_LANG==="en"?"Choose the Narrator voice.":"Escolha a voz do Narrador."); return; }
+    $("gerar").disabled = true; $("gerar").textContent = UI_LANG==="en"?"Generating...":"Gerando..."; $("prog").style.display = "block"; $("progTxt").textContent = UI_LANG==="en"?"Starting...":"Começando..."; $("barra").style.width = "0";
     inicio = Date.now();
-    relogio = setInterval(function () { $("progTxt").dataset.t = mmss((Date.now() - inicio) / 1000); $("progTxt").textContent = ($("progTxt").dataset.m || "Trabalhando...") + "   " + $("progTxt").dataset.t; }, 1000);
+    relogio = setInterval(function () { $("progTxt").dataset.t = mmss((Date.now() - inicio) / 1000); $("progTxt").textContent = ($("progTxt").dataset.m || (UI_LANG==="en"?"Working...":"Trabalhando...")) + "   " + $("progTxt").dataset.t; }, 1000);
     try {
       var corpo = { texto: $("roteiro").value, narrador: { voz: narrador.voz, estilo: narrador.estilo },
         personagens: personagens.filter(function (p) { return p.ativo !== false; }).map(function (p) { return { nome: p.nome, voz: p.voz, estilo: p.estilo }; }),
@@ -243,8 +281,9 @@
   };
   $("copiar").onclick = async function () {
     try { await navigator.clipboard.writeText($("srt").value); } catch (e) { $("srt").select(); document.execCommand("copy"); }
-    $("copiar").textContent = "Copiado ✔"; setTimeout(function () { $("copiar").textContent = "Copiar legenda"; }, 1500);
+    $("copiar").textContent = UI_LANG==="en"?"Copied ✔":"Copiado ✔"; setTimeout(function () { $("copiar").textContent = UI_LANG==="en"?"Copy subtitles":"Copiar legenda"; }, 1500);
   };
+  applyDialogueEnglish();
   carregarVozes();
 </script>
 </body>
