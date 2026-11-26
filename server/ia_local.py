@@ -661,7 +661,8 @@ def stop_runtime(request: Request):
     return {"ok": True}
 
 @router.get("/jobs/{jid}")
-def ai_job(jid: str):
+def ai_job(jid: str, request: Request):
+    _guard_local_request(request)
     if jid not in JOBS:
         raise HTTPException(404, "Tarefa não encontrada.")
     return JOBS[jid]
