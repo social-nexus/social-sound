@@ -57,7 +57,7 @@ const EN = {
 "Gerar outra versão desta voz (o resultado varia a cada vez)":"Generate another version of this voice (results vary each time)","Ouvir amostra de voz":"Play voice sample",
 "Escolher arquivo TXT/SRT":"Choose TXT/SRT file","Carregar arquivo":"Load file","Dividir texto":"Split text",
 "Cancelar":"Cancel","Adicionar à fila":"Add to queue","Remover":"Remove","Concluído":"Completed","Erro":"Error",
-"Voz excluída":"Voice deleted","Falha ao gerar áudio":"Audio generation failed","Falha ao carregar vozes":"Failed to load voices"
+"Voz excluída":"Voice deleted","Falha ao gerar áudio":"Audio generation failed","Falha ao carregar vozes":"Failed to load voices",
 "SRT ÚNICO":"SINGLE SRT",
 "LIMPAR":"CLEAR",
 "INICIAR TUDO":"START ALL",
