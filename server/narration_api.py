@@ -452,6 +452,60 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
     db.recover_interrupted()
     start_worker()
 
+    engine_install_lock = threading.Lock()
+    engine_install_state = {"job_id": None, "engine": None, "status": "idle", "message": "", "started_at": None, "finished_at": None}
+    engine_install_state_guard = threading.Lock()
+
+    def run_engine_installer(engine_id: str, job_id: str, license_accepted: bool):
+        scripts = {"supertonic3": "instalar-supertonic.bat", "omnivoice": "instalar-omnivoice.bat", "f5tts": "instalar-f5tts.bat"}
+        script_path = Path(__file__).resolve().parent.parent / scripts[engine_id]
+        try:
+            if os.name != "nt":
+                raise RuntimeError("Instalação automatizada pela interface está disponível no Windows. No Linux, use o instalador correspondente.")
+            env = os.environ.copy()
+            env["SOCIAL_SOUND_INSTALL_FROM_UI"] = "1"
+            env["SOCIAL_SOUND_LICENSE_ACCEPTED"] = "1" if license_accepted else "0"
+            with engine_install_state_guard:
+                engine_install_state.update(status="running", message="Preparando instalador…")
+            result = subprocess.run(["cmd.exe", "/c", str(script_path)], cwd=str(script_path.parent),
+                capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=14400,
+                env=env, check=False)
+            output = (result.stdout or "") + "\n" + (result.stderr or "")
+            if result.returncode != 0:
+                detail = output.strip()[-1500:] or f"Instalador terminou com código {result.returncode}"
+                raise RuntimeError(detail)
+            with engine_install_state_guard:
+                engine_install_state.update(status="completed", message="Instalação concluída e verificada.", finished_at=time.time())
+        except Exception as exc:
+            with engine_install_state_guard:
+                engine_install_state.update(status="error", message=str(exc)[:1500], finished_at=time.time())
+        finally:
+            engine_install_lock.release()
+
+    @router.post("/engines/{engine_id}/install")
+    def install_engine(engine_id: str, payload: dict):
+        if engine_id not in {"supertonic3", "omnivoice", "f5tts"}:
+            raise HTTPException(status_code=400, detail="Motor não permitido para instalação opcional.")
+        accepted = bool(payload.get("license_accepted", False))
+        if not accepted:
+            raise HTTPException(status_code=400, detail="Confirme a leitura e aceitação dos avisos/licenças antes de instalar.")
+        if engine_id in {"omnivoice", "f5tts"} and not bool(payload.get("non_commercial_ack", False)):
+            raise HTTPException(status_code=400, detail="Este motor é restrito a uso não comercial. Confirme essa condição para continuar.")
+        if not engine_install_lock.acquire(blocking=False):
+            raise HTTPException(status_code=409, detail="Outra instalação de motor está em andamento. Aguarde.")
+        job_id = uuid.uuid4().hex
+        with engine_install_state_guard:
+            engine_install_state.update(job_id=job_id, engine=engine_id, status="queued", message="Instalação enfileirada.", started_at=time.time(), finished_at=None)
+        threading.Thread(target=run_engine_installer, args=(engine_id, job_id, accepted), daemon=True).start()
+        return {"job_id": job_id, "status": "queued"}
+
+    @router.get("/engines/install/{job_id}")
+    def engine_install_status(job_id: str):
+        with engine_install_state_guard:
+            if engine_install_state.get("job_id") != job_id:
+                raise HTTPException(status_code=404, detail="Instalação não encontrada.")
+            return dict(engine_install_state)
+
     @router.get("/engines")
     def list_engines():
         from tts_engine_catalog import public_catalog
