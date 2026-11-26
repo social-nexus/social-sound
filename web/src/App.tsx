@@ -596,6 +596,7 @@ const App = () => {
               <p className="text-sm text-nx-muted">{T("Escreva ou carregue um TXT/SRT, escolha a voz e o tom e gere o áudio já com a legenda.")}</p>
             </div>
           </div>
+          <div className="flex items-center gap-2 shrink-0"><label htmlFor="ui-language" className="text-xs text-nx-muted">{UI_LANG==="en"?"Language":"Idioma"}</label><select id="ui-language" value={UI_LANG} onChange={(e)=>{const url=new URL(window.location.href);if(e.target.value==="en")url.searchParams.set("lang","en");else url.searchParams.delete("lang");window.location.href=url.toString();}} className="bg-nx-bg border border-nx-line rounded-lg px-2 py-1 text-xs text-nx-text"><option value="pt-BR">Português</option><option value="en">English</option></select></div>
           <div className="hidden sm:flex items-center gap-4 shrink-0">
              {enableSplit && (
                  <div className="bg-amber-500/10 text-amber-300 border border-amber-500/20 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-tighter flex items-center gap-1">
