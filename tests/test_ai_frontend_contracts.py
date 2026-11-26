@@ -30,7 +30,7 @@ def test_local_model_removal_preserves_runtime_and_other_models():
     source = APP_JS.read_text(encoding="utf-8")
     assert 'remove.textContent="Desinstalar e excluir"' in source
     assert 'Os pesos deste modelo serão removidos' in source
-    assert 'O runtime llama.cpp, os outros modelos' in source
+    assert 'O llama.cpp instalado, os outros modelos' in source
     assert 'm.size_bytes' in source
 
 
