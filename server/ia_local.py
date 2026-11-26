@@ -547,9 +547,10 @@ async def import_model(request: Request, file: UploadFile = File(...)):
     folder = MODELS_DIR / model_id
     folder.mkdir(parents=True, exist_ok=False)
     target = folder / filename
+    temporary = folder / ("." + filename + "." + uuid.uuid4().hex + ".part")
     total = 0
     try:
-        with target.open("wb") as out:
+        with temporary.open("wb") as out:
             while True:
                 chunk = await file.read(1024 * 1024)
                 if not chunk:
@@ -560,16 +561,22 @@ async def import_model(request: Request, file: UploadFile = File(...)):
                 out.write(chunk)
         if total < 1024 * 1024:
             raise HTTPException(400, "O arquivo GGUF parece incompleto.")
-        with target.open("rb") as check:
+        with temporary.open("rb") as check:
             if check.read(4) != b"GGUF":
                 raise HTTPException(400, "O arquivo selecionado não tem cabeçalho GGUF válido.")
+        # Publish the model only after the complete file passed basic validation.
+        temporary.replace(target)
+        metadata = folder / "model.json"
+        metadata_temp = folder / (".model.json." + uuid.uuid4().hex + ".tmp")
+        metadata_temp.write_text(json.dumps({"model_id": model_id, "filename": filename,
+            "license": "Não verificada — confirme os termos do modelo original"}, indent=2), encoding="utf-8")
+        metadata_temp.replace(metadata)
     except Exception:
         shutil.rmtree(folder, ignore_errors=True)
         raise
     finally:
+        temporary.unlink(missing_ok=True)
         await file.close()
-    (folder / "model.json").write_text(json.dumps({"model_id": model_id, "filename": filename,
-        "license": "Não verificada — confirme os termos do modelo original"}, indent=2), encoding="utf-8")
     return {"id": model_id, "name": filename, "size_bytes": total,
             "warning": "A licença do arquivo importado não foi verificada."}
 
