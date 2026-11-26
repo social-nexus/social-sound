@@ -224,6 +224,13 @@ def test_f5tts_job_reuses_one_worker_and_preserves_completed_parts_on_retry(tmp_
         output_dir=tmp_path / "audio",
     ))
     client = TestClient(app)
+    # A partial Hugging Face snapshot must not be reported as installed.
+    (model_snapshot / "vocab.txt").unlink()
+    engines = {item["id"]: item for item in client.get("/api/narration/engines").json()["engines"]}
+    assert engines["f5tts"]["installed"] is False
+    (model_snapshot / "vocab.txt").write_text("vocab", encoding="utf-8")
+    engines = {item["id"]: item for item in client.get("/api/narration/engines").json()["engines"]}
+    assert engines["f5tts"]["installed"] is True
     response = client.post("/api/narration/jobs", json={
         "text": ("Primeira frase para teste. Segunda frase para teste. "
                  "Terceira frase para teste. Quarta frase para teste."),
