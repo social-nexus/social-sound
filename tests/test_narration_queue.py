@@ -146,7 +146,7 @@ def test_concurrent_enqueue_allocates_queue_order_without_collisions(tmp_path):
     import threading
 
     path = tmp_path / "concurrent-queue.sqlite3"
-    NarrationQueue(path)  # Initialize the schema before concurrent submissions.
+    queue = NarrationQueue(path)  # Initialize schema before concurrent submissions.
     count = 12
     barrier = threading.Barrier(count)
     created = []
@@ -155,7 +155,6 @@ def test_concurrent_enqueue_allocates_queue_order_without_collisions(tmp_path):
 
     def submit(index):
         try:
-            queue = NarrationQueue(path)
             barrier.wait(timeout=10)
             job = queue.enqueue(f"Texto {index}", "voz", "voxcpm2", [f"Parte {index}"])
             with guard:
@@ -172,9 +171,46 @@ def test_concurrent_enqueue_allocates_queue_order_without_collisions(tmp_path):
 
     assert not errors
     assert all(not thread.is_alive() for thread in threads)
-    queue = NarrationQueue(path)
     jobs = queue.list_jobs()
     assert len(jobs) == count
     orders = [job["queue_order"] for job in jobs]
     assert sorted(orders) == list(range(count))
     assert len({job["id"] for job in jobs}) == count
+
+
+def test_concurrent_requeue_allocates_unique_queue_order(tmp_path):
+    import threading
+
+    queue = NarrationQueue(tmp_path / "concurrent-requeue.sqlite3")
+    count = 10
+    jobs = [
+        queue.enqueue(f"Texto {index}", "voz", "voxcpm2", [f"Parte {index}"])
+        for index in range(count)
+    ]
+    for job in jobs:
+        queue.finish(job["id"], error="teste")
+    barrier = threading.Barrier(count)
+    errors = []
+    guard = threading.Lock()
+
+    def retry(job_id):
+        try:
+            barrier.wait(timeout=10)
+            queue.requeue(job_id)
+        except Exception as exc:
+            with guard:
+                errors.append(exc)
+
+    threads = [threading.Thread(target=retry, args=(job["id"],)) for job in jobs]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join(timeout=20)
+
+    assert not errors
+    assert all(not thread.is_alive() for thread in threads)
+    queued = [job for job in queue.list_jobs() if job["status"] == "queued"]
+    orders = [job["queue_order"] for job in queued]
+    assert len(queued) == count
+    assert len(set(orders)) == count
+    assert sorted(orders) == list(range(count, count * 2))
