@@ -105,3 +105,11 @@ def test_voice_engine_page_has_language_selector():
     page = PAGE.read_text(encoding="utf-8")
     assert "function addEngineLanguageSelector()" in page
     assert 'select.id="engine-ui-language"' in page
+
+
+def test_voice_engine_catalog_localizes_dynamic_metadata():
+    page = PAGE.read_text(encoding="utf-8")
+    assert 'esc(T(e.notes))' in page
+    assert 'esc(T(e.size_notes||""))' in page
+    assert 'esc(T(e.download_estimate||"Download não estimado"))' in page
+    assert '"Checkpoint comunitário ajustado para português brasileiro' in page
