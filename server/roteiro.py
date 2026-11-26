@@ -656,6 +656,7 @@ def humanizar(texto, acentos=True, motor="auto", margem=0.0, numeros=True, virgu
 # ====================================================================== rotas
 router = APIRouter()
 DOWNLOAD = {"rodando": False, "baixado": 0, "total": 0, "erro": None}
+DOWNLOAD_LOCK = threading.Lock()
 
 
 class Pedido(BaseModel):
@@ -744,8 +745,42 @@ def _baixar(refazer: bool = False):
         DOWNLOAD["rodando"] = False
 
 
+def _baixar_guarded(refazer: bool = False):
+    try:
+        _baixar(refazer)
+    finally:
+        DOWNLOAD_LOCK.release()
+
+
 @router.post("/api/roteiro/baixar-modelo")
 def rota_baixar(refazer: bool = False):
-    if not DOWNLOAD["rodando"]:
-        threading.Thread(target=_baixar, args=(refazer,), daemon=True).start()
+    if not DOWNLOAD_LOCK.acquire(blocking=False):
+        return {"ok": True, "pasta": str(MARK_DIR), "message": "O download já está em andamento."}
+    DOWNLOAD["rodando"] = True
+    try:
+        thread = threading.Thread(target=_baixar_guarded, args=(refazer,), daemon=True)
+        thread.start()
+    except Exception:
+        DOWNLOAD["rodando"] = False
+        DOWNLOAD_LOCK.release()
+        raise
     return {"ok": True, "pasta": str(MARK_DIR)}
+
+
+@router.delete("/api/roteiro/modelo")
+def rota_excluir_modelo():
+    if not DOWNLOAD_LOCK.acquire(blocking=False):
+        from fastapi import HTTPException
+        raise HTTPException(status_code=409, detail="Aguarde o download do modelo Mark terminar antes de excluir.")
+    try:
+        with MARK._lock:
+            MARK.sess, MARK.tags, MARK.erro = None, None, None
+            for filename in MARK_URLS:
+                (MARK_DIR / filename).unlink(missing_ok=True)
+                (MARK_DIR / (filename + ".part")).unlink(missing_ok=True)
+            if MARK_DIR.exists() and not any(MARK_DIR.iterdir()):
+                MARK_DIR.rmdir()
+        DOWNLOAD.update(rodando=False, baixado=0, total=0, erro=None)
+        return {"ok": True, "removed": True}
+    finally:
+        DOWNLOAD_LOCK.release()
