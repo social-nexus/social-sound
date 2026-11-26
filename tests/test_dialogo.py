@@ -39,3 +39,4 @@ def test_dialogue_job_cleanup_preserves_running_and_caps_finished_history(monkey
     assert "old" not in dialogo.JOBS
     assert "new-a" not in dialogo.JOBS
     assert "new-b" in dialogo.JOBS
+    dialogo.JOBS.clear()
