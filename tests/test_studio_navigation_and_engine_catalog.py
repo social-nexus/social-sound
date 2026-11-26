@@ -78,6 +78,8 @@ def test_dialogue_page_supports_english_interface():
     assert 'applyDialogueEnglish();' in html
     assert 'UI_LANG==="en"?"Generating...":"Gerando..."' in html
     assert 'if(UI_LANG==="en")TONS.forEach' in html
+    assert 'relogio = setInterval(function ()' in html
+    assert 'mmss((Date.now() - inicio) / 1000)' in html
 
 def test_narration_queue_translation_does_not_mutate_user_script_text():
     app = ROOT / "server" / "narracoes" / "app.js"
