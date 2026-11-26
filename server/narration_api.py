@@ -117,6 +117,10 @@ class EnqueueRequest(BaseModel):
 
 def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
                             find_mine, parse_text, split_sentences, tighten, data_dir: Path, output_dir: Path, unload_engine=None, inference_lock=None):
+    global _WORKER_SHUTDOWN_REQUESTED
+    with _ACTIVE_WORKER_PROCESSES_LOCK:
+        if not _ACTIVE_WORKER_PROCESSES:
+            _WORKER_SHUTDOWN_REQUESTED = False
     router = APIRouter(prefix="/api/narration", tags=["narracao"])
     db = NarrationQueue(data_dir / "narration_queue.sqlite3")
     output_dir.mkdir(parents=True, exist_ok=True)
