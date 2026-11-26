@@ -2,7 +2,7 @@
 const $=id=>document.getElementById(id);
 const api="/api/ai",providersApi="/api/ai/providers";
 const workspace=document.body.dataset.workspace;
-const providerNames={local:"IA local (llama.cpp)",openai:"OpenAI",anthropic:"Anthropic Claude",gemini:"Google Gemini",openrouter:"OpenRouter",deepseek:"DeepSeek",groq:"Groq",mistral:"Mistral AI"};
+const providerNames={local:UI_LANG==="en"?"Local AI (llama.cpp)":"IA local (llama.cpp)",openai:"OpenAI",anthropic:"Anthropic Claude",gemini:"Google Gemini",openrouter:"OpenRouter",deepseek:"DeepSeek",groq:"Groq",mistral:"Mistral AI"};
 const UI_LANG=new URLSearchParams(location.search).get("lang")==="en"?"en":"pt-BR";
 const AI_EN={
 "IA — Roteiros e Narração":"AI — Scripts & Narration","Crie, revise, adapte e prepare textos para narrar.":"Create, revise, adapt and prepare scripts for narration.",
