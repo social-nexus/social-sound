@@ -132,10 +132,31 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
     def supertonic_ready() -> bool:
         python = supertonic_python()
         cache = supertonic_cache()
-        return (python.is_file() and (cache / "onnx").is_dir()
-                and any((cache / "onnx").glob("*.onnx"))
-                and (cache / "voice_styles").is_dir()
-                and any((cache / "voice_styles").glob("*.json")))
+        # The SDK requires these exact ONNX/config artifacts. A partially
+        # downloaded cache with just one ONNX file must not be marked ready.
+        required = (
+            cache / "onnx" / "duration_predictor.onnx",
+            cache / "onnx" / "text_encoder.onnx",
+            cache / "onnx" / "vector_estimator.onnx",
+            cache / "onnx" / "vocoder.onnx",
+            cache / "onnx" / "tts.json",
+            cache / "onnx" / "unicode_indexer.json",
+        )
+        if not python.is_file() or not all(path.is_file() and path.stat().st_size > 0 for path in required):
+            return False
+        styles_dir = cache / "voice_styles"
+        if not styles_dir.is_dir():
+            return False
+        # At least one usable style JSON is needed; ignore malformed or
+        # interrupted downloads instead of presenting the engine as installed.
+        for style_path in styles_dir.glob("*.json"):
+            try:
+                style = json.loads(style_path.read_text(encoding="utf-8"))
+                if style:
+                    return True
+            except (OSError, json.JSONDecodeError):
+                continue
+        return False
 
     def render_supertonic_piece(job, part_index: int, destination: Path):
         if not supertonic_ready():
