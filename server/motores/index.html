@@ -11,22 +11,22 @@ const UI_LANG=new URLSearchParams(location.search).get("lang")==="en"?"en":"pt-B
 const EN={
 "Motores de Voz":"Voice Engines",
 "Confira licenças, tamanho dos downloads e espaço livre estimado. Instalações opcionais executam em ambiente Python separado, sem substituir o VoxCPM2. A instalação pode levar bastante tempo e depende da conexão e do hardware.":"Review licenses, download sizes and estimated free space. Optional engines run in separate Python environments without replacing VoxCPM2. Installation may take a while depending on your connection and hardware.",
-"Consultando catálogo…":"Loading catalog…",
-"Instalador integrado:":"Integrated installer:",
+"Consultando catálogo…":"Loading catalog…","Instalador integrado:":"Integrated installer:",
 "a instalação é executada em segundo plano, sem abrir ou procurar arquivos BAT. O sistema permite apenas uma instalação de motor por vez. Para OmniVoice e F5-TTS, os pesos são restritos a uso não comercial; confirme antes de instalar.":"installation runs in the background without opening or searching for BAT files. Only one engine can be installed at a time. OmniVoice and F5-TTS weights are non-commercial only; confirm before installing.",
 "Li e entendi as licenças; vou usar somente para fins não comerciais (sem monetização, publicidade ou serviços pagos).":"I have read the licenses and will use these models only for non-commercial purposes (no monetization, advertising or paid services).",
 "Li os avisos e a licença do motor/modelo e entendi suas restrições de uso.":"I have read the engine/model license and understand its restrictions.",
-T("Confirmo explicitamente que o uso será não comercial."):"I explicitly confirm that my use will be non-commercial.",
-"Integrado":"Integrated","Instalado":"Installed","Opcional":"Optional","Sim":"Yes","Não":"No","Código: ":"Code: ","Pesos: ":"Weights: ","Clonagem: ":"Voice cloning: ","Espaço recomendado: ":"Recommended space: ","
-T("Download não estimado"):"Download not estimated","não estimado":"not estimated",
+"Confirmo explicitamente que o uso será não comercial.":"I explicitly confirm that my use will be non-commercial.",
+"Integrado":"Integrated","Instalado":"Installed","Opcional":"Optional","Sim":"Yes","Não":"No",
+"Código: ":"Code: ","Pesos: ":"Weights: ","Clonagem: ":"Voice cloning: ","Espaço recomendado: ":"Recommended space: ",
+"Download não estimado":"Download not estimated","não estimado":"not estimated",
 "Modelo/licença":"Model/license","Código":"Code","Licença tokenizer":"Tokenizer license",
 "Instalar ":"Install ","Liberar pesos baixados":"Release downloaded weights","Desinstalar e excluir":"Uninstall and delete",
-T("Catálogo vazio"):"Catalog is empty","Falha ao consultar motores: ":"Could not load engines: ",
-T("Solicitando instalação…"):"Requesting installation…",T("Instalação iniciada. Pode demorar; acompanhe aqui."):"Installation started. It may take a while; monitor progress here.",
-"Não foi possível iniciar: ":"Could not start installation: ",T("Desinstalando com segurança…"):"Uninstalling safely…",
-T("Limpeza concluída."):"Cleanup completed.",T("Desinstalação concluída."):"Uninstallation completed.",
+"Catálogo vazio":"Catalog is empty","Falha ao consultar motores: ":"Could not load engines: ",
+"Solicitando instalação…":"Requesting installation…","Instalação iniciada. Pode demorar; acompanhe aqui.":"Installation started. It may take a while; monitor progress here.",
+"Não foi possível iniciar: ":"Could not start installation: ","Desinstalando com segurança…":"Uninstalling safely…",
+"Limpeza concluída.":"Cleanup completed.","Desinstalação concluída.":"Uninstallation completed.",
 " Espaço liberado: ":" Space freed: "," GB.":" GB.",
-T("Instalação concluída e verificada. Atualizando catálogo…"):"Installation completed and verified. Refreshing catalog…",
+"Instalação concluída e verificada. Atualizando catálogo…":"Installation completed and verified. Refreshing catalog…",
 "Erro ao consultar andamento: ":"Error checking progress: ","Não foi possível desinstalar: ":"Could not uninstall: "
 };
 const T=value=>UI_LANG==="en"?(EN[value]||value):value;
