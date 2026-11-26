@@ -508,7 +508,7 @@ def test_installer_termination_falls_back_to_killing_parent(monkeypatch):
             return 0
 
     process = FakeProcess()
-    monkeypatch.setattr(narration_api.os, "name", "nt")
+    monkeypatch.setattr(narration_api, "os", SimpleNamespace(name="nt"))
 
     def failed_taskkill(*args, **kwargs):
         raise OSError("taskkill indisponível")
