@@ -21,9 +21,16 @@ from narration_queue import NarrationQueue, split_for_duration
 
 
 def _terminate_process_tree(process):
-    """Stop a worker and descendants, including children that keep pipes open."""
+    """Stop a live worker and descendants, including children that keep pipes open."""
     if process is None:
         return
+    # Never signal a PID/PGID after its parent has exited: the identifier may
+    # already have been reused by an unrelated process.
+    try:
+        if process.poll() is not None:
+            return
+    except Exception:
+        pass
     if os.name == "nt":
         try:
             subprocess.run(
