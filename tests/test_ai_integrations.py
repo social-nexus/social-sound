@@ -402,6 +402,63 @@ def test_duplicate_model_download_jobs_serialize_and_reuse_verified_file(monkeyp
     assert all(ia_local.JOBS[jid]["status"] == "done" for jid in jobs)
 
 
+def test_runtime_uninstall_removes_runtime_and_staging_backup(monkeypatch, tmp_path):
+    variant = "linux-cpu-x64"
+    runtime_root = tmp_path / "runtime"
+    monkeypatch.setattr(ia_local, "RUNTIME_DIR", runtime_root)
+    monkeypatch.setattr(ia_local, "RUNTIME_INSTALL_LOCKS", {})
+    runtime_root.mkdir()
+    final = runtime_root / variant
+    staging = runtime_root / (variant + ".staging-test")
+    backup = runtime_root / (variant + ".backup-test")
+    for folder, filename, payload in ((final, "llama-server", b"runtime"),
+                                     (staging, "partial", b"staging"),
+                                     (backup, "old", b"backup")):
+        folder.mkdir()
+        (folder / filename).write_bytes(payload)
+    monkeypatch.setattr(ia_local, "PROCESS", None)
+    monkeypatch.setattr(ia_local, "ACTIVE_MODEL", None)
+    monkeypatch.setattr(ia_local, "ACTIVE_VARIANT", None)
+    monkeypatch.setattr(ia_local, "ACTIVE_GENERATIONS", 0)
+    result = ia_local.uninstall_runtime(variant, local_request())
+    assert result == {"ok": True, "removed_bytes": len(b"runtime") + len(b"staging") + len(b"backup")}
+    assert not final.exists()
+    assert not staging.exists()
+    assert not backup.exists()
+
+
+def test_runtime_uninstall_refuses_while_generation_is_active(monkeypatch, tmp_path):
+    variant = "linux-cpu-x64"
+    runtime_root = tmp_path / "runtime"
+    monkeypatch.setattr(ia_local, "RUNTIME_DIR", runtime_root)
+    monkeypatch.setattr(ia_local, "RUNTIME_INSTALL_LOCKS", {})
+    runtime_root.mkdir()
+    final = runtime_root / variant
+    final.mkdir()
+    (final / "llama-server").write_bytes(b"runtime")
+    class ActiveProcess:
+        def poll(self):
+            return None
+    monkeypatch.setattr(ia_local, "PROCESS", ActiveProcess())
+    monkeypatch.setattr(ia_local, "ACTIVE_MODEL", "qwen3-4b-q4km")
+    monkeypatch.setattr(ia_local, "ACTIVE_VARIANT", variant)
+    monkeypatch.setattr(ia_local, "ACTIVE_GENERATIONS", 1)
+    with pytest.raises(ia_local.HTTPException) as raised:
+        ia_local.uninstall_runtime(variant, local_request())
+    assert raised.value.status_code == 409
+    assert final.exists()
+
+
+def test_local_ai_ui_offers_runtime_uninstall_with_confirmation():
+    source = (Path(__file__).resolve().parents[1] / "server" / "ai_web" / "app.js").read_text(encoding="utf-8")
+    assert "async function uninstallRuntime(runtime)" in source
+    assert "Desinstalar o runtime" in source
+    assert "Desinstalar runtime e excluir arquivos" in source
+    for path in ("ia-roteiros/index.html", "ia-prompts/index.html"):
+        page = (Path(__file__).resolve().parents[1] / "server" / path).read_text(encoding="utf-8")
+        assert 'id="runtime-installed"' in page
+
+
 def test_runtime_install_refuses_publish_if_runtime_activated_during_download(monkeypatch, tmp_path):
     variant = "linux-cpu-x64"
     meta = ia_local.RUNTIME_CATALOG[variant]
