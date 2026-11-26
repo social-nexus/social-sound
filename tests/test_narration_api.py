@@ -191,10 +191,15 @@ def test_voxcpm_queue_generates_parts_and_requires_candidate_approval(tmp_path, 
 
 def test_f5tts_readiness_rejects_empty_and_partial_cache_artifacts(tmp_path, monkeypatch):
     runtime = tmp_path / "f5-runtime"
-    python = runtime / "Scripts" / "python.exe"
+    if sys.platform == "win32":
+        python = runtime / "Scripts" / "python.exe"
+        package_dir = runtime / "Lib" / "site-packages" / "f5_tts"
+    else:
+        python = runtime / "bin" / "python"
+        package_dir = runtime / "lib" / "python3.11" / "site-packages" / "f5_tts"
     python.parent.mkdir(parents=True)
     python.write_bytes(b"fake python")
-    (runtime / "Lib" / "site-packages" / "f5_tts").mkdir(parents=True)
+    package_dir.mkdir(parents=True)
     cache = tmp_path / "hf-cache"
     model = cache / "models--Cataldir--F5-TTS-pt-br" / "snapshots" / "model"
     vocoder = cache / "models--charactr--vocos-mel-24khz" / "snapshots" / "vocoder"
