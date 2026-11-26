@@ -312,6 +312,7 @@ def _install_runtime_worker(jid: str, variant: str):
         install_lock = RUNTIME_INSTALL_LOCKS.setdefault(variant, threading.Lock())
     with install_lock:
         meta = RUNTIME_CATALOG[variant]
+        staging = None
         try:
             if _runtime_binary(variant):
                 _update_job(jid, status="done", progress=100, message="Runtime já instalado.")
@@ -364,6 +365,8 @@ def _install_runtime_worker(jid: str, variant: str):
                         shutil.rmtree(backup, ignore_errors=True)
             _update_job(jid, status="done", progress=100, message="Runtime instalado e verificado.")
         except Exception as exc:
+            if staging is not None:
+                shutil.rmtree(staging, ignore_errors=True)
             _update_job(jid, status="error", message=str(exc)[:350])
 
 def _model_file(model_id: str) -> Path:
