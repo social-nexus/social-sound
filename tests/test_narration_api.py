@@ -178,8 +178,14 @@ def test_f5tts_job_reuses_one_worker_and_preserves_completed_parts_on_retry(tmp_
     (runtime / "Lib" / "site-packages" / "f5_tts").mkdir(parents=True)
     (runtime / "lib" / "python3.11" / "site-packages" / "f5_tts").mkdir(parents=True)
     cache = tmp_path / "hf-cache"
-    (cache / "models--Cataldir--F5-TTS-pt-br" / "snapshots" / "model").mkdir(parents=True)
-    (cache / "models--charactr--vocos-mel-24khz" / "snapshots" / "vocoder").mkdir(parents=True)
+    model_snapshot = cache / "models--Cataldir--F5-TTS-pt-br" / "snapshots" / "model"
+    vocoder_snapshot = cache / "models--charactr--vocos-mel-24khz" / "snapshots" / "vocoder"
+    model_snapshot.mkdir(parents=True)
+    vocoder_snapshot.mkdir(parents=True)
+    (model_snapshot / "model_last.safetensors").write_bytes(b"checkpoint")
+    (model_snapshot / "vocab.txt").write_text("vocab", encoding="utf-8")
+    (vocoder_snapshot / "config.yaml").write_text("config", encoding="utf-8")
+    (vocoder_snapshot / "pytorch_model.bin").write_bytes(b"vocoder")
     monkeypatch.setenv("SOCIAL_SOUND_F5TTS_PYTHON", str(python))
     monkeypatch.setenv("HF_HUB_CACHE", str(cache))
 
