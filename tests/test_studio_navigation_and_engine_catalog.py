@@ -127,3 +127,5 @@ def test_subtitle_workspace_supports_english_ui():
     assert 'applyCaptionEnglish();' in html
     assert 'UI_LANG==="en" ? (w?' in html
     assert 'UI_LANG==="en" ? (f==="palavras"' in html
+    assert 'Whisper installed ✔' in html
+    assert 'Whisper not installed: run instalar.bat again' in html
