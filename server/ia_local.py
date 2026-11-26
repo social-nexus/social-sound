@@ -416,7 +416,11 @@ def _download_model_worker(jid: str, model_id: str):
                 metadata_temp = None
                 _update_job(jid, status="done", progress=100, message="Modelo já instalado e verificado.")
                 return
-            # Download to a staging file; keep the previous model intact until validation passes.
+            # Remove an invalid prior artifact so it cannot be shown as installed after a failed repair.
+            if target.exists():
+                target.unlink(missing_ok=True)
+                metadata_path.unlink(missing_ok=True)
+            # Download to a staging file; publish only after validation passes.
             staged = target_dir / (".model-download-" + uuid.uuid4().hex + ".gguf")
             url = f"https://huggingface.co/{meta['repo']}/resolve/main/{meta['filename']}"
             _download(url, staged, size, jid)
