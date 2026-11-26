@@ -543,7 +543,14 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
         job_id = uuid.uuid4().hex
         with engine_install_state_guard:
             engine_install_state.update(job_id=job_id, engine=engine_id, status="queued", message="Instalação enfileirada.", started_at=time.time(), finished_at=None)
-        threading.Thread(target=run_engine_installer, args=(engine_id, job_id, accepted), daemon=True).start()
+        installer_thread = threading.Thread(target=run_engine_installer, args=(engine_id, job_id, accepted), daemon=True)
+        try:
+            installer_thread.start()
+        except Exception as exc:
+            with engine_install_state_guard:
+                engine_install_state.update(status="error", message=f"Não foi possível iniciar a instalação: {str(exc)[:500]}", finished_at=time.time())
+            engine_install_lock.release()
+            raise HTTPException(status_code=500, detail="Não foi possível iniciar o processo de instalação.") from exc
         return {"job_id": job_id, "status": "queued"}
 
     @router.get("/engines/install/{job_id}")
