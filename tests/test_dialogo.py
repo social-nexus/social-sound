@@ -86,3 +86,35 @@ def test_dialogue_frontend_enforces_script_size_and_line_limits():
     assert 'maxlength="200000"' in source
     assert "split(/\\r?\\n/)" in source
     assert "2.000 linhas" in source
+
+
+def test_dialogue_worker_updates_progress_and_finishes_job(tmp_path):
+    import numpy as np
+
+    outputs = tmp_path / "outputs"
+    outputs.mkdir()
+    jid = "worker-progress-test"
+    dialogo.JOBS[jid] = {"status": "rodando", "msg": "Começando...", "atual": 0, "total": 1, "t": time.time()}
+    model = type("Model", (), {"tts_model": type("TTS", (), {"sample_rate": 24000})()})()
+    ctx = {
+        "lock": threading.Lock(),
+        "run": lambda fn: fn(model),
+        "synth": lambda *args, **kwargs: np.zeros(2400, dtype=np.float32),
+        "tighten": lambda wav, sr: wav,
+        "make_cues": lambda text, start, end, maximum: [{"text": text, "start": start, "end": end}],
+        "parse_text": lambda text, pause=0.0: [("text", text)],
+        "split_sentences": lambda text: [text],
+        "ensure_preset": lambda *args: outputs / "voice.wav",
+        "find_mine": lambda name: None,
+        "preset_by_id": lambda name: {"id": name},
+        "saidas": outputs,
+    }
+    falas = [{"nome": None, "texto": "Olá", "par": False}]
+    narrador = {"voz": "preset:default", "estilo": ""}
+    dialogo._trabalho(ctx, jid, falas, narrador, {}, {
+        "pausa_falas": 0.5, "para_pause": 0.8, "max_chars": 42, "nome_na_legenda": True,
+    })
+    assert dialogo.JOBS[jid]["status"] == "pronto"
+    assert dialogo.JOBS[jid]["audio"] == f"/saidas/{jid}.wav"
+    assert "Carregando o modelo" not in dialogo.JOBS[jid]["msg"]
+    dialogo.JOBS.pop(jid, None)
