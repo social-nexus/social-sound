@@ -707,6 +707,8 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
             if not inference_acquired:
                 raise HTTPException(status_code=409, detail="O motor está sendo utilizado em uma geração de áudio. Tente novamente quando terminar.")
 
+            removed_bytes = 0
+            preserved = []
             if engine_id == "voxcpm2":
                 if unload_engine is not None:
                     unload_engine()
@@ -735,8 +737,6 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
                 "f5tts": "SOCIAL_SOUND_F5TTS_PYTHON",
             }[engine_id]
             configured_python = os.environ.get(configured_var)
-            removed_bytes = 0
-            preserved = []
             if configured_python:
                 custom_python = Path(configured_python).expanduser().resolve()
                 managed_root = runtime_root.resolve()
