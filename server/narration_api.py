@@ -932,10 +932,18 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
             raise HTTPException(409, "Esta parte já tem uma versão aguardando aprovação.")
         candidate_path = job_paths(job_id) / f"candidata_{part_index + 1:03d}_{uuid.uuid4().hex[:8]}.wav"
         try:
+            # Do not let a regeneration queued behind the inference lock undo
+            # an uninstall by loading (or downloading) the engine again.
+            with engine_uninstalling_guard:
+                if job.get("engine") in engine_uninstalling:
+                    raise HTTPException(409, "Este motor está sendo desinstalado. Aguarde antes de regenerar uma parte.")
             # Keep the duplicate-candidate check, rendering, and staging under
             # the same inference lock. Otherwise concurrent requests can both
             # pass the initial check and create multiple pending candidates.
             with inference_guard:
+                with engine_uninstalling_guard:
+                    if job.get("engine") in engine_uninstalling:
+                        raise HTTPException(409, "Este motor está sendo desinstalado. Aguarde antes de regenerar uma parte.")
                 if any(item["part_index"] == part_index for item in db.list_candidates(job_id)):
                     raise HTTPException(409, "Esta parte já tem uma versão aguardando aprovação.")
                 job = db.get(job_id)
