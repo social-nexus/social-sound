@@ -709,7 +709,6 @@ def delete_model(model_id: str, request: Request):
             shutil.rmtree(resolved_folder)
         return {"ok": True, "removed_bytes": removed_bytes}
 
-@router.post("/generate")
 def _extract_local_completion_text(data: Any) -> str:
     """Safely extract text from the local OpenAI-compatible completion payload."""
     if not isinstance(data, dict):
@@ -727,6 +726,7 @@ def _extract_local_completion_text(data: Any) -> str:
     return answer
 
 
+@router.post("/generate")
 async def generate_text(payload: dict, request: Request):
     _guard_local_request(request)
     provider = str(payload.get("provider", "local")).strip().lower()
