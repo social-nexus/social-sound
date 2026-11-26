@@ -3,6 +3,7 @@ import os
 import sys
 import tempfile
 import time
+import httpx
 import pytest
 from pathlib import Path
 from unittest.mock import AsyncMock
@@ -186,6 +187,43 @@ def test_generic_cloud_generation_works_without_local_runtime(monkeypatch):
     asyncio.run(run_test())
 
 
+
+
+def test_cloud_generation_rejects_invalid_model_identifier(monkeypatch):
+    monkeypatch.setattr(ai_providers, "_get_key", lambda provider: "test-key")
+    with pytest.raises(ValueError, match="identificador de modelo válido"):
+        asyncio.run(ai_providers.generate_with_provider(
+            "openai", "../invalid", "system", "prompt"
+        ))
+
+
+def test_cloud_generation_reports_missing_api_key(monkeypatch):
+    monkeypatch.setattr(ai_providers, "_get_key", lambda provider: None)
+    with pytest.raises(RuntimeError, match="Cadastre a chave de API"):
+        asyncio.run(ai_providers.generate_with_provider(
+            "openai", "gpt-4.1-mini", "system", "prompt"
+        ))
+
+
+@pytest.mark.parametrize(
+    ("status", "expected"),
+    [
+        (401, "A chave foi recusada pelo provedor"),
+        (403, "A chave foi recusada pelo provedor"),
+        (429, "Limite ou crédito da API atingido"),
+        (500, "Erro HTTP 500 do provedor"),
+    ],
+)
+def test_cloud_generation_maps_provider_http_errors(monkeypatch, status, expected):
+    request = httpx.Request("POST", "https://provider.example")
+    response = httpx.Response(status, request=request, text="provider error detail")
+    error = httpx.HTTPStatusError("provider error", request=request, response=response)
+    monkeypatch.setattr(ai_providers, "_get_key", lambda provider: "test-key")
+    monkeypatch.setattr(ai_providers, "_request_completion", AsyncMock(side_effect=error))
+    with pytest.raises(RuntimeError, match=expected):
+        asyncio.run(ai_providers.generate_with_provider(
+            "openai", "gpt-4.1-mini", "system", "prompt"
+        ))
 
 def test_f5tts_worker_resolves_custom_huggingface_uris_before_loading(monkeypatch, tmp_path):
     import importlib.util
