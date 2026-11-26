@@ -121,3 +121,49 @@ def test_mark_model_uninstall_refuses_while_download_lock_is_held(tmp_path, monk
         assert response.status_code == 409
     finally:
         lock.release()
+
+
+def test_mark_validation_accepts_language_specific_diacritics_only():
+    assert roteiro.MARK._validar("a", ["à"]) == "à"
+    assert roteiro.MARK._validar("e", ["é"]) == "é"
+    assert roteiro.MARK._validar("a", ["b"]) == "a"
+    assert roteiro.MARK._validar("a", ["áx"]) == "a"
+    assert roteiro.MARK._validar("a", ["a"]) == "a"
+
+
+def test_mark_multilingual_language_id_is_forwarded(monkeypatch):
+    import numpy as np
+
+    seen = {}
+
+    class FakeSession:
+        def run(self, _outputs, inputs):
+            seen["language"] = int(inputs["lang_ids"][0])
+            return [np.zeros((1, 512, 2), dtype=np.float32)]
+
+    monkeypatch.setattr(roteiro.MARK, "sess", FakeSession())
+    monkeypatch.setattr(roteiro.MARK, "tags", ["KEEP", "M:00E0"])
+    predictions, size = roteiro.MARK._previsoes("a", 0.0, "fr")
+    assert seen["language"] == roteiro.MARK_LANGS.index("fr")
+    assert size == 2
+    assert predictions == [0]
+
+
+def test_mark_unknown_language_falls_back_to_portuguese(monkeypatch):
+    calls = []
+
+    def fake_restore(_text, _margin, language):
+        calls.append(language)
+        return "texto"
+
+    monkeypatch.setattr(roteiro.MARK, "_restaurar", fake_restore)
+    assert roteiro.MARK.restaurar("texto", 0.0, "invalid") == "texto"
+    assert calls == ["pt"]
+
+
+def test_humanization_ui_exposes_multilingual_mark_language_selector():
+    page = (Path(__file__).resolve().parents[1] / "server" / "roteiro_web" / "index.html").read_text(encoding="utf-8")
+    assert 'id="mark-language"' in page
+    assert 'idioma_mark: $("mark-language").value' in page
+    for code in ("pt", "en", "es", "fr", "vi", "ar", "he", "yo"):
+        assert f'<option value="{code}">' in page
