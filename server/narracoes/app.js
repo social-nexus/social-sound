@@ -69,6 +69,14 @@ document.querySelectorAll("[title]").forEach(el=>{const key=el.title.trim();if(S
 
 const $=id=>document.getElementById(id);
 applyStaticEnglish();
+function addQueueLanguageSelector(){
+ if(window.self!==window.top)return;
+ const header=document.querySelector(".top");if(!header||header.querySelector("#queue-ui-language"))return;
+ const select=document.createElement("select");select.id="queue-ui-language";select.style.cssText="margin-left:auto;background:#0b1324;color:inherit;border:1px solid #29344a;border-radius:8px;padding:7px";
+ for(const [value,label] of [["pt-BR","Português"],["en","English"]]){const option=document.createElement("option");option.value=value;option.textContent=label;select.appendChild(option);}
+ select.value=UI_LANG;select.addEventListener("change",()=>{const url=new URL(location.href);if(select.value==="en")url.searchParams.set("lang","en");else url.searchParams.delete("lang");location.href=url.toString();});header.appendChild(select);
+}
+addQueueLanguageSelector();
 let jobs=[];let queuePaused=false;let voicesData=null;const jobElapsed=new Map();function elapsedLabel(ms){const total=Math.max(0,Math.floor(ms/1000));return String(Math.floor(total/60)).padStart(2,"0")+":"+String(total%60).padStart(2,"0");}
 const esc=value=>String(value??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
 const statusLabel=s=>T(({queued:"Na fila",processing:"Em andamento",completed:"Concluída",failed:"Falhou",interrupted:"Interrompida"}[s]||s));
