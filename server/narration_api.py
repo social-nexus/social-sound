@@ -532,6 +532,8 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
     engine_install_process_guard = threading.Lock()
     engine_install_process = {"process": None}
     engine_install_thread = {"thread": None}
+    engine_uninstalling = set()
+    engine_uninstalling_guard = threading.Lock()
 
     def shutdown_engine_installer():
         # A daemon installer must not leave cmd/pip children running after the API exits.
@@ -688,7 +690,11 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
         if not engine_install_lock.acquire(blocking=False):
             raise HTTPException(status_code=409, detail="Aguarde a instalação de um motor terminar antes de desinstalar.")
         inference_acquired = False
+        uninstall_flag_set = False
         try:
+            with engine_uninstalling_guard:
+                engine_uninstalling.add(engine_id)
+                uninstall_flag_set = True
             active_jobs = [
                 job for job in db.list_jobs()
                 if job.get("engine") == engine_id and job.get("status") in {"queued", "processing"}
@@ -753,6 +759,9 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
         finally:
             if inference_acquired:
                 inference_guard.release()
+            if uninstall_flag_set:
+                with engine_uninstalling_guard:
+                    engine_uninstalling.discard(engine_id)
             engine_install_lock.release()
 
     @router.post("/split")
@@ -838,10 +847,13 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
                 raise HTTPException(400, "Selecione uma voz predefinida válida do Supertonic 3.")
         else:
             raise HTTPException(400, "Motor de narração inválido.")
-        job = db.enqueue(payload.text, payload.voice, payload.engine, parts,
-                         {"style": payload.style, "target_seconds": payload.target_seconds,
-                          "chars_per_minute": payload.chars_per_minute, "mode": payload.mode,
-                          "reference_audio": payload.reference_audio, "reference_text": payload.reference_text})
+        with engine_uninstalling_guard:
+            if payload.engine in engine_uninstalling:
+                raise HTTPException(409, "Este motor está sendo desinstalado. Aguarde antes de adicionar uma nova narração.")
+            job = db.enqueue(payload.text, payload.voice, payload.engine, parts,
+                             {"style": payload.style, "target_seconds": payload.target_seconds,
+                              "chars_per_minute": payload.chars_per_minute, "mode": payload.mode,
+                              "reference_audio": payload.reference_audio, "reference_text": payload.reference_text})
         return public_job(job)
 
     @router.get("/jobs/{job_id}")
