@@ -48,7 +48,8 @@ if errorlevel 1 echo AVISO: o modelo de voz nao terminou de baixar. Ele sera bai
 
 echo.
 echo [5/6] Baixando o modelo de acentos da aba Roteiro (cerca de 42 MB)...
-python -c "import roteiro; roteiro._baixar(); print('erro:', roteiro.DOWNLOAD['erro'])"
+python -c "import roteiro; roteiro._baixar(); e=roteiro.DOWNLOAD['erro']; print(('AVISO: ' + e + '. A aba Roteiro usara o dicionario de reserva; voce pode tentar baixar novamente dentro da aba.') if e else 'Modelo de acentos baixado com sucesso.')"
+
 
 echo.
 echo [6/6] Baixando o modelo Whisper base da aba Legendas (cerca de 150 MB)...
