@@ -42,7 +42,7 @@ const STATIC_EN={
 "Você também pode colar o texto diretamente.":"You can also paste text directly.","Idioma":"Language",
 "Produção":"Production","Código:":"Code:","Pesos:":"Weights:","Clonagem:":"Voice cloning:",
 "Instalado":"Installed","Integrado":"Integrated","Opcional":"Optional","Sim":"Yes","Não":"No",
-" "Opcional · instalar pela aba Motores de Voz":"Optional · install from Voice Engines tab","Opcional · não instalado":"Optional · not installed",
+"Opcional · instalar pela aba Motores de Voz":"Optional · install from Voice Engines tab","Opcional · não instalado":"Optional · not installed",
 "Modelo e licença oficial":"Official model and license","Código":"Code","Licença tokenizer":"Tokenizer license",
 "Liberar pesos baixados":"Release downloaded weights","Desinstalar e excluir":"Uninstall and delete",
 "Consultar catálogo de motores":"Load voice engine catalog","Não foi possível carregar o catálogo de motores.":"Could not load engine catalog.",
