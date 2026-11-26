@@ -116,6 +116,10 @@ class NarrationQueue:
                 );
             """)
             columns = {row["name"] for row in db.execute("PRAGMA table_info(narration_jobs)")}
+            if "started_at" not in columns:
+                db.execute("ALTER TABLE narration_jobs ADD COLUMN started_at TEXT")
+            if "completed_at" not in columns:
+                db.execute("ALTER TABLE narration_jobs ADD COLUMN completed_at TEXT")
             if "queue_order" not in columns:
                 db.execute("ALTER TABLE narration_jobs ADD COLUMN queue_order INTEGER NOT NULL DEFAULT 0")
                 rows = db.execute("SELECT id FROM narration_jobs ORDER BY created_at, rowid").fetchall()
@@ -196,7 +200,7 @@ class NarrationQueue:
                 db.commit()
                 return None
             changed = db.execute(
-                "UPDATE narration_jobs SET status='processing', updated_at=CURRENT_TIMESTAMP "
+                "UPDATE narration_jobs SET status='processing', started_at=COALESCE(started_at,CURRENT_TIMESTAMP), completed_at=NULL, updated_at=CURRENT_TIMESTAMP "
                 "WHERE id=? AND status='queued'", (row["id"],)
             ).rowcount
             db.commit()
@@ -223,7 +227,7 @@ class NarrationQueue:
     def finish(self, job_id: str, error: str | None = None) -> dict:
         with self._connect() as db:
             db.execute(
-                "UPDATE narration_jobs SET status=?, error=?, updated_at=CURRENT_TIMESTAMP WHERE id=?",
+                "UPDATE narration_jobs SET status=?, error=?, completed_at=CURRENT_TIMESTAMP, updated_at=CURRENT_TIMESTAMP WHERE id=?",
                 ("failed" if error else "completed", error, job_id)
             )
         return self.get(job_id)
@@ -232,7 +236,7 @@ class NarrationQueue:
         """Mark jobs left running at shutdown; queued jobs remain queued."""
         with self._connect() as db:
             cur = db.execute(
-                "UPDATE narration_jobs SET status='interrupted', "
+                "UPDATE narration_jobs SET status='interrupted', completed_at=CURRENT_TIMESTAMP, "
                 "updated_at=CURRENT_TIMESTAMP WHERE status='processing'"
             )
             return cur.rowcount
@@ -244,7 +248,7 @@ class NarrationQueue:
                 "SELECT COALESCE(MAX(queue_order), -1) + 1 FROM narration_jobs"
             ).fetchone()[0]
             cur = db.execute(
-                "UPDATE narration_jobs SET status='queued', error=NULL, queue_order=?, "
+                "UPDATE narration_jobs SET status='queued', error=NULL, started_at=NULL, completed_at=NULL, queue_order=?, "
                 "updated_at=CURRENT_TIMESTAMP WHERE id=? AND status IN ('interrupted','failed')",
                 (next_order, job_id)
             )
