@@ -253,7 +253,7 @@
   applyCaptionEnglish();
   fetch("/api/legenda/status").then(function (r) { return r.json(); }).then(function (s) {
     whisperOk = !!s.whisper;
-    $("estadoWhisper").textContent = whisperOk ? "Whisper instalado ✔" : "Whisper não instalado: rode o instalar.bat de novo";
+    $("estadoWhisper").textContent = whisperOk ? (UI_LANG==="en"?"Whisper installed ✔":"Whisper instalado ✔") : (UI_LANG==="en"?"Whisper not installed: run instalar.bat again":"Whisper não instalado: rode o instalar.bat de novo");
   }).catch(function () {});
 </script>
 </body>
