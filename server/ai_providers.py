@@ -270,8 +270,9 @@ async def generate_with_provider(provider: str, model: str, system: str, user: s
             raise RuntimeError("A chave foi recusada pelo provedor. Confira a chave e as permissões.")
         if status == 429:
             raise RuntimeError("Limite ou crédito da API atingido. Confira a conta do provedor.")
-        detail = exc.response.text[:250]
-        raise RuntimeError(f"Erro HTTP {status} do provedor: {detail}")
+        # Provider response bodies can echo request data or contain sensitive details.
+        # Keep the UI error actionable without forwarding untrusted response text.
+        raise RuntimeError(f"Erro HTTP {status} do provedor. Confira a configuração e tente novamente.")
     except httpx.HTTPError as exc:
         raise RuntimeError(f"Não foi possível conectar ao provedor: {str(exc)[:180]}")
 
@@ -308,8 +309,8 @@ def save_key(payload: dict, request: Request):
         raise HTTPException(400, "A chave de API parece inválida.")
     try:
         _set_key(provider, api_key)
-    except Exception as exc:
-        raise HTTPException(503, str(exc))
+    except Exception:
+        raise HTTPException(503, "Não foi possível salvar a chave no cofre de credenciais do sistema.")
     return {"ok": True, "configured": True}
 
 
