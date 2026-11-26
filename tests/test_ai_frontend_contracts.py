@@ -92,4 +92,7 @@ def test_narration_queue_static_ui_localizes_to_english():
     assert "applyStaticEnglish();" in source
     assert 'T("Fila ativa")' in source
     assert 'T("Pausar após a atual")' in source
-    assert 'T("Adicionada à fila.")' in source\n    assert 'T("Motores com uso comercial permitido")' in source\n    assert 'T("Liberar pesos baixados")' in source\n    assert 'T("Desinstalar e excluir")' in source
+    assert 'T("Adicionada à fila.")' in source
+    assert 'T("Motores com uso comercial permitido")' in source
+    assert 'T("Liberar pesos baixados")' in source
+    assert 'T("Desinstalar e excluir")' in source
