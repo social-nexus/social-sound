@@ -606,3 +606,18 @@ def test_local_ai_job_history_is_bounded_and_keeps_active_jobs(monkeypatch):
     active = [job for job in ia_local.JOBS.values() if job["status"] not in ("done", "error")]
     assert len(finished) == 100
     assert {job["id"] for job in active} >= {"running-1", "running-2", jid}
+
+
+def test_background_job_start_failure_marks_job_failed(monkeypatch):
+    class FailingThread:
+        def __init__(self, *args, **kwargs):
+            pass
+        def start(self):
+            raise RuntimeError("thread resource unavailable")
+    monkeypatch.setattr(ia_local.threading, "Thread", FailingThread)
+    jid = ia_local._job("runtime")
+    with pytest.raises(Exception) as caught:
+        ia_local._start_background_job(jid, lambda: None, ())
+    assert getattr(caught.value, "status_code", None) == 500
+    assert ia_local.JOBS[jid]["status"] == "error"
+    assert "resource unavailable" in ia_local.JOBS[jid]["message"]
