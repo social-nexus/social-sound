@@ -710,11 +710,19 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
             raise HTTPException(409, "Esta parte já tem uma versão aguardando aprovação.")
         candidate_path = job_paths(job_id) / f"candidata_{part_index + 1:03d}_{uuid.uuid4().hex[:8]}.wav"
         try:
+            # Keep the duplicate-candidate check, rendering, and staging under
+            # the same inference lock. Otherwise concurrent requests can both
+            # pass the initial check and create multiple pending candidates.
             with inference_guard:
+                if any(item["part_index"] == part_index for item in db.list_candidates(job_id)):
+                    raise HTTPException(409, "Esta parte já tem uma versão aguardando aprovação.")
+                job = db.get(job_id)
+                if not job or job["status"] != "completed":
+                    raise HTTPException(409, "A narração não está mais concluída.")
                 if job.get("engine") != "voxcpm2" and unload_engine is not None:
                     unload_engine()
                 render_piece(job, part_index, candidate_path)
-            candidate_id = db.stage_candidate(job_id, part_index, str(candidate_path))
+                candidate_id = db.stage_candidate(job_id, part_index, str(candidate_path))
             return {"candidate_id": candidate_id, "part_index": part_index,
                     "audio_url": f"/saidas/narracoes/{job_id}/{candidate_path.name}",
                     "status": "awaiting_approval"}
