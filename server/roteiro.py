@@ -679,6 +679,7 @@ def rota_status():
     pronto = MARK.carregar() if MARK.baixado() else False
     return {
         "mark_baixado": MARK.baixado(),
+        "mark_files_present": MARK_DIR.exists() and any(MARK_DIR.iterdir()),
         "mark_pronto": pronto,
         "mark_erro": MARK.erro,
         "onnxruntime": find_spec("onnxruntime") is not None,
@@ -775,13 +776,16 @@ def rota_excluir_modelo():
     try:
         with MARK._lock:
             MARK.sess, MARK.tags, MARK.erro = None, None, None
-            for filename in MARK_URLS:
-                (MARK_DIR / filename).unlink(missing_ok=True)
-                (MARK_DIR / (filename + ".part")).unlink(missing_ok=True)
-                (MARK_DIR / (filename + ".baixando")).unlink(missing_ok=True)
-            if MARK_DIR.exists() and not any(MARK_DIR.iterdir()):
-                MARK_DIR.rmdir()
+            removed_bytes = 0
+            if MARK_DIR.exists():
+                for item in MARK_DIR.rglob("*"):
+                    try:
+                        if item.is_file() and not item.is_symlink():
+                            removed_bytes += item.stat().st_size
+                    except OSError:
+                        continue
+                shutil.rmtree(MARK_DIR)
         DOWNLOAD.update(rodando=False, baixado=0, total=0, erro=None)
-        return {"ok": True, "removed": True}
+        return {"ok": True, "removed": True, "removed_bytes": removed_bytes}
     finally:
         DOWNLOAD_LOCK.release()
