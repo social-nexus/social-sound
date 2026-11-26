@@ -138,7 +138,16 @@ def _trabalho(ctx, jid, falas, narrador, personagens, opts):
         with ctx["lock"]:
             sr, saida, cues, info = ctx["run"](work)
         caminho = ctx["saidas"] / f"{jid}.wav"
-        sf.write(str(caminho), saida, sr, subtype="PCM_16")
+        temp_audio = caminho.with_name(f".{jid}.{uuid.uuid4().hex}.tmp.wav")
+        try:
+            sf.write(str(temp_audio), saida, sr, subtype="PCM_16")
+            info_wav = sf.info(str(temp_audio))
+            if info_wav.frames <= 0 or info_wav.samplerate < 8000 or info_wav.channels not in (1, 2):
+                raise RuntimeError("O WAV temporário do diálogo não passou na validação.")
+            import os
+            os.replace(temp_audio, caminho)
+        finally:
+            temp_audio.unlink(missing_ok=True)
         duracao = len(saida) / sr
         srt = montar_srt([{"texto": c["text"]} for c in cues], [c["start"] for c in cues], [c["end"] for c in cues], duracao)
         _job_update(jid, status="pronto", atual=n, msg="Pronto.", audio=f"/saidas/{jid}.wav", srt=srt, falas=info, duracao=round(duracao, 1))
