@@ -238,6 +238,16 @@ def test_local_completion_parser_validates_payload(payload, expected):
         ("openai", None, ""),
     ],
 )
+def test_cloud_generation_uses_guarded_parser_for_each_provider():
+    source = Path(ai_providers.__file__).read_text(encoding="utf-8")
+    request = source.split("async def _request_completion(", 1)[1].split(
+        "async def generate_with_provider(", 1)[0]
+    for provider in ("openai", "anthropic", "gemini"):
+        assert f'_extract_response_text(response.json(), "{provider}")' in request
+    assert 'response.json().get("content", [])' not in request
+    assert 'response.json().get("candidates", [])' not in request
+
+
 def test_local_generation_endpoint_uses_guarded_response_parser():
     source = Path(ia_local.__file__).read_text(encoding="utf-8")
     generation = source.split("async def generate_text(", 1)[1]
