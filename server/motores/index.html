@@ -45,7 +45,7 @@ function addEngineLanguageSelector(){
  select.value=UI_LANG;select.addEventListener("change",()=>{const url=new URL(location.href);if(select.value==="en")url.searchParams.set("lang","en");else url.searchParams.delete("lang");location.href=url.toString();});
  box.append(label,select);header.appendChild(box);
 }
-addEngineLanguageSelector();
+if(window.self===window.top)addEngineLanguageSelector();
 applyEnginesEnglish();
 
 async function api(url,opts={}){const r=await fetch(url,opts);const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.detail||j.message||("HTTP "+r.status));return j}
