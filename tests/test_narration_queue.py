@@ -214,3 +214,19 @@ def test_concurrent_requeue_allocates_unique_queue_order(tmp_path):
     assert len(queued) == count
     assert len(set(orders)) == count
     assert sorted(orders) == list(range(count, count * 2))
+
+
+def test_approving_candidate_discards_stale_sibling_candidates(tmp_path):
+    queue = NarrationQueue(tmp_path / "queue.sqlite3")
+    job = queue.enqueue("Texto", "voz", "voxcpm2", ["Parte 1"])
+    older = queue.stage_candidate(job["id"], 0, "older.wav")
+    newer = queue.stage_candidate(job["id"], 0, "newer.wav")
+
+    approved = queue.approve_candidate(newer)
+    assert approved["parts"][0]["audio_path"] == "newer.wav"
+    assert queue.candidate(newer)["status"] == "approved"
+    assert queue.candidate(older)["status"] == "discarded"
+    import pytest
+    with pytest.raises(KeyError):
+        queue.approve_candidate(older)
+    assert queue.get(job["id"])["parts"][0]["audio_path"] == "newer.wav"
