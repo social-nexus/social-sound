@@ -230,3 +230,25 @@ def test_approving_candidate_discards_stale_sibling_candidates(tmp_path):
     with pytest.raises(KeyError):
         queue.approve_candidate(older)
     assert queue.get(job["id"])["parts"][0]["audio_path"] == "newer.wav"
+
+
+def test_queue_persists_generation_timestamps_and_resets_on_requeue(tmp_path):
+    queue = NarrationQueue(tmp_path / "queue.sqlite3")
+    job = queue.enqueue("Texto", "voz", "voxcpm2", ["Parte"])
+    claimed = queue.claim_next()
+    assert claimed["id"] == job["id"]
+    assert claimed["started_at"]
+    assert claimed["completed_at"] is None
+
+    finished = queue.finish(job["id"])
+    assert finished["started_at"] == claimed["started_at"]
+    assert finished["completed_at"]
+
+    failed = queue.enqueue("Texto 2", "voz", "voxcpm2", ["Parte"])
+    queue.claim_next()
+    queue.finish(failed["id"], error="falha simulada")
+    queued_again = queue.requeue(failed["id"])
+    assert queued_again["started_at"] is None
+    assert queued_again["completed_at"] is None
+    assert queue.claim_next()["id"] == failed["id"]
+    assert queue.get(failed["id"])["started_at"]
