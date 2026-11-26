@@ -78,3 +78,11 @@ def test_dialogue_api_rejects_oversized_script_and_detection_payload(tmp_path):
         "pausa_falas": "não é número",
     })
     assert invalid_options.status_code == 400
+
+
+def test_dialogue_frontend_enforces_script_size_and_line_limits():
+    ui = SERVER / "dialogo_web" / "index.html"
+    source = ui.read_text(encoding="utf-8")
+    assert 'maxlength="200000"' in source
+    assert "split(/\\\\r?\\\\n/)" in source
+    assert "2.000 linhas" in source
