@@ -68,8 +68,8 @@
     <div>
       <section class="card">
         <label class="t" for="roteiro">Roteiro com falas</label>
-        <textarea id="roteiro" placeholder="Narrador: Era uma noite chuvosa.&#10;Maria: Você ouviu isso?&#10;João: Foi só o vento.&#10;&#10;Narrador: Mas o barulho continuou."></textarea>
-        <div class="dica">Uma fala por linha, no formato <b>Nome: fala</b>. Linhas sem nome usam a voz do Narrador. Uma linha em branco separa os blocos (pausa maior). Pausas: &lt;pause 1s&gt;. <button class="link" id="exemplo">Inserir um exemplo</button></div>
+        <textarea id="roteiro" maxlength="200000" placeholder="Narrador: Era uma noite chuvosa.&#10;Maria: Você ouviu isso?&#10;João: Foi só o vento.&#10;&#10;Narrador: Mas o barulho continuou."></textarea>
+        <div class="dica">Uma fala por linha, no formato <b>Nome: fala</b>. Linhas sem nome usam a voz do Narrador. Uma linha em branco separa os blocos (pausa maior). Pausas: &lt;pause 1s&gt;. Limite: 200.000 caracteres e 2.000 linhas. <button class="link" id="exemplo">Inserir um exemplo</button></div>
       </section>
       <section class="card">
         <label class="t">Vozes</label>
@@ -204,6 +204,7 @@
     $("erros").innerHTML = ""; $("info").textContent = ""; $("srt").value = ""; $("player").style.display = "none"; $("baixarAudio").style.display = "none";
     $("baixarSrt").disabled = $("copiar").disabled = true;
     if (!$("roteiro").value.trim()) { mostrarErro("Escreva o roteiro."); return; }
+    if ($("roteiro").value.split(/\\r?\\n/).length > 2000) { mostrarErro("O roteiro excede o limite de 2.000 linhas."); return; }
     if (!narrador.voz) { mostrarErro("Escolha a voz do Narrador."); return; }
     $("gerar").disabled = true; $("gerar").textContent = "Gerando..."; $("prog").style.display = "block"; $("progTxt").textContent = "Começando..."; $("barra").style.width = "0";
     inicio = Date.now();
