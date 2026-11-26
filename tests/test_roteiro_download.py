@@ -170,3 +170,13 @@ def test_humanization_ui_exposes_multilingual_mark_language_selector():
     assert 'idioma_mark: $("mark-language").value' in page
     for code in ("pt", "es", "fr", "vi", "ar", "he", "ht", "yo"):
         assert f'<option value="{code}">' in page
+
+
+def test_mark_language_dropdown_matches_model_supported_languages():
+    import re
+
+    page = (Path(__file__).resolve().parents[1] / "server" / "roteiro_web" / "index.html").read_text(encoding="utf-8")
+    select = re.search(r'<select id="mark-language"[^>]*>(.*?)</select>', page, re.S)
+    assert select
+    options = re.findall(r'<option value="([a-z]{2})">', select.group(1))
+    assert options == roteiro.MARK_LANGS
