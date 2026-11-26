@@ -795,3 +795,25 @@ def test_local_runtime_cannot_switch_models_during_generation(monkeypatch, tmp_p
         ia_local._start_runtime("test-model", "test-cpu", 0)
 
     assert stopped == []
+
+
+def test_runtime_install_cleans_staging_when_runtime_becomes_active(monkeypatch, tmp_path):
+    variant = "linux-cpu-x64"
+    meta = ia_local.RUNTIME_CATALOG[variant]
+    runtime_root = tmp_path / "runtime"
+    monkeypatch.setattr(ia_local, "RUNTIME_DIR", runtime_root)
+    runtime_root.mkdir()
+    monkeypatch.setattr(ia_local, "_runtime_binary", lambda selected: None)
+    monkeypatch.setattr(ia_local, "_download", lambda url, archive, size, jid: archive.write_bytes(b"package"))
+    def fake_extract(archive, destination, kind):
+        destination.mkdir(parents=True, exist_ok=True)
+        (destination / meta["binary"]).write_bytes(b"fake-runtime")
+    monkeypatch.setattr(ia_local, "_extract_archive", fake_extract)
+    monkeypatch.setattr(ia_local, "_sha256", lambda path: meta["sha256"])
+    monkeypatch.setattr(ia_local, "ACTIVE_VARIANT", variant)
+    monkeypatch.setattr(ia_local, "PROCESS", type("RunningProcess", (), {"poll": lambda self: None})())
+    job_id = ia_local._job("runtime")
+    ia_local._install_runtime_worker(job_id, variant)
+    assert ia_local.JOBS[job_id]["status"] == "error"
+    assert not list(runtime_root.glob(f"{variant}.staging-*"))
+    assert not (runtime_root / variant).exists()
