@@ -1,6 +1,10 @@
 from pathlib import Path
 import sys
 import time
+import threading
+
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
 
 SERVER = Path(__file__).resolve().parents[1] / "server"
 sys.path.insert(0, str(SERVER))
@@ -27,7 +31,7 @@ def test_parse_dialogue_uses_known_names_and_tracks_blank_blocks():
     ]
 
 
-def test_dialogue_job_cleanup_preserves_running_and_caps_finished_history(monkeypatch):
+def test_dialogue_job_cleanup_preserves_running_and_caps_finished_history():
     dialogo.JOBS.clear()
     now = time.time()
     dialogo.JOBS["running"] = {"status": "rodando", "t": now - 5000}
@@ -40,3 +44,31 @@ def test_dialogue_job_cleanup_preserves_running_and_caps_finished_history(monkey
     assert "new-a" not in dialogo.JOBS
     assert "new-b" in dialogo.JOBS
     dialogo.JOBS.clear()
+
+
+def _client(tmp_path):
+    outputs = tmp_path / "outputs"
+    outputs.mkdir()
+    app = FastAPI()
+    model = type("Model", (), {"tts_model": type("TTS", (), {"sample_rate": 24000})()})()
+    app.include_router(dialogo.criar_router({
+        "lock": threading.Lock(),
+        "run": lambda fn: fn(model),
+        "synth": lambda *args, **kwargs: None,
+        "tighten": lambda wav, sr: wav,
+        "make_cues": lambda text, start, end, maximum: [{"text": text, "start": start, "end": end}],
+        "parse_text": lambda text, pause=0.0: [("text", text)],
+        "split_sentences": lambda text: [text],
+        "ensure_preset": lambda *args: outputs / "voice.wav",
+        "find_mine": lambda name: None,
+        "preset_by_id": lambda name: {"id": name},
+        "saidas": outputs,
+    }))
+    return TestClient(app)
+
+
+def test_dialogue_api_rejects_oversized_script_and_detection_payload(tmp_path):
+    client = _client(tmp_path)
+    oversized = "x" * 200001
+    assert client.post("/api/dialogo/gerar", json={"texto": oversized}).status_code == 413
+    assert client.post("/api/dialogo/detectar", json={"texto": oversized}).status_code == 413
