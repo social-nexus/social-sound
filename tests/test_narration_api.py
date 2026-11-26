@@ -134,7 +134,17 @@ def test_voxcpm_queue_generates_parts_and_requires_candidate_approval(tmp_path, 
     assert client.get(f"/api/narration/jobs/{job_id}/candidates").json()["candidates"][0]["status"] == "awaiting_approval"
 
     monkeypatch.setattr(narration_api.os, "replace", original_replace)
+    # Simulate an older pending sibling from a concurrent/previous regen request.
+    from narration_queue import NarrationQueue
+    queue_db = NarrationQueue(tmp_path / "data" / "narration_queue.sqlite3")
+    sibling_audio = Path(candidate["audio_url"].split("/")[-1])
+    sibling_path = Path(tmp_path / "audio" / job_id / "stale_sibling.wav")
+    sibling_path.write_bytes(Path(tmp_path / "audio" / job_id / candidate["audio_url"].split("/")[-1]).read_bytes())
+    sibling_id = queue_db.stage_candidate(job_id, 0, str(sibling_path))
     approved = client.post(f"/api/narration/candidates/{candidate['candidate_id']}/approve")
+    assert approved.status_code == 200
+    assert queue_db.candidate(sibling_id)["status"] == "discarded"
+    assert not sibling_path.exists()
     assert approved.status_code == 200
     assert approved.json()["parts"][0]["audio_path"] != original_path
     assert Path(tmp_path / "audio" / job_id / "completo.wav").is_file()
