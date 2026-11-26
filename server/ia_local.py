@@ -716,9 +716,7 @@ async def generate_text(payload: dict, request: Request):
             response = await client.post(f"http://127.0.0.1:{PORT}/v1/chat/completions", json=body)
             response.raise_for_status()
             data = response.json()
-        answer = data["choices"][0]["message"]["content"].strip()
-        if not answer:
-            raise ValueError("O modelo local retornou uma resposta vazia.")
+        answer = _extract_local_completion_text(data)
         return {"text": answer, "model": ACTIVE_MODEL, "provider": "local"}
     except (httpx.HTTPError, KeyError, IndexError, ValueError) as exc:
         raise HTTPException(502, f"Falha ao gerar com o modelo local: {str(exc)[:250]}")
