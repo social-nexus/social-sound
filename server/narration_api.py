@@ -406,9 +406,14 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
             audio.append(wav)
         if not audio:
             raise RuntimeError("Não há partes de áudio para juntar.")
-        temp = destination.with_name(destination.stem + ".tmp.wav")
-        sf.write(str(temp), np.concatenate(audio), sample_rate, subtype="PCM_16")
-        os.replace(temp, destination)
+        temp = destination.with_name("." + destination.stem + "." + uuid.uuid4().hex + ".tmp.wav")
+        try:
+            sf.write(str(temp), np.concatenate(audio), sample_rate, subtype="PCM_16")
+            if not valid_audio_file(temp):
+                raise RuntimeError("O áudio completo temporário não passou na validação WAV.")
+            os.replace(temp, destination)
+        finally:
+            temp.unlink(missing_ok=True)
 
     def worker_loop():
         while True:
