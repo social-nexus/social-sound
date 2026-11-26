@@ -734,3 +734,24 @@ def test_active_local_model_cannot_be_uninstalled_during_generation(monkeypatch,
 
     assert exc.value.status_code == 409
     assert "gerando um roteiro" in exc.value.detail
+
+
+def test_local_model_uninstall_refuses_symlink_outside_model_directory(monkeypatch, tmp_path):
+    from fastapi import HTTPException
+
+    models_root = tmp_path / "models"
+    outside = tmp_path / "outside"
+    models_root.mkdir()
+    outside.mkdir()
+    protected = outside / "keep.gguf"
+    protected.write_bytes(b"keep")
+    (models_root / "qwen3-4b-q4km").symlink_to(outside, target_is_directory=True)
+    monkeypatch.setattr(ia_local, "MODELS_DIR", models_root)
+    monkeypatch.setattr(ia_local, "ACTIVE_MODEL", None)
+    monkeypatch.setattr(ia_local, "ACTIVE_GENERATIONS", 0)
+
+    with pytest.raises(HTTPException) as exc:
+        ia_local.delete_model("qwen3-4b-q4km", local_request(method="DELETE"))
+
+    assert exc.value.status_code == 400
+    assert protected.read_bytes() == b"keep"
