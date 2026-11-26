@@ -489,3 +489,18 @@ def test_worker_process_timeout_terminates_process_tree(monkeypatch):
         assert "partial" in str(exc.output)
     assert terminated == [process]
     assert process.calls == 2
+
+def test_process_tree_termination_does_not_signal_exited_parent(monkeypatch):
+    import narration_api
+
+    class ExitedProcess:
+        pid = 2468
+
+        def poll(self):
+            return 0
+
+    calls = []
+    monkeypatch.setattr(narration_api.subprocess, "run",
+                        lambda *args, **kwargs: calls.append((args, kwargs)))
+    narration_api._terminate_process_tree(ExitedProcess())
+    assert calls == []
