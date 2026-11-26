@@ -179,6 +179,13 @@ def _job(kind: str) -> str:
         for old_id, old in list(JOBS.items()):
             if old.get("status") in ("done", "error") and now - old.get("created_at", now) > 3600:
                 JOBS.pop(old_id, None)
+        finished = sorted(
+            ((old.get("created_at", now), old_id) for old_id, old in JOBS.items()
+             if old.get("status") in ("done", "error")),
+            key=lambda item: item[0],
+        )
+        for _, old_id in finished[:-100]:
+            JOBS.pop(old_id, None)
         JOBS[jid] = {"id": jid, "kind": kind, "status": "queued", "progress": 0,
                      "message": "Na fila", "created_at": now}
     return jid
