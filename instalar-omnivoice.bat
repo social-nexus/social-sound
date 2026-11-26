@@ -20,7 +20,7 @@ if not "%SOCIAL_SOUND_INSTALL_FROM_UI%"=="1" (
   set /p "CONFIRM=Voce leu e aceita as licencas e usara somente para fins nao comerciais? (S/N): "
   if /i not "%CONFIRM%"=="S" (
     echo Instalacao cancelada. Nenhuma alteracao foi feita.
-    if not "%SOCIAL_SOUND_INSTALL_FROM_UI%"=="1" if not "%SOCIAL_SOUND_INSTALL_FROM_UI%"=="1" pause
+    if not "%SOCIAL_SOUND_INSTALL_FROM_UI%"=="1" pause
     exit /b 0
   )
 ) else if not "%SOCIAL_SOUND_LICENSE_ACCEPTED%"=="1" (
@@ -30,7 +30,7 @@ if not "%SOCIAL_SOUND_INSTALL_FROM_UI%"=="1" (
 
 if defined SOCIAL_NEXUS_MODELS_DIR if not exist "%SOCIAL_NEXUS_MODELS_DIR%" (
   echo ERRO: a biblioteca compartilhada nao esta disponivel: %SOCIAL_NEXUS_MODELS_DIR%
-  if not "%SOCIAL_SOUND_INSTALL_FROM_UI%"=="1" if not "%SOCIAL_SOUND_INSTALL_FROM_UI%"=="1" pause
+  if not "%SOCIAL_SOUND_INSTALL_FROM_UI%"=="1" pause
   exit /b 1
 )
 cd /d "%~dp0server"
