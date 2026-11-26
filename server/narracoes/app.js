@@ -18,10 +18,10 @@ const UI_STR={"en":{
 "Clonar voz com áudio de referência":"Clone voice from reference audio",
 "Criar voz por descrição":"Create voice from description",
 "Minha voz":"My voice","Padrão":"Preset",
-"Supertonic 3 usa 10 vozes predefinidas. Clonagem de áudio não está disponível.":"Supertonic 3 has 10 preset voices. Audio cloning is not available.",
-"OmniVoice é somente para uso não comercial. Use apenas sua voz ou uma voz com autorização.":"OmniVoice is non-commercial only. Use only your own voice or a voice you have permission to use.",
-"F5-TTS PT-BR é um modelo comunitário experimental e somente para uso não comercial. Use uma voz autorizada.":"F5-TTS Brazilian Portuguese is an experimental community model for non-commercial use only. Use an authorized voice.",
-"O VoxCPM2 aceita vozes salvas e vozes predefinidas.":"VoxCPM2 supports saved and preset voices.",
+T("Supertonic 3 usa 10 vozes predefinidas. Clonagem de áudio não está disponível."):"Supertonic 3 has 10 preset voices. Audio cloning is not available.",
+T("OmniVoice é somente para uso não comercial. Use apenas sua voz ou uma voz com autorização."):"OmniVoice is non-commercial only. Use only your own voice or a voice you have permission to use.",
+T("F5-TTS PT-BR é um modelo comunitário experimental e somente para uso não comercial. Use uma voz autorizada."):"F5-TTS Brazilian Portuguese is an experimental community model for non-commercial use only. Use an authorized voice.",
+T("O VoxCPM2 aceita vozes salvas e vozes predefinidas."):"VoxCPM2 supports saved and preset voices.",
 "Erro ":"Error ","Não foi possível carregar a fila: ":"Could not load queue: "
 }};
 const T=value=>UI_LANG==="en"?(UI_STR.en[value]||value):value;
@@ -33,11 +33,11 @@ async function request(url,options={}){const res=await fetch(url,options);if(!re
 function refreshVoiceOptions(){
  const engine=$("engine").value;let opts=[];
  if(engine==="supertonic3"){
-  opts=["M1","M2","M3","M4","M5","F1","F2","F3","F4","F5"].map(v=>({id:"supertonic:"+v,label:v+" — Voz predefinida"}));
+  opts=["M1","M2","M3","M4","M5","F1","F2","F3","F4","F5"].map(v=>({id:"supertonic:"+v,label:v+" — "+T("Voz predefinida")}));
   $("styleField").style.display="none";$("omnivoiceFields").style.display="none";
   $("stylehint").textContent="Supertonic 3 usa 10 vozes predefinidas. Clonagem de áudio não está disponível.";
  }else if(engine==="omnivoice"){
-  opts=[{id:"omnivoice:auto",label:"Voz automática"},{id:"omnivoice:clone",label:"Clonar voz com áudio de referência"},{id:"omnivoice:design",label:"Criar voz por descrição"}];
+  opts=[{id:"omnivoice:auto",label:T("Voz automática")},{id:"omnivoice:clone",label:T("Clonar voz com áudio de referência")},{id:"omnivoice:design",label:T("Criar voz por descrição")}];
   $("omnivoiceFields").style.display="block";$("styleField").style.display="none";
   $("stylehint").textContent="OmniVoice é somente para uso não comercial. Use apenas sua voz ou uma voz com autorização.";
  }else if(engine==="f5tts"){
@@ -45,11 +45,11 @@ function refreshVoiceOptions(){
   $("omnivoiceFields").style.display="block";$("styleField").style.display="none";
   $("stylehint").textContent="F5-TTS PT-BR é um modelo comunitário experimental e somente para uso não comercial. Use uma voz autorizada.";
  }else{
-  if(voicesData){voicesData.mine.forEach(v=>opts.push({id:"mine:"+v.name,label:v.name+" — Minha voz"}));voicesData.presets.forEach(v=>opts.push({id:"preset:"+v.id,label:v.label+" — Padrão"}))}
+  if(voicesData){voicesData.mine.forEach(v=>opts.push({id:"mine:"+v.name,label:v.name+" — "+T("Minha voz")}));voicesData.presets.forEach(v=>opts.push({id:"preset:"+v.id,label:v.label+" — "+T("Padrão")}))}
   $("styleField").style.display="block";$("omnivoiceFields").style.display="none";
   $("stylehint").textContent="O VoxCPM2 aceita vozes salvas e vozes predefinidas.";
  }
- $("voice").innerHTML=opts.map(v=>'<option value="'+esc(v.id)+'">'+esc(v.label)+'</option>').join("")||'<option value="">Nenhuma voz encontrada</option>';
+ $("voice").innerHTML=opts.map(v=>'<option value="'+esc(v.id)+'">'+esc(v.label)+'</option>').join("")||'<option value="">'+T("Nenhuma voz encontrada")+'</option>';
  if(engine==="omnivoice"||engine==="f5tts")refreshOmniMode();
 }
 function refreshOmniMode(){
