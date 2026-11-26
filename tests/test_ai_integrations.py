@@ -564,3 +564,29 @@ def test_corrupted_existing_local_model_is_repaired_and_metadata_published_atomi
     metadata = json.loads((target_dir / "model.json").read_text(encoding="utf-8"))
     assert metadata["sha256"] == digest
     assert not list(target_dir.glob(".model.json.*.tmp"))
+
+
+def test_failed_repair_does_not_leave_corrupted_model_reported_as_installed(monkeypatch, tmp_path):
+    import hashlib
+
+    model_id = "qwen3-4b-q4km"
+    expected = b"valid-model-fixture"
+    digest = hashlib.sha256(expected).hexdigest()
+    monkeypatch.setattr(ia_local, "MODELS_DIR", tmp_path)
+    target_dir = tmp_path / model_id
+    target_dir.mkdir()
+    target = target_dir / ia_local.MODEL_CATALOG[model_id]["filename"]
+    target.write_bytes(b"corrupted")
+    (target_dir / "model.json").write_text("{bad metadata", encoding="utf-8")
+    monkeypatch.setattr(ia_local, "_hf_file_digest", lambda repo, filename: (digest, len(expected)))
+
+    def fail_download(url, destination, size, job_id):
+        raise OSError("simulated network interruption")
+
+    monkeypatch.setattr(ia_local, "_download", fail_download)
+    jid = ia_local._job("model")
+    ia_local._download_model_worker(jid, model_id)
+
+    assert ia_local.JOBS[jid]["status"] == "error"
+    assert not target.exists()
+    assert not (target_dir / "model.json").exists()
