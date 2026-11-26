@@ -10,6 +10,8 @@ def test_optional_engine_install_api_is_allowlisted_and_license_gated():
     assert 'router.post("/engines/{engine_id}/install")' in source
     assert 'engine_id not in {"supertonic3", "omnivoice", "f5tts"}' in source
     assert 'if not accepted:' in source
+    assert 'payload.get("license_accepted") is True' in source
+    assert 'payload.get("non_commercial_ack") is not True' in source
     assert 'engine_id in {"omnivoice", "f5tts"}' in source
     assert 'if not engine_install_lock.acquire(blocking=False)' in source
     assert 'router.get("/engines/install/{job_id}")' in source
