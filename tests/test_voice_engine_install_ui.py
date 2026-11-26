@@ -99,3 +99,9 @@ def test_voice_engine_catalog_supports_english_ui_and_dynamic_labels():
     assert 'T("Liberar pesos baixados")' in page
     assert 'T("Desinstalar e excluir")' in page
     assert 'T("Confirmo explicitamente que o uso será não comercial.")' in page
+
+
+def test_voice_engine_page_has_language_selector():
+    page = PAGE.read_text(encoding="utf-8")
+    assert "function addEngineLanguageSelector()" in page
+    assert 'select.id="engine-ui-language"' in page
