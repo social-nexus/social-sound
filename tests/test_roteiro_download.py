@@ -168,6 +168,7 @@ def test_humanization_ui_exposes_multilingual_mark_language_selector():
     assert 'id="mark-language"' in page
     assert 'id="mark-language-help"' in page
     assert 'id="mark-language-note"' in page
+    assert 'socialsound:mark-language' in page
     assert "Portuguese-focused" in page
     assert "Mark does not support English" in page
     assert '<option value="en">English</option>' not in page
