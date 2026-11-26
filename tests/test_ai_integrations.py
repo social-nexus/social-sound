@@ -84,6 +84,14 @@ def test_api_key_storage_uses_os_credential_service(monkeypatch):
     assert saved == [("SocialSound", "openai", "test-key-value")]
 
 
+def test_save_key_endpoint_sanitizes_keyring_errors(monkeypatch):
+    monkeypatch.setattr(ai_providers, "_set_key", lambda provider, value: (_ for _ in ()).throw(RuntimeError("secret backend diagnostic")))
+    with pytest.raises(ai_providers.HTTPException) as raised:
+        ai_providers.save_key({"provider": "openai", "api_key": "long-enough-test-key"}, local_request())
+    assert raised.value.status_code == 503
+    assert "secret backend diagnostic" not in raised.value.detail
+
+
 def test_llama_runtime_args_disable_web_ui_and_restrict_cors(tmp_path):
     args = ia_local._runtime_args(Path("llama-server"), tmp_path / "model.gguf", 12)
     assert args[args.index("--host") + 1] == "127.0.0.1"
