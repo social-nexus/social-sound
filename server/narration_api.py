@@ -21,8 +21,8 @@ from narration_queue import NarrationQueue, split_for_duration
 
 
 def _terminate_process_tree(process):
-    """Stop an installer and its descendants; batch files may spawn pip/Python children."""
-    if process is None or process.poll() is not None:
+    """Stop a worker and descendants, including children that keep pipes open."""
+    if process is None:
         return
     if os.name == "nt":
         try:
@@ -36,6 +36,12 @@ def _terminate_process_tree(process):
             )
         except Exception:
             pass
+    elif getattr(process, "_social_sound_new_session", False):
+        try:
+            import signal
+            os.killpg(process.pid, signal.SIGKILL)
+        except (ProcessLookupError, PermissionError, OSError):
+            pass
     if process.poll() is None:
         try:
             process.kill()
@@ -45,6 +51,25 @@ def _terminate_process_tree(process):
         process.wait(timeout=10)
     except Exception:
         pass
+
+
+def _run_worker_process(command, *, timeout, env):
+    """Run a model worker in an isolated process group and reap it on timeout."""
+    process = subprocess.Popen(
+        command, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        text=True, encoding="utf-8", errors="replace", env=env,
+        start_new_session=(os.name != "nt"),
+    )
+    process._social_sound_new_session = os.name != "nt"
+    try:
+        stdout, stderr = process.communicate(timeout=timeout)
+    except subprocess.TimeoutExpired as exc:
+        _terminate_process_tree(process)
+        stdout, stderr = process.communicate()
+        raise subprocess.TimeoutExpired(
+            command, timeout, output=stdout or exc.output, stderr=stderr or exc.stderr
+        ) from exc
+    return subprocess.CompletedProcess(command, process.returncode, stdout, stderr)
 
 
 class EnqueueRequest(BaseModel):
@@ -132,11 +157,10 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
         env["SUPERTONIC_CACHE_DIR"] = str(supertonic_cache())
         try:
             request_file.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
-            result = subprocess.run(
+            result = _run_worker_process(
                 [str(supertonic_python()), str(Path(__file__).resolve().parent / "tts_engines" / "supertonic_worker.py"),
                  str(request_file)],
-                capture_output=True, text=True, encoding="utf-8", errors="replace",
-                timeout=3600, env=env, check=False,
+                timeout=3600, env=env,
             )
             if result.returncode != 0:
                 detail = (result.stderr or result.stdout or "Falha sem detalhes")[-900:]
@@ -198,10 +222,9 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
                    "reference_text": reference_text, "instruction": instruction, "segments": segments}
         try:
             request_file.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
-            result = subprocess.run(
+            result = _run_worker_process(
                 [str(omnivoice_python()), str(Path(__file__).resolve().parent / "tts_engines" / "omnivoice_worker.py"), str(request_file)],
-                capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=7200,
-                env=os.environ.copy(), check=False)
+                timeout=7200, env=os.environ.copy())
             if result.returncode != 0:
                 detail = (result.stderr or result.stdout or "Falha sem detalhes")[-1200:]
                 raise RuntimeError(f"Falha na geração com OmniVoice: {detail}")
@@ -296,10 +319,9 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
             result = None
             run_error = None
             try:
-                result = subprocess.run(
+                result = _run_worker_process(
                     [str(python), str(Path(__file__).resolve().parent / "tts_engines" / worker), str(request_file)],
-                    capture_output=True, text=True, encoding="utf-8", errors="replace",
-                    timeout=7200, env=os.environ.copy(), check=False)
+                    timeout=7200, env=os.environ.copy())
             except Exception as exc:
                 run_error = exc
             # Workers write each part as soon as it finishes. Record those files
@@ -345,10 +367,9 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
                    "reference_text": reference_text, "segments": segments, "steps": 16}
         try:
             request_file.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
-            result = subprocess.run(
+            result = _run_worker_process(
                 [str(f5tts_python()), str(Path(__file__).resolve().parent / "tts_engines" / "f5tts_worker.py"), str(request_file)],
-                capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=7200,
-                env=os.environ.copy(), check=False)
+                timeout=7200, env=os.environ.copy())
             if result.returncode != 0:
                 detail = (result.stderr or result.stdout or "Falha sem detalhes")[-1200:]
                 raise RuntimeError(f"Falha na geração com F5-TTS: {detail}")
