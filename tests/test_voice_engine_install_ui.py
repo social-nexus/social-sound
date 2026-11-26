@@ -41,3 +41,10 @@ def test_engine_catalog_ui_shows_optional_tokenizer_license_link():
     source = (ROOT / "server" / "motores" / "index.html").read_text(encoding="utf-8")
     assert "e.tokenizer_url" in source
     assert "Licença tokenizer" in source
+
+
+def test_engine_install_api_releases_lock_when_thread_start_fails():
+    source = (ROOT / "server" / "narration_api.py").read_text(encoding="utf-8")
+    assert "installer_thread.start()" in source
+    assert "engine_install_lock.release()" in source
+    assert "Não foi possível iniciar o processo de instalação." in source
