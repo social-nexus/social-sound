@@ -68,12 +68,12 @@ def _terminate_process_tree(process):
             os.killpg(process.pid, signal.SIGKILL)
         except (ProcessLookupError, PermissionError, OSError):
             pass
-    else:
-        try:
-            if process.poll() is None:
-                process.kill()
-        except Exception:
-            pass
+    # Fall back to killing the direct worker if tree/group termination failed.
+    try:
+        if process.poll() is None:
+            process.kill()
+    except Exception:
+        pass
     try:
         process.wait(timeout=10)
     except Exception:
