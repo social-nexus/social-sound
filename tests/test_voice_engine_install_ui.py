@@ -69,7 +69,7 @@ def test_optional_voice_engines_have_safe_uninstall_controls():
     assert 'models--k2-fsa--OmniVoice' in api
     assert 'models--Cataldir--F5-TTS-pt-br' in api
     assert 'removable=installable||e.id==="voxcpm2"' in page
-    assert 'e.id==="voxcpm2"?"Liberar pesos baixados":"Desinstalar e excluir"' in page
+    assert 'e.id==="voxcpm2"?T("Liberar pesos baixados"):T("Desinstalar e excluir")' in page
     assert 'startUninstall' in page
     assert 'Pode afetar outros aplicativos' in page or 'outros aplicativos' in page
 
