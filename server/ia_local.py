@@ -568,6 +568,47 @@ def ai_catalog(request: Request):
                "installed": _model_file(k).is_file()} for k, v in MODEL_CATALOG.items()]
     return {"runtimes": runtimes, "models": models, "installed_models": _installed_models()}
 
+@router.delete("/runtime/{variant}")
+def uninstall_runtime(variant: str, request: Request):
+    _guard_local_request(request)
+    if variant not in RUNTIME_CATALOG:
+        raise HTTPException(400, "Runtime inválido.")
+    with LOCK:
+        install_lock = RUNTIME_INSTALL_LOCKS.setdefault(variant, threading.Lock())
+    if not install_lock.acquire(blocking=False):
+        raise HTTPException(409, "A instalação ou atualização deste runtime está em andamento. Aguarde antes de desinstalar.")
+    try:
+        with RUNTIME_LIFECYCLE_LOCK:
+            if ACTIVE_VARIANT == variant:
+                if ACTIVE_GENERATIONS:
+                    raise HTTPException(409, "Este runtime está sendo usado para gerar texto. Aguarde a geração terminar.")
+                _stop_runtime()
+            root = RUNTIME_DIR.resolve()
+            targets = [RUNTIME_DIR / variant]
+            targets.extend(RUNTIME_DIR.glob(variant + ".staging-*"))
+            targets.extend(RUNTIME_DIR.glob(variant + ".backup-*"))
+            removed_bytes = 0
+            for target in targets:
+                if target.is_symlink():
+                    raise HTTPException(400, "Um caminho de runtime é link simbólico e foi preservado por segurança.")
+                resolved = target.resolve()
+                if resolved == root or root not in resolved.parents:
+                    raise HTTPException(400, "O caminho de runtime está fora da pasta permitida.")
+                if not target.exists():
+                    continue
+                removed_bytes += sum(
+                    item.stat().st_size for item in target.rglob("*")
+                    if item.is_file() and not item.is_symlink()
+                ) if target.is_dir() else target.stat().st_size
+                if target.is_dir():
+                    shutil.rmtree(target)
+                else:
+                    target.unlink()
+            return {"ok": True, "removed_bytes": removed_bytes}
+    finally:
+        install_lock.release()
+
+
 @router.post("/runtime/install")
 def install_runtime(payload: dict, request: Request):
     _guard_local_request(request)
