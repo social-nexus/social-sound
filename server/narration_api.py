@@ -674,6 +674,8 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
     def _safe_remove_directory(path: Path, allowed_parent: Path) -> int:
         target = path.resolve()
         parent = allowed_parent.resolve()
+        if path.is_symlink():
+            raise RuntimeError("O caminho de desinstalação é um link simbólico e foi preservado por segurança.")
         if target == parent or parent not in target.parents:
             raise RuntimeError("O caminho de desinstalação não está dentro da pasta permitida.")
         size = _directory_size(target)
@@ -683,7 +685,7 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
 
     @router.delete("/engines/{engine_id}")
     def uninstall_engine(engine_id: str, payload: dict | None = None):
-        if engine_id not in {"supertonic3", "omnivoice", "f5tts"}:
+        if engine_id not in {"voxcpm2", "supertonic3", "omnivoice", "f5tts"}:
             raise HTTPException(status_code=400, detail="Este motor não pode ser removido por esta opção.")
         payload = payload or {}
         delete_shared_cache = payload.get("delete_shared_cache") is True
@@ -704,6 +706,24 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
             inference_acquired = inference_guard.acquire(blocking=False)
             if not inference_acquired:
                 raise HTTPException(status_code=409, detail="O motor está sendo utilizado em uma geração de áudio. Tente novamente quando terminar.")
+
+            if engine_id == "voxcpm2":
+                if unload_engine is not None:
+                    unload_engine()
+                else:
+                    preserved.append("modelo VoxCPM2 não foi descarregado da memória porque o callback de liberação não está disponível")
+                hf_cache = Path(os.environ.get(
+                    "HF_HUB_CACHE",
+                    Path(os.environ.get("HF_HOME", Path.home() / ".cache" / "huggingface")) / "hub",
+                )).expanduser()
+                model_cache = hf_cache / "models--openbmb--VoxCPM2"
+                if delete_shared_cache and model_cache.exists():
+                    removed_bytes += _safe_remove_directory(model_cache, hf_cache)
+                elif model_cache.exists():
+                    preserved.append("pesos VoxCPM2 no cache Hugging Face compartilhado; preservados para evitar afetar outros aplicativos")
+                return {"ok": True, "engine": engine_id, "removed_bytes": removed_bytes,
+                        "shared_cache_deleted": bool(delete_shared_cache and not model_cache.exists()),
+                        "preserved": preserved}
 
             server_dir = Path(__file__).resolve().parent
             venv_root = server_dir / ".venvs"
