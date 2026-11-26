@@ -24,3 +24,11 @@ def test_script_generation_instructions_follow_selected_duration():
     assert 'const characterLimit=Math.max(100,Math.round(durationSeconds*20))' in source
     assert 'approximately "+durationLabel' in source
     assert 'no máximo "+characterLimit.toLocaleString("pt-BR")+" caracteres' in source
+
+
+def test_local_model_removal_preserves_runtime_and_other_models():
+    source = APP_JS.read_text(encoding="utf-8")
+    assert 'remove.textContent="Desinstalar e excluir"' in source
+    assert 'Os pesos deste modelo serão removidos' in source
+    assert 'O runtime llama.cpp, os outros modelos' in source
+    assert 'm.size_bytes' in source
