@@ -65,3 +65,14 @@ def test_narration_queue_has_english_dynamic_translation():
     assert '"Elapsed time: "' in js
     assert 'Object.keys(UI_STR.en).reduce' in js
     assert 'T("Nenhuma narração na fila ainda.")' in js
+
+
+def test_dialogue_page_supports_english_interface():
+    page = ROOT / "server" / "dialogo_web" / "index.html"
+    html = page.read_text(encoding="utf-8")
+    assert 'get("lang")==="en"' in html
+    assert '"Multi-voice dialogue"' in html
+    assert '"Generate dialogue"' in html
+    assert 'applyDialogueEnglish();' in html
+    assert 'UI_LANG==="en"?"Generating...":"Gerando..."' in html
+    assert 'if(UI_LANG==="en")TONS.forEach' in html
