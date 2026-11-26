@@ -520,7 +520,7 @@ def test_model_deletion_waits_for_model_download_lock(monkeypatch, tmp_path):
         download_lock.release()
     worker.join(timeout=2)
     assert finished.is_set()
-    assert result == [{"ok": True}]
+    assert result == [{"ok": True, "removed_bytes": len(b"partial")}]
     assert not model_folder.exists()
 
 
