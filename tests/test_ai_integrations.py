@@ -427,6 +427,27 @@ def test_runtime_uninstall_removes_runtime_and_staging_backup(monkeypatch, tmp_p
     assert not backup.exists()
 
 
+def test_runtime_uninstall_refuses_during_install(monkeypatch, tmp_path):
+    variant = "linux-cpu-x64"
+    runtime_root = tmp_path / "runtime"
+    monkeypatch.setattr(ia_local, "RUNTIME_DIR", runtime_root)
+    locks = {}
+    monkeypatch.setattr(ia_local, "RUNTIME_INSTALL_LOCKS", locks)
+    runtime_root.mkdir()
+    final = runtime_root / variant
+    final.mkdir()
+    (final / "llama-server").write_bytes(b"runtime")
+    lock = locks.setdefault(variant, __import__("threading").Lock())
+    lock.acquire()
+    try:
+        with pytest.raises(ia_local.HTTPException) as raised:
+            ia_local.uninstall_runtime(variant, local_request())
+        assert raised.value.status_code == 409
+        assert final.exists()
+    finally:
+        lock.release()
+
+
 def test_runtime_uninstall_refuses_while_generation_is_active(monkeypatch, tmp_path):
     variant = "linux-cpu-x64"
     runtime_root = tmp_path / "runtime"
