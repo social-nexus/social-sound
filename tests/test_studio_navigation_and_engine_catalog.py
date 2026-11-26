@@ -24,7 +24,7 @@ def test_voice_engines_page_displays_catalog_and_size_estimates():
     assert "/api/narration/engines" in html
     assert "download_estimate" in html
     assert "disk_estimate" in html
-    assert "Instalação pela interface em desenvolvimento" in html
+    assert "Instalação é executada em segundo plano" in html
 
 
 def test_voice_engines_page_is_mounted_by_server():
