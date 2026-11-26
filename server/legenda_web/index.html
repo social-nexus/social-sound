@@ -190,9 +190,9 @@
   $("modo").onchange = function () {
     var w = $("modo").value === "whisper";
     $("blocoWhisper").style.display = w ? "flex" : "none";
-    $("dicaModo").textContent = w
+    $("dicaModo").textContent = UI_LANG==="en" ? (w?"Precise: Whisper listens to the audio and aligns the script to what it heard. The selected model downloads on first use.":"Fast: works well with steady speech and pauses between sentences. If subtitles drift, use Precise mode.") : (w
       ? "Preciso: o Whisper ouve o áudio e o roteiro é casado com o que ele ouviu. Na primeira vez baixa o modelo escolhido."
-      : "Rápido: costuma acertar bem quando a voz tem velocidade regular e pausas entre as frases. Se a legenda sair fora de lugar em algum trecho, use o modo Preciso.";
+      : "Rápido: costuma acertar bem quando a voz tem velocidade regular e pausas entre as frases. Se a legenda sair fora de lugar em algum trecho, use o modo Preciso.");
   };
 
   async function gerar() {
