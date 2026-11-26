@@ -215,8 +215,25 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
         tokenizer_cache = hf_cache / "models--bosonai--higgs-audio-v2-tokenizer" / "snapshots"
         runtime_root = python.parent.parent
         package_dir = runtime_root / ("Lib/site-packages/omnivoice" if os.name == "nt" else "lib/python3.11/site-packages/omnivoice")
-        return (python.is_file() and package_dir.is_dir() and model_cache.is_dir()
-                and any(model_cache.iterdir()) and tokenizer_cache.is_dir() and any(tokenizer_cache.iterdir()))
+        def snapshot_has(snapshot_root, required):
+            if not snapshot_root.is_dir():
+                return False
+            return any(
+                snapshot.is_dir() and all(
+                    (snapshot / filename).is_file() and (snapshot / filename).stat().st_size > 0
+                    for filename in required
+                )
+                for snapshot in snapshot_root.iterdir()
+            )
+
+        # Validate the actual inference-critical files rather than merely the
+        # presence of non-empty snapshot folders (interrupted HF downloads).
+        return (
+            python.is_file()
+            and package_dir.is_dir()
+            and snapshot_has(model_cache, ("config.json", "model.safetensors", "tokenizer.json", "tokenizer_config.json"))
+            and snapshot_has(tokenizer_cache, ("config.json", "model.safetensors"))
+        )
 
     def render_omnivoice_piece(job, part_index: int, destination: Path):
         if not omnivoice_ready():
