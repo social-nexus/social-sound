@@ -60,10 +60,12 @@ async function activateModel(m){const variant=$("runtime").value,gpu_layers=Numb
 async function deleteModel(m){if(!confirm("Excluir o modelo "+m.name+" do armazenamento local?"))return;try{await apiFetch(api+"/models/"+encodeURIComponent(m.id),{method:"DELETE"});await loadLocal();}catch(e){msg("local-msg",e.message,"error");}}
 function promptForWorkspace(){
 if(workspace==="scripts"){
-const subject=$("subject").value.trim(),format=$("format").value,duration=$("duration").value,tone=$("tone").value,audience=$("audience").value.trim(),notes=$("notes").value.trim(),base=$("script-input").value.trim();
-const formatDesc=format==="shorts"?"Short-form vertical video for Shorts, Reels or TikTok, approximately "+duration+" seconds.":format==="long"?"Long-form YouTube video, around "+duration+" minutes.":"Flexible video format, around "+duration+" minutes.";
+const subject=$("subject").value.trim(),format=$("format").value,duration=$("duration").value,durationLabel=$("duration").selectedOptions[0]?.textContent||duration,tone=$("tone").value,audience=$("audience").value.trim(),notes=$("notes").value.trim(),base=$("script-input").value.trim();
+const durationSeconds=duration==="60-70"?65:duration==="30"||duration==="90"?Number(duration):Number(duration)*60;
+const characterLimit=Math.max(100,Math.round(durationSeconds*20));
+const formatDesc=format==="shorts"?"Short-form vertical video for Shorts, Reels or TikTok, approximately "+durationLabel+".":format==="long"?"Long-form YouTube video, around "+durationLabel+".":"Flexible video format, around "+durationLabel+".";
 const system="Você é roteirista profissional de vídeos e narrador editorial. Escreva em português brasileiro natural, com ritmo de fala, frases claras, sem inventar dados. Crie uma abertura forte, desenvolvimento organizado e fechamento adequado. Evite linguagem robótica e excesso de adjetivos. Não imite autores ou criadores específicos. Entregue apenas o roteiro final, sem explicar o processo.";
-const shortRules=format==="shorts"?"Para Shorts/Reels/TikTok, mantenha cerca de 60 a 70 segundos e no máximo 1.300 caracteres, com ritmo de fala e retenção. ":"";
+const shortRules=format==="shorts"?"Para Shorts/Reels/TikTok, mantenha aproximadamente "+durationLabel+" e no máximo "+characterLimit.toLocaleString("pt-BR")+" caracteres, com ritmo de fala e retenção. ":"";
 const prompt="TEMA/ASSUNTO: "+(subject||"desenvolva o assunto descrito abaixo")+"\nFORMATO: "+formatDesc+"\nTOM: "+tone+"\nPÚBLICO: "+(audience||"público geral")+"\nINSTRUÇÕES: "+shortRules+(notes||"Use uma estrutura clara e envolvente")+"\n\nREFERÊNCIA OU TEXTO BASE:\n"+(base||"Crie o roteiro com base no tema e instruções acima.");
 return {system,prompt};
 }
