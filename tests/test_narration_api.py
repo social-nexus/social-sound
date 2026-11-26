@@ -384,7 +384,7 @@ def test_installer_termination_kills_windows_process_tree(monkeypatch):
         process.alive = False
         return SimpleNamespace(returncode=0)
 
-    monkeypatch.setattr(narration_api.os, "name", "nt")
+    monkeypatch.setattr(narration_api, "os", SimpleNamespace(name="nt"))
     monkeypatch.setattr(narration_api.subprocess, "run", fake_run)
     narration_api._terminate_process_tree(process)
 
