@@ -179,4 +179,6 @@ def test_mark_language_dropdown_matches_model_supported_languages():
     select = re.search(r'<select id="mark-language"[^>]*>(.*?)</select>', page, re.S)
     assert select
     options = re.findall(r'<option value="([a-z]{2})">', select.group(1))
-    assert set(options) == set(roteiro.MARK_LANGS)\n    assert len(options) == len(roteiro.MARK_LANGS)\n    assert options[0] == "pt"
+    assert set(options) == set(roteiro.MARK_LANGS)
+    assert len(options) == len(roteiro.MARK_LANGS)
+    assert options[0] == "pt"
