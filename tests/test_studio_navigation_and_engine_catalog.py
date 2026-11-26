@@ -113,3 +113,15 @@ def test_voice_studio_is_integrated_into_main_navigation_and_mounted():
     assert "PREPARAÇÃO DE ÁUDIO" in voice_html
     assert "view.setUint8(offset+i,str.charCodeAt(i));" in voice_html
     assert "function wavBlob(samples,sr)" in voice_html
+
+
+def test_subtitle_workspace_supports_english_ui():
+    page = ROOT / "server" / "legenda_web" / "index.html"
+    html = page.read_text(encoding="utf-8")
+    assert 'get("lang")==="en"' in html
+    assert '"Subtitles & timestamps"' in html
+    assert '"Word-by-word subtitles (.srt)"' in html
+    assert '"Generate subtitles"' in html
+    assert 'applyCaptionEnglish();' in html
+    assert 'UI_LANG==="en" ? (w?' in html
+    assert 'UI_LANG==="en" ? (f==="palavras"' in html
