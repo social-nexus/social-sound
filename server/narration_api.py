@@ -726,6 +726,9 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
             return {"candidate_id": candidate_id, "part_index": part_index,
                     "audio_url": f"/saidas/narracoes/{job_id}/{candidate_path.name}",
                     "status": "awaiting_approval"}
+        except HTTPException:
+            candidate_path.unlink(missing_ok=True)
+            raise
         except Exception as exc:
             candidate_path.unlink(missing_ok=True)
             raise HTTPException(500, f"Não foi possível regenerar a parte: {str(exc)[:400]}") from exc
