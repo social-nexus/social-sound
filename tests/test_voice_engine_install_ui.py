@@ -48,3 +48,9 @@ def test_engine_install_api_releases_lock_when_thread_start_fails():
     assert "installer_thread.start()" in source
     assert "engine_install_lock.release()" in source
     assert "Não foi possível iniciar o processo de instalação." in source
+
+
+def test_narration_queue_catalog_shows_optional_tokenizer_license_link():
+    source = (ROOT / "server" / "narracoes" / "app.js").read_text(encoding="utf-8")
+    assert "e.tokenizer_url" in source
+    assert "Licença tokenizer" in source
