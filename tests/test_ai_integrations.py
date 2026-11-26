@@ -713,3 +713,24 @@ def test_background_job_start_failure_marks_job_failed(monkeypatch):
     assert getattr(caught.value, "status_code", None) == 500
     assert ia_local.JOBS[jid]["status"] == "error"
     assert "resource unavailable" in ia_local.JOBS[jid]["message"]
+
+
+def test_active_local_model_cannot_be_uninstalled_during_generation(monkeypatch, tmp_path):
+    from fastapi import HTTPException
+
+    class RunningProcess:
+        @staticmethod
+        def poll():
+            return None
+
+    model_id = "qwen3-4b-q4km"
+    monkeypatch.setattr(ia_local, "MODELS_DIR", tmp_path)
+    monkeypatch.setattr(ia_local, "PROCESS", RunningProcess())
+    monkeypatch.setattr(ia_local, "ACTIVE_MODEL", model_id)
+    monkeypatch.setattr(ia_local, "ACTIVE_GENERATIONS", 1)
+
+    with pytest.raises(HTTPException) as exc:
+        ia_local.delete_model(model_id, local_request(method="DELETE"))
+
+    assert exc.value.status_code == 409
+    assert "gerando um roteiro" in exc.value.detail
