@@ -467,7 +467,7 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
             env["SOCIAL_SOUND_LICENSE_ACCEPTED"] = "1" if license_accepted else "0"
             with engine_install_state_guard:
                 engine_install_state.update(status="running", message="Preparando instalador…")
-            process = subprocess.Popen(["cmd.exe", "/c", str(script_path)], cwd=str(script_path.parent),
+            process = subprocess.Popen(["cmd.exe", "/d", "/c", 'call "' + str(script_path) + '"'], cwd=str(script_path.parent),
                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8",
                 errors="replace", env=env, bufsize=1)
             output_tail = []
