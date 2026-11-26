@@ -494,7 +494,7 @@ def test_model_deletion_waits_for_runtime_lifecycle_lock(monkeypatch, tmp_path):
         ia_local.RUNTIME_LIFECYCLE_LOCK.release()
     worker.join(timeout=2)
     assert finished.is_set()
-    assert result == [{"ok": True}]
+    assert result == [{"ok": True, "removed_bytes": 0}]
 
 
 def test_model_deletion_waits_for_model_download_lock(monkeypatch, tmp_path):
