@@ -285,3 +285,69 @@ def test_omnivoice_catalog_uses_explicit_huggingface_hub_cache(tmp_path, monkeyp
     ))
     engines = {item["id"]: item for item in TestClient(app).get("/api/narration/engines").json()["engines"]}
     assert engines["omnivoice"]["installed"] is True
+
+
+def test_concurrent_regeneration_requests_only_create_one_pending_candidate(tmp_path, monkeypatch):
+    from concurrent.futures import ThreadPoolExecutor
+    import threading
+
+    regeneration_started = threading.Event()
+    release_regeneration = threading.Event()
+    regeneration_count = {"value": 0}
+    regenerating = {"value": False}
+
+    def fake_synth(model, text, style="", ref=None, transcript=None):
+        if regenerating["value"]:
+            regeneration_count["value"] += 1
+            if regeneration_count["value"] == 1:
+                regeneration_started.set()
+                assert release_regeneration.wait(timeout=5)
+        return np.zeros(2400, dtype=np.float32)
+
+    app = FastAPI()
+    app.include_router(create_narration_router(
+        lock=threading.Lock(),
+        run=lambda fn: fn(SimpleNamespace(tts_model=SimpleNamespace(sample_rate=24000))),
+        synth=fake_synth,
+        ensure_preset=lambda model, preset: tmp_path / "preset.wav",
+        preset_by_id=lambda pid: {"id": pid},
+        find_mine=lambda name: None,
+        parse_text=lambda text: [("text", text)],
+        split_sentences=lambda text: [text],
+        tighten=lambda wav, sample_rate: wav,
+        data_dir=tmp_path / "data",
+        output_dir=tmp_path / "audio",
+    ))
+    client = TestClient(app)
+    text = "Primeira frase. Segunda frase. Terceira frase. Quarta frase."
+    created = client.post("/api/narration/jobs", json={
+        "text": text, "voice": "preset:narrador-grave",
+        "target_seconds": 15, "chars_per_minute": 300,
+    })
+    assert created.status_code == 200
+    job_id = created.json()["id"]
+    completed = None
+    for _ in range(100):
+        completed = client.get(f"/api/narration/jobs/{job_id}").json()
+        if completed["status"] in {"completed", "failed"}:
+            break
+        time.sleep(0.05)
+    assert completed["status"] == "completed", completed.get("error)
+
+    regenerating["value"] = True
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        first = pool.submit(client.post, f"/api/narration/jobs/{job_id}/parts/0/regenerate")
+        assert regeneration_started.wait(timeout=5)
+        second = pool.submit(client.post, f"/api/narration/jobs/{job_id}/parts/0/regenerate")
+        # Let the second request reach the old pre-lock check while the first
+        # synthesis is deliberately held inside the inference lock.
+        time.sleep(0.15)
+        release_regeneration.set()
+        first_response = first.result(timeout=10)
+        second_response = second.result(timeout=10)
+
+    assert first_response.status_code == 200, first_response.text
+    assert second_response.status_code == 409, second_response.text
+    pending = client.get(f"/api/narration/jobs/{job_id}/candidates").json()["candidates"]
+    assert len(pending) == 1
+    assert pending[0]["id"] == first_response.json()["candidate_id"]
