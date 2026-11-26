@@ -32,6 +32,8 @@ def test_local_model_removal_preserves_runtime_and_other_models():
     assert 'Os pesos deste modelo serão removidos' in source
     assert 'O llama.cpp instalado, os outros modelos' in source
     assert 'm.size_bytes' in source
+    assert 'result.removed_bytes' in source
+    assert 'Espaço liberado:' in source
 
 
 def test_cloud_provider_key_can_be_removed_from_script_and_prompt_workspaces():
