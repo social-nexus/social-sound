@@ -36,6 +36,16 @@ document.documentElement.lang="en";
 const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
 let node;while((node=walker.nextNode())){const original=node.nodeValue.trim();if(EN[original])node.nodeValue=node.nodeValue.replace(original,EN[original]);}
 }
+function addEngineLanguageSelector(){
+ const header=document.querySelector("header");if(!header||header.querySelector("#engine-ui-language"))return;
+ const box=document.createElement("div");box.style.cssText="display:flex;justify-content:flex-end;align-items:center;gap:8px;margin:8px 0";
+ const label=document.createElement("label");label.htmlFor="engine-ui-language";label.textContent=UI_LANG==="en"?"Language":"Idioma";
+ const select=document.createElement("select");select.id="engine-ui-language";select.style.cssText="background:#101827;color:inherit;border:1px solid #354156;border-radius:8px;padding:6px 10px";
+ for(const [value,text] of [["pt-BR","Português"],["en","English"]]){const o=document.createElement("option");o.value=value;o.textContent=text;select.appendChild(o);}
+ select.value=UI_LANG;select.addEventListener("change",()=>{const url=new URL(location.href);if(select.value==="en")url.searchParams.set("lang","en");else url.searchParams.delete("lang");location.href=url.toString();});
+ box.append(label,select);header.appendChild(box);
+}
+addEngineLanguageSelector();
 applyEnginesEnglish();
 
 async function api(url,opts={}){const r=await fetch(url,opts);const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.detail||j.message||("HTTP "+r.status));return j}
