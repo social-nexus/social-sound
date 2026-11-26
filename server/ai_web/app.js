@@ -22,24 +22,32 @@ const models=[...(catalog?.models||[])];
 for(const imported of (catalog?.installed_models||[]).filter(m=>!models.some(x=>x.id===m.id))){
 models.push({id:imported.id,name:imported.name,description:"Modelo GGUF importado pelo usuário.",installed:true,license:imported.license});
 }
-if(!models.length){list.textContent="Nenhum modelo no catálogo.";return;}
+if(!models.length){list.textContent="Nenhum modelo no catálogo. Verifique a conexão com o gerenciador de IA.";return;}
 for(const m of models){
 const item=document.createElement("div");item.className="model-item";
 const name=document.createElement("strong");name.textContent=m.name;item.appendChild(name);
 const description=document.createElement("div");description.className="small";description.textContent=m.description||"Modelo importado";item.appendChild(description);
 const licenseLine=document.createElement("div");licenseLine.className="small";licenseLine.textContent="Licença: "+(m.license||"Licença do modelo")+" · "+(m.approx_size_gb?m.approx_size_gb+" GB aproximados":"arquivo importado");item.appendChild(licenseLine);
-let check=null;if(m.requires_license_acceptance){const label=document.createElement("label");label.className="small inline";check=document.createElement("input");check.type="checkbox";label.append(check,document.createTextNode("Li e aceito os termos de licença"));item.appendChild(label);
-if(!m.installed){
 if(m.requires_license_acceptance){
-if(m.requires_license_acceptance)check.onchange=()=>button.disabled=!check.checked;
+const label=document.createElement("label");label.className="small inline";
+const check=document.createElement("input");check.type="checkbox";
+label.append(check,document.createTextNode("Li e aceito os termos de licença"));item.appendChild(label);
 const link=document.createElement("a");link.href=m.license_url;link.target="_blank";link.rel="noopener";link.textContent="Abrir licença";link.className="small";item.appendChild(link);
 }
-const row=document.createElement("div");row.className="row";const button=document.createElement("button");button.className="btn";button.textContent="Baixar modelo";button.disabled=!!m.requires_license_acceptance;button.onclick=()=>downloadModel(m);row.appendChild(button);item.appendChild(row);
-if(m.requires_license_acceptance)check.onchange=()=>button.disabled=!check.checked;
-}else{
-const row=document.createElement("div");row.className="row";const activate=document.createElement("button");activate.className="btn primary";activate.textContent=isActive?"Modelo ativo":"Ativar modelo";activate.disabled=isActive;activate.onclick=()=>activateModel(m);row.appendChild(activate);const remove=document.createElement("button");remove.className="btn danger";remove.textContent="Excluir";remove.onclick=()=>deleteModel(m);row.appendChild(remove);item.appendChild(row);
+const row=document.createElement("div");row.className="row";
+if(!m.installed){
+const button=document.createElement("button");button.className="btn";button.textContent="Baixar modelo";
+button.disabled=!!m.requires_license_acceptance;
+button.onclick=()=>downloadModel(m);row.appendChild(button);
+if(m.requires_license_acceptance){
+const check=item.querySelector('input[type="checkbox"]');if(check)check.onchange=()=>button.disabled=!check.checked;
 }
-list.appendChild(item);
+}else{
+const active=(aiStatus?.active_model||"")===m.id&&aiStatus?.runtime_running;
+const activate=document.createElement("button");activate.className="btn primary";activate.textContent=active?"Modelo ativo":"Ativar modelo";activate.disabled=active;activate.onclick=()=>activateModel(m);row.appendChild(activate);
+const remove=document.createElement("button");remove.className="btn danger";remove.textContent="Excluir";remove.onclick=()=>deleteModel(m);row.appendChild(remove);
+}
+item.appendChild(row);list.appendChild(item);
 }
 }
 async function runJob(id,kind){msg("local-msg","A tarefa começou. Aguarde…","warn");while(true){await new Promise(r=>setTimeout(r,1500));const job=await apiFetch(api+"/jobs/"+id);msg("local-msg",(job.progress||0)+"% · "+job.message,job.status==="error"?"error":job.status==="done"?"good":"warn");if(job.status==="done"){await loadLocal();return;}if(job.status==="error")throw new Error(job.message||"A tarefa falhou.");}}
