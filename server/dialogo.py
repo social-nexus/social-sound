@@ -213,7 +213,7 @@ def criar_router(ctx):
             "nome_na_legenda": bool(dados.get("nome_na_legenda", True)),
         }
         limpar_jobs()
-        jid = uuid.uuid4().hex[:8]
+        jid = uuid.uuid4().hex[:16]
         with JOBS_LOCK:
             JOBS[jid] = {"status": "rodando", "msg": "Começando...", "atual": 0, "total": len(falas), "t": time.time()}
         threading.Thread(target=_trabalho, args=(ctx, jid, falas, narrador, personagens, opts), daemon=True).start()
