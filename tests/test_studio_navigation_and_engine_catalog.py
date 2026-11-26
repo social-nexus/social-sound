@@ -43,3 +43,14 @@ def test_main_studio_language_selector_persists_and_translates_shell():
     assert '"AI Settings"' in html
     assert 'encodeURIComponent(APP_LANG)' in html
     assert 'lang="en"' in html or 'document.documentElement.lang=APP_LANG==="en"?"en":"pt-BR"' in html
+
+
+def test_script_humanization_page_supports_english_static_ui():
+    page = ROOT / "server" / "roteiro_web" / "index.html"
+    html = page.read_text(encoding="utf-8")
+    assert 'new URLSearchParams(location.search).get("lang") === "en"' in html
+    assert '"Prepare script":"Prepare script"' not in html
+    assert '"Your script"' in html
+    assert '"Humanize"' in html
+    assert 'applyScriptEnglish();' in html
+    assert 'document.documentElement.lang="en"' in html
