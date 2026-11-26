@@ -639,3 +639,69 @@ def test_supertonic_uninstall_preserves_custom_model_cache(tmp_path, monkeypatch
     assert marker.read_bytes() == b"custom model"
     assert any("personalizado" in item for item in response.json()["preserved"])
     assert not (server_dir / ".venvs" / "supertonic").exists()
+
+
+def test_voxcpm2_cleanup_unloads_model_and_removes_only_its_hf_cache(tmp_path, monkeypatch):
+    import narration_api
+
+    hf_cache = tmp_path / "shared-hf" / "hub"
+    model_cache = hf_cache / "models--openbmb--VoxCPM2"
+    unrelated_cache = hf_cache / "models--other--model"
+    for folder in (model_cache, unrelated_cache):
+        folder.mkdir(parents=True)
+        (folder / "weights.bin").write_bytes(b"weights")
+    monkeypatch.setenv("HF_HUB_CACHE", str(hf_cache))
+    unloaded = []
+
+    app = FastAPI()
+    app.include_router(create_narration_router(
+        lock=threading.Lock(),
+        run=lambda fn: fn(SimpleNamespace(tts_model=SimpleNamespace(sample_rate=24000))),
+        synth=lambda *args, **kwargs: np.zeros(2400, dtype=np.float32),
+        ensure_preset=lambda *args: tmp_path / "preset.wav",
+        preset_by_id=lambda pid: {"id": pid},
+        find_mine=lambda name: None,
+        parse_text=lambda text: [("text", text)],
+        split_sentences=lambda text: [text],
+        tighten=lambda wav, sample_rate: wav,
+        data_dir=tmp_path / "data",
+        output_dir=tmp_path / "audio",
+        unload_engine=lambda: unloaded.append(True),
+    ))
+    response = TestClient(app).request("DELETE", "/api/narration/engines/voxcpm2",
+                                       json={"delete_shared_cache": True})
+
+    assert response.status_code == 200, response.text
+    assert unloaded == [True]
+    assert not model_cache.exists()
+    assert unrelated_cache.exists()
+    assert response.json()["removed_bytes"] > 0
+
+
+def test_voxcpm2_cleanup_preserves_shared_weights_when_not_confirmed(tmp_path, monkeypatch):
+    hf_cache = tmp_path / "shared-hf" / "hub"
+    model_cache = hf_cache / "models--openbmb--VoxCPM2"
+    model_cache.mkdir(parents=True)
+    (model_cache / "weights.bin").write_bytes(b"weights")
+    monkeypatch.setenv("HF_HUB_CACHE", str(hf_cache))
+
+    app = FastAPI()
+    app.include_router(create_narration_router(
+        lock=threading.Lock(),
+        run=lambda fn: fn(SimpleNamespace(tts_model=SimpleNamespace(sample_rate=24000))),
+        synth=lambda *args, **kwargs: np.zeros(2400, dtype=np.float32),
+        ensure_preset=lambda *args: tmp_path / "preset.wav",
+        preset_by_id=lambda pid: {"id": pid},
+        find_mine=lambda name: None,
+        parse_text=lambda text: [("text", text)],
+        split_sentences=lambda text: [text],
+        tighten=lambda wav, sample_rate: wav,
+        data_dir=tmp_path / "data",
+        output_dir=tmp_path / "audio",
+        unload_engine=lambda: None,
+    ))
+    response = TestClient(app).request("DELETE", "/api/narration/engines/voxcpm2", json={})
+
+    assert response.status_code == 200, response.text
+    assert model_cache.exists()
+    assert any("preservados" in item for item in response.json()["preserved"])
