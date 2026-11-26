@@ -148,6 +148,7 @@
   var TONS = [["", "Natural"], ["high energy, excited", "Animado"], ["serious, formal", "Sério"], ["whispering", "Sussurro"],
               ["very calm and soothing", "Calmo"], ["dramatic, lots of emotion", "Dramático"], ["angry, intense", "Bravo"],
               ["sad, soft, slow", "Triste"], ["cheerful, smiling", "Alegre"]];
+  if(UI_LANG==="en")TONS.forEach(function(item){if(UI_DIALOGUE_EN[item[1]])item[1]=UI_DIALOGUE_EN[item[1]];});
   var voz = { lista: [] };          // [{id, label}]
   var narrador = { voz: "", estilo: "" };
   var personagens = [];             // [{nome, falas, voz, estilo, ativo}]
