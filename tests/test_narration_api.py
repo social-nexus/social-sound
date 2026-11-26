@@ -679,8 +679,13 @@ def test_engine_installer_shutdown_handler_is_registered(tmp_path):
     )
     # FastAPI invokes router shutdown handlers when the hosting application exits.
     assert any(callable(handler) for handler in router.on_shutdown)
+    queue_thread = next(
+        thread for thread in threading.enumerate()
+        if thread.name == "social-sound-narration-queue"
+    )
     for handler in router.on_shutdown:
         handler()
+    assert not queue_thread.is_alive(), "queue worker should stop promptly when idle"
 
 
 def test_supertonic_uninstall_preserves_custom_model_cache(tmp_path, monkeypatch):
