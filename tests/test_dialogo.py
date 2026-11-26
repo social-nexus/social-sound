@@ -88,7 +88,7 @@ def test_dialogue_frontend_enforces_script_size_and_line_limits():
     assert "2.000 linhas" in source
 
 
-def test_dialogue_worker_updates_progress_and_finishes_job(tmp_path):
+def test_dialogue_worker_updates_progress_and_finishes_job(tmp_path, monkeypatch):
     import numpy as np
 
     outputs = tmp_path / "outputs"
@@ -120,3 +120,14 @@ def test_dialogue_worker_updates_progress_and_finishes_job(tmp_path):
     assert not list(outputs.glob(f".{jid}.*.tmp.wav"))
     assert "Carregando o modelo" not in dialogo.JOBS[jid]["msg"]
     dialogo.JOBS.pop(jid, None)
+
+    # A subtitle-conversion failure must not leave an apparently published WAV.
+    failed_jid = "worker-subtitle-failure"
+    dialogo.JOBS[failed_jid] = {"status": "rodando", "msg": "Começando...", "atual": 0, "total": 1, "t": time.time()}
+    monkeypatch.setattr(dialogo, "montar_srt", lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeError("falha SRT simulada")))
+    dialogo._trabalho(ctx, failed_jid, falas, narrador, {}, {
+        "pausa_falas": 0.5, "para_pause": 0.8, "max_chars": 42, "nome_na_legenda": True,
+    })
+    assert dialogo.JOBS[failed_jid]["status"] == "erro"
+    assert not (outputs / f"{failed_jid}.wav").exists()
+    dialogo.JOBS.pop(failed_jid, None)
