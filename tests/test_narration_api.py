@@ -300,8 +300,14 @@ def test_omnivoice_catalog_uses_explicit_huggingface_hub_cache(tmp_path, monkeyp
     (runtime / "Lib" / "site-packages" / "omnivoice").mkdir(parents=True)
     (runtime / "lib" / "python3.11" / "site-packages" / "omnivoice").mkdir(parents=True)
     cache = tmp_path / "custom-hf-cache"
-    (cache / "models--k2-fsa--OmniVoice" / "snapshots" / "model").mkdir(parents=True)
-    (cache / "models--bosonai--higgs-audio-v2-tokenizer" / "snapshots" / "tokenizer").mkdir(parents=True)
+    model_snapshot = cache / "models--k2-fsa--OmniVoice" / "snapshots" / "model"
+    tokenizer_snapshot = cache / "models--bosonai--higgs-audio-v2-tokenizer" / "snapshots" / "tokenizer"
+    model_snapshot.mkdir(parents=True)
+    tokenizer_snapshot.mkdir(parents=True)
+    for filename in ("config.json", "model.safetensors", "tokenizer.json", "tokenizer_config.json"):
+        (model_snapshot / filename).write_bytes(b"fake")
+    for filename in ("config.json", "model.safetensors"):
+        (tokenizer_snapshot / filename).write_bytes(b"fake")
     monkeypatch.setenv("SOCIAL_SOUND_OMNIVOICE_PYTHON", str(python))
     monkeypatch.setenv("HF_HOME", str(tmp_path / "different-hf-home"))
     monkeypatch.setenv("HF_HUB_CACHE", str(cache))
