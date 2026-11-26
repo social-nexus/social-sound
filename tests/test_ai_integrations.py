@@ -224,20 +224,6 @@ def test_local_completion_parser_validates_payload(payload, expected):
         assert ia_local._extract_local_completion_text(payload) == expected
 
 
-@pytest.mark.parametrize(
-    ("kind", "payload", "expected"),
-    [
-        ("openai", {"choices": [{"message": {"content": "texto"}}]}, "texto"),
-        ("openai", {"choices": [{"message": {"content": [{"text": "parte 1"}, {"text": "parte 2"}]}}]}, "parte 1parte 2"),
-        ("anthropic", {"content": [{"type": "text", "text": "resposta"}]}, "resposta"),
-        ("gemini", {"candidates": [{"content": {"parts": [{"text": "ok"}]}}]}, "ok"),
-        ("openai", {"unexpected": "shape"}, ""),
-        ("anthropic", {"content": "unexpected"}, ""),
-        ("gemini", {"candidates": []}, ""),
-        ("gemini", {"candidates": [{"content": None}]}, ""),
-        ("openai", None, ""),
-    ],
-)
 def test_cloud_generation_uses_guarded_parser_for_each_provider():
     source = Path(ai_providers.__file__).read_text(encoding="utf-8")
     request = source.split("async def _request_completion(", 1)[1].split(
@@ -255,6 +241,20 @@ def test_local_generation_endpoint_uses_guarded_response_parser():
     assert 'data["choices"][0]["message"]["content"]' not in generation
 
 
+@pytest.mark.parametrize(
+    ("kind", "payload", "expected"),
+    [
+        ("openai", {"choices": [{"message": {"content": "texto"}}]}, "texto"),
+        ("openai", {"choices": [{"message": {"content": [{"text": "parte 1"}, {"text": "parte 2"}]}}]}, "parte 1parte 2"),
+        ("anthropic", {"content": [{"type": "text", "text": "resposta"}]}, "resposta"),
+        ("gemini", {"candidates": [{"content": {"parts": [{"text": "ok"}]}}]}, "ok"),
+        ("openai", {"unexpected": "shape"}, ""),
+        ("anthropic", {"content": "unexpected"}, ""),
+        ("gemini", {"candidates": []}, ""),
+        ("gemini", {"candidates": [{"content": None}]}, ""),
+        ("openai", None, ""),
+    ],
+)
 def test_cloud_provider_response_parser_handles_valid_and_malformed_payloads(kind, payload, expected):
     assert ai_providers._extract_response_text(payload, kind) == expected
 
