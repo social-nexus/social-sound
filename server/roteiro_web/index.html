@@ -116,7 +116,7 @@
     "Preparar roteiro":"Prepare script",
     "Coloca os acentos que faltam, escreve números por extenso e põe vírgulas nas frases longas, para a narração sair mais natural. Você revisa tudo antes de enviar.":"Adds missing accents, spells out numbers and inserts commas in long sentences to make narration sound more natural. Review everything before sending.",
     "Seu roteiro":"Your script","Cole aqui o roteiro...":"Paste your script here...",
-    "Acentos":"Accents","Motor":"Engine","Automático":"Automatic","Modelo Mark":"Mark model","Dicionário":"Dictionary","Idioma do texto (Mark)":"Text language (Mark)","Este idioma orienta o Mark na restauração de acentos. Dicionário, números por extenso e regras de vírgulas continuam focados em português.":"This language guides Mark for accent restoration. Dictionary fallback, number spelling and comma rules remain Portuguese-focused.",
+    "Acentos":"Accents","Motor":"Engine","Automático":"Automatic","Modelo Mark":"Mark model","Dicionário":"Dictionary","Idioma do texto (Mark)":"Text language (Mark)","Idioma selecionado para o modelo multilíngue Mark":"Selected language for the multilingual Mark model","Este idioma orienta o Mark na restauração de acentos. Dicionário, números por extenso e regras de vírgulas continuam focados em português.":"This language guides Mark for accent restoration. Dictionary fallback, number spelling and comma rules remain Portuguese-focused.",
     "Cuidado":"Correction level","Corrigir tudo":"Correct all","Equilibrado":"Balanced","Só os mais certos":"Only high-confidence corrections",
     "Verificando o modelo de acentos...":"Checking accent model...",
     "Números e abreviações por extenso":"Spell out numbers and abbreviations",
@@ -136,7 +136,7 @@
     var walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
     var node;while((node=walker.nextNode())){var key=node.nodeValue.trim();if(UI_EN[key])node.nodeValue=node.nodeValue.replace(key,UI_EN[key]);}
     document.querySelectorAll("[placeholder]").forEach(function(el){if(UI_EN[el.placeholder])el.placeholder=UI_EN[el.placeholder];});
-    document.querySelectorAll("option").forEach(function(el){if(UI_EN[el.textContent.trim()])el.textContent=UI_EN[el.textContent.trim()];});
+    document.querySelectorAll("option").forEach(function(el){if(UI_EN[el.textContent.trim()])el.textContent=UI_EN[el.textContent.trim()];});\n    document.querySelectorAll("[title]").forEach(function(el){if(UI_EN[el.title])el.title=UI_EN[el.title];});
   }
 
   var $ = function (id) { return document.getElementById(id); };
