@@ -52,4 +52,4 @@ jobs:
         run: |
           node --check server/ai_web/app.js
           node --check server/narracoes/app.js
-          node -e 'const fs=require("fs");const html=fs.readFileSync("server/motores/index.html","utf8");const scripts=[...html.matchAll(/<script>([\\s\\S]*?)<\\/script>/g)].map(x=>x[1]);if(!scripts.length)throw Error("no inline script");scripts.forEach(s=>new Function(s));'
+          node -e 'const fs=require("fs");const html=fs.readFileSync("server/motores/index.html","utf8");const scripts=[...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(x=>x[1]);if(!scripts.length)throw Error("no inline script");scripts.forEach(s=>new Function(s));'
