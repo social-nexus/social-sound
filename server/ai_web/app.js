@@ -20,15 +20,16 @@ function renderModels(){
 const list=$("models");list.innerHTML="";
 const models=[...(catalog?.models||[])];
 for(const imported of (catalog?.installed_models||[]).filter(m=>!models.some(x=>x.id===m.id))){
-models.push({id:imported.id,name:imported.name,description:"Modelo GGUF importado pelo usuário.",installed:true,license:imported.license});
+models.push({id:imported.id,name:imported.name,description:"Modelo GGUF importado pelo usuário.",installed:true,license:imported.license,size_bytes:imported.size_bytes});
 }
+for(const model of models){const installedInfo=(catalog?.installed_models||[]).find(x=>x.id===model.id);if(installedInfo)model.size_bytes=installedInfo.size_bytes;}
 if(!models.length){list.textContent="Nenhum modelo no catálogo. Verifique a conexão com o gerenciador de IA.";return;}
 for(const m of models){
 const item=document.createElement("div");item.className="model-item";
 const name=document.createElement("strong");name.textContent=m.name;item.appendChild(name);
 const description=document.createElement("div");description.className="small";description.textContent=m.description||"Modelo importado";item.appendChild(description);
 const licenseLine=document.createElement("div");licenseLine.className="small";licenseLine.textContent="Licença: "+(m.license||"Licença do modelo");item.appendChild(licenseLine);
-const sizeLine=document.createElement("div");sizeLine.className="small";sizeLine.textContent="Peso estimado do arquivo: "+(m.download_estimate|| (m.approx_size_gb?m.approx_size_gb+" GB (aprox.)":"arquivo importado"));item.appendChild(sizeLine);
+const sizeLine=document.createElement("div");sizeLine.className="small";sizeLine.textContent=m.size_bytes?"Espaço ocupado: "+(m.size_bytes/1024**3).toFixed(2)+" GB":"Peso estimado do arquivo: "+(m.download_estimate|| (m.approx_size_gb?m.approx_size_gb+" GB (aprox.)":"arquivo importado"));item.appendChild(sizeLine);
 const diskLine=document.createElement("div");diskLine.className="small";diskLine.textContent="Espaço livre recomendado: "+(m.disk_estimate|| (m.approx_size_gb?Math.ceil(m.approx_size_gb*1.5)+" GB":"não estimado"));item.appendChild(diskLine);
 if(m.requires_license_acceptance){
 const label=document.createElement("label");label.className="small inline";
@@ -47,7 +48,7 @@ const check=item.querySelector('input[type="checkbox"]');if(check)check.onchange
 }else{
 const active=(aiStatus?.active_model||"")===m.id&&aiStatus?.runtime_running;
 const activate=document.createElement("button");activate.className="btn primary";activate.textContent=active?"Modelo ativo":"Ativar modelo";activate.disabled=active;activate.onclick=()=>activateModel(m);row.appendChild(activate);
-const remove=document.createElement("button");remove.className="btn danger";remove.textContent="Excluir";remove.onclick=()=>deleteModel(m);row.appendChild(remove);
+const remove=document.createElement("button");remove.className="btn danger";remove.textContent="Desinstalar e excluir";remove.onclick=()=>deleteModel(m);row.appendChild(remove);
 }
 item.appendChild(row);list.appendChild(item);
 }
@@ -57,7 +58,7 @@ async function installRuntime(){const variant=$("runtime").value;if(!variant){ms
 async function downloadModel(m){try{const accept=m.requires_license_acceptance?true:false;const result=await apiFetch(api+"/models/download",json("POST",{model_id:m.id,accept_license:accept}));if(result.job_id)await runJob(result.job_id,"model");else await loadLocal();}catch(e){msg("local-msg",e.message,"error");}}
 async function importModel(){const file=$("gguf-file").files[0];if(!file){msg("local-msg","Escolha um arquivo .gguf para importar.","warn");return;}if(!confirm("Importar este arquivo GGUF? A licença do modelo não será verificada automaticamente."))return;try{msg("local-msg","Importando modelo GGUF…","warn");const fd=new FormData();fd.append("file",file);const result=await apiFetch(api+"/models/import",{method:"POST",body:fd});msg("local-msg","Modelo importado: "+result.name+" · "+result.warning,"good");await loadLocal();}catch(e){msg("local-msg",e.message,"error");}}
 async function activateModel(m){const variant=$("runtime").value,gpu_layers=Number($("gpu-layers").value);if(!variant){msg("local-msg","Instale e selecione um runtime compatível.","warn");return;}try{msg("local-msg","Inicializando modelo. Isso pode levar alguns minutos…","warn");await apiFetch(api+"/models/activate",json("POST",{model_id:m.id,variant,gpu_layers}));await loadLocal();msg("local-msg","Modelo local ativado: "+m.name,"good");}catch(e){msg("local-msg",e.message,"error");}}
-async function deleteModel(m){if(!confirm("Excluir o modelo "+m.name+" do armazenamento local?"))return;try{await apiFetch(api+"/models/"+encodeURIComponent(m.id),{method:"DELETE"});await loadLocal();}catch(e){msg("local-msg",e.message,"error");}}
+async function deleteModel(m){if(!confirm("Desinstalar e excluir "+m.name+"? Os pesos deste modelo serão removidos do armazenamento. O runtime llama.cpp, os outros modelos, seus roteiros e projetos serão preservados."))return;try{await apiFetch(api+"/models/"+encodeURIComponent(m.id),{method:"DELETE"});await loadLocal();msg("local-msg","Modelo "+m.name+" removido. O runtime llama.cpp e os demais modelos foram preservados.","good");}catch(e){msg("local-msg",e.message,"error");}}
 function promptForWorkspace(){
 if(workspace==="scripts"){
 const subject=$("subject").value.trim(),format=$("format").value,duration=$("duration").value,durationLabel=$("duration").selectedOptions[0]?.textContent||duration,tone=$("tone").value,audience=$("audience").value.trim(),notes=$("notes").value.trim(),base=$("script-input").value.trim();
