@@ -20,6 +20,22 @@ from pydantic import BaseModel, Field
 from narration_queue import NarrationQueue, split_for_duration
 
 
+_ACTIVE_WORKER_PROCESSES = {}
+_ACTIVE_WORKER_PROCESSES_LOCK = threading.Lock()
+_WORKER_SHUTDOWN_REQUESTED = False
+
+
+def _terminate_active_worker_processes():
+    """Terminate tracked external TTS workers on application shutdown."""
+    global _WORKER_SHUTDOWN_REQUESTED
+    with _ACTIVE_WORKER_PROCESSES_LOCK:
+        _WORKER_SHUTDOWN_REQUESTED = True
+        processes = list(_ACTIVE_WORKER_PROCESSES.values())
+    for process in processes:
+        _terminate_process_tree(process)
+
+
+
 def _terminate_process_tree(process):
     """Stop a live worker and descendants, including children that keep pipes open."""
     if process is None:
@@ -68,6 +84,11 @@ def _run_worker_process(command, *, timeout, env):
         start_new_session=(os.name != "nt"),
     )
     process._social_sound_new_session = os.name != "nt"
+    with _ACTIVE_WORKER_PROCESSES_LOCK:
+        _ACTIVE_WORKER_PROCESSES[process.pid] = process
+        shutdown_requested = _WORKER_SHUTDOWN_REQUESTED
+    if shutdown_requested:
+        _terminate_process_tree(process)
     try:
         stdout, stderr = process.communicate(timeout=timeout)
     except subprocess.TimeoutExpired as exc:
@@ -76,6 +97,9 @@ def _run_worker_process(command, *, timeout, env):
         raise subprocess.TimeoutExpired(
             command, timeout, output=stdout or exc.output, stderr=stderr or exc.stderr
         ) from exc
+    finally:
+        with _ACTIVE_WORKER_PROCESSES_LOCK:
+            _ACTIVE_WORKER_PROCESSES.pop(process.pid, None)
     return subprocess.CompletedProcess(command, process.returncode, stdout, stderr)
 
 
@@ -569,9 +593,12 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
         worker_stop.set()
         thread = worker_thread["thread"]
         if thread is not None and thread is not threading.current_thread():
-            # Don't claim an active inference was cancelled: it may finish or be
-            # recovered as interrupted on next startup after this bounded wait.
+            # Let an active inference finish when possible; if it outlives the
+            # bounded wait, terminate any tracked external worker processes.
             thread.join(timeout=30)
+        _terminate_active_worker_processes()
+        if thread is not None and thread is not threading.current_thread():
+            thread.join(timeout=10)
 
     router.add_event_handler("shutdown", shutdown_narration_worker)
 
