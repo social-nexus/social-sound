@@ -6,8 +6,10 @@ Ferramenta **local** para Windows, Linux e macOS que junta, em uma janela só:
 - **Narração**: gera voz com clonagem de voz (VoxCPM2);
 - **Diálogo**: narração com várias vozes, uma por personagem;
 - **Legendas**: gera o `.srt` (normal ou palavra por palavra) ou a lista de timestamps a partir de um áudio pronto e do roteiro;
-- **IA — Roteiros e Narração**: área de criação assistida por IA (em desenvolvimento).
-- **IA — Prompts Visuais**: criação de prompts para vídeos e imagens (em desenvolvimento).
+- **IA — Roteiros e Narração**: geração, revisão e adaptação de roteiros com provedores online ou modelos locais, com envio direto para a aba Narração.
+- **IA — Prompts Visuais**: criação de prompts de imagem e vídeo a partir de roteiros e ideias.
+- **Configurações de IA**: provedores, chaves API e modelos GGUF locais.
+- **Motores de Voz**: catálogo, licenças, estimativas de download e instalação de motores opcionais.
 
 Tudo roda no seu computador. A internet é usada para baixar runtime/modelos e, quando escolhidas, para conectar às APIs externas.
 
@@ -75,6 +77,17 @@ No Linux/macOS, configure `SOCIAL_NEXUS_MODELS_DIR` no ambiente antes de instala
 - **Desligar:** duplo clique em `parar.bat`. Fechar só a janela do programa **não** desliga os servidores nem libera a placa de vídeo.
 - **Atalhos:** `Ctrl+1` Roteiro · `Ctrl+2` Narração · `Ctrl+3` Diálogo · `Ctrl+4` Legendas · `Ctrl+5` IA Roteiros · `Ctrl+6` IA Prompts · `Ctrl+7` Fila de Narrações.
 - Feche o ComfyUI (ou outro programa que use a placa) antes de ligar.
+
+## IA, provedores e modelos locais
+
+- **Provedores online:** OpenAI, Anthropic Claude, Google Gemini, OpenRouter, DeepSeek, Groq e Mistral. Cada serviço exige sua própria chave e pode cobrar pelo uso.
+- **Chaves:** guardadas no cofre de credenciais do sistema operacional (Windows Credential Manager, Keychain ou Secret Service/KWallet compatível). Se o cofre seguro não estiver disponível, o programa não salva a chave em texto simples.
+- **IA local:** o runtime `llama.cpp` é instalado sob demanda, pela aba de configuração, com pacote compatível com o sistema e a arquitetura. Ele não faz parte do `instalar.bat`.
+- **Modelos do catálogo:** Qwen 3 4B Instruct Q4_K_M (~2,50 GB, Apache-2.0) e Gemma 3 4B Instruct Q4_K_M (~2,49 GB, Gemma Terms — leia e aceite antes do download). Os tamanhos de download e espaço livre recomendado aparecem na interface.
+- **Importação GGUF:** permite importar outros modelos, mas a licença do arquivo importado não é verificada automaticamente. Confira os termos do modelo original.
+- **GPU e memória:** o número de camadas enviado à GPU é ajustável. Comece com 0 (CPU) se tiver pouca VRAM; aumente aos poucos. A quantidade de VRAM necessária depende do modelo, contexto e camadas. O tamanho do arquivo GGUF não é igual ao consumo de VRAM.
+- Os downloads oficiais do runtime e do catálogo são verificados por SHA-256; os modelos do catálogo são verificados usando o hash informado pelo Hugging Face. O runtime local escuta apenas em `127.0.0.1`.
+
 
 ## As abas
 
