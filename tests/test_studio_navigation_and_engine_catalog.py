@@ -54,3 +54,14 @@ def test_script_humanization_page_supports_english_static_ui():
     assert '"Humanize"' in html
     assert 'applyScriptEnglish();' in html
     assert 'document.documentElement.lang="en"' in html
+
+
+def test_narration_queue_has_english_dynamic_translation():
+    app = ROOT / "server" / "narracoes" / "app.js"
+    js = app.read_text(encoding="utf-8")
+    assert 'get("lang")==="en"' in js
+    assert '"Queued"' in js
+    assert '"Approve and replace"' in js
+    assert '"Elapsed time: "' in js
+    assert 'Object.keys(UI_STR.en).reduce' in js
+    assert 'T("Nenhuma narração na fila ainda.")' in js
