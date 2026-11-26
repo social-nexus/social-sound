@@ -1,31 +1,30 @@
 const API="/api/narration";
 const UI_LANG=new URLSearchParams(location.search).get("lang")==="en"?"en":"pt-BR";
-const UI_STR={"pt-BR":{},"en":{
+const UI_STR={"en":{
 "Na fila":"Queued","Em andamento":"In progress","Concluída":"Completed","Falhou":"Failed","Interrompida":"Interrupted",
-T("Nenhuma narração na fila ainda."):"No narrations in the queue yet.",
+"Nenhuma narração na fila ainda.":"No narrations in the queue yet.",
 "Parte ":"Part "," de ":" of ","pendente":"pending",
-T("Regenerar esta parte"):"Regenerate this part",T("Nova versão — aguardando sua aprovação"):"New version — awaiting your approval",
-T("Aprovar e substituir"):"Approve and replace",T("Descartar"):"Discard",
+"Regenerar esta parte":"Regenerate this part","Nova versão — aguardando sua aprovação":"New version — awaiting your approval",
+"Aprovar e substituir":"Approve and replace","Descartar":"Discard",
 "Narração ":"Narration "," parte(s)":" part(s)",
 "Motor: ":"Engine: "," · Voz: ":" · Voice: "," · Criada: ":" · Created: ",
-" de ":" of "," partes concluídas":" parts completed",
-T("Tempo em andamento: "):"Elapsed time: ",T("Tempo de geração: "):"Generation time: ",
-T("Áudio completo"):"Full audio",T("Baixar áudio completo"):"Download full audio",
-T("Ver partes e versões"):"View parts and versions",
-T("↑ Subir"):"↑ Move up",T("↓ Descer"):"↓ Move down",T("Remover da fila"):"Remove from queue",
-T("Tentar novamente"):"Retry",T("Nenhuma voz encontrada"):"No voices found",
-T("Voz predefinida"):"Preset voice",T("Voz automática"):"Automatic voice",
-T("Clonar voz com áudio de referência"):"Clone voice from reference audio",
-T("Criar voz por descrição"):"Create voice from description",
+" partes concluídas":" parts completed",
+"Tempo em andamento: ":"Elapsed time: ","Tempo de geração: ":"Generation time: ",
+"Áudio completo":"Full audio","Baixar áudio completo":"Download full audio",
+"Ver partes e versões":"View parts and versions",
+"↑ Subir":"↑ Move up","↓ Descer":"↓ Move down","Remover da fila":"Remove from queue",
+"Tentar novamente":"Retry","Nenhuma voz encontrada":"No voices found",
+"Voz predefinida":"Preset voice","Voz automática":"Automatic voice",
+"Clonar voz com áudio de referência":"Clone voice from reference audio",
+"Criar voz por descrição":"Create voice from description",
 "Minha voz":"My voice","Padrão":"Preset",
-T("Supertonic 3 usa 10 vozes predefinidas. Clonagem de áudio não está disponível."):"Supertonic 3 has 10 preset voices. Audio cloning is not available.",
-T("OmniVoice é somente para uso não comercial. Use apenas sua voz ou uma voz com autorização."):"OmniVoice is non-commercial only. Use only your own voice or a voice you have permission to use.",
-T("F5-TTS PT-BR é um modelo comunitário experimental e somente para uso não comercial. Use uma voz autorizada."):"F5-TTS Brazilian Portuguese is an experimental community model for non-commercial use only. Use an authorized voice.",
-T("O VoxCPM2 aceita vozes salvas e vozes predefinidas."):"VoxCPM2 supports saved and preset voices.",
-"Erro ":"Error ",T("Não foi possível carregar a fila: "):"Could not load queue: "
+"Supertonic 3 usa 10 vozes predefinidas. Clonagem de áudio não está disponível.":"Supertonic 3 has 10 preset voices. Audio cloning is not available.",
+"OmniVoice é somente para uso não comercial. Use apenas sua voz ou uma voz com autorização.":"OmniVoice is non-commercial only. Use only your own voice or a voice you have permission to use.",
+"F5-TTS PT-BR é um modelo comunitário experimental e somente para uso não comercial. Use uma voz autorizada.":"F5-TTS Brazilian Portuguese is an experimental community model for non-commercial use only. Use an authorized voice.",
+"O VoxCPM2 aceita vozes salvas e vozes predefinidas.":"VoxCPM2 supports saved and preset voices.",
+"Erro ":"Error ","Não foi possível carregar a fila: ":"Could not load queue: "
 }};
 const T=value=>UI_LANG==="en"?(UI_STR.en[value]||value):value;
-
 const $=id=>document.getElementById(id);
 let jobs=[];let queuePaused=false;let voicesData=null;const jobElapsed=new Map();function elapsedLabel(ms){const total=Math.max(0,Math.floor(ms/1000));return String(Math.floor(total/60)).padStart(2,"0")+":"+String(total%60).padStart(2,"0");}
 const esc=value=>String(value??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
