@@ -21,8 +21,8 @@ def test_voice_engine_cards_display_size_estimates():
     source = APP_JS.read_text(encoding="utf-8")
     assert "Download estimado:" in source
     assert "Espaço recomendado:" in source
-    assert "esc(e.download_estimate)" in source
-    assert "esc(e.disk_estimate)" in source
+    assert "esc(T(e.download_estimate))" in source
+    assert "esc(T(e.disk_estimate))" in source
 
 
 def test_main_installer_does_not_install_llama_cpp_runtime():
