@@ -37,17 +37,16 @@ def _terminate_active_worker_processes():
 
 
 def _terminate_process_tree(process):
-    """Stop a live worker and descendants, including children that keep pipes open."""
+    """Stop a worker and descendants, including children that keep pipes open."""
     if process is None:
         return
-    # Never signal a PID/PGID after its parent has exited: the identifier may
-    # already have been reused by an unrelated process.
-    try:
-        if process.poll() is not None:
-            return
-    except Exception:
-        pass
     if os.name == "nt":
+        # taskkill /T also targets descendants after the direct worker exits.
+        try:
+            if process.poll() is not None:
+                return
+        except Exception:
+            pass
         try:
             subprocess.run(
                 ["taskkill", "/PID", str(process.pid), "/T", "/F"],
@@ -60,14 +59,19 @@ def _terminate_process_tree(process):
         except Exception:
             pass
     elif getattr(process, "_social_sound_new_session", False):
+        # A child can exit while a grandchild still owns stdout/stderr. In that
+        # case communicate() times out although the Popen PID is already gone.
+        # Signal the dedicated session/process group, not the individual PID.
+        # If no descendants remain, killpg raises ProcessLookupError.
         try:
             import signal
             os.killpg(process.pid, signal.SIGKILL)
         except (ProcessLookupError, PermissionError, OSError):
             pass
-    if process.poll() is None:
+    else:
         try:
-            process.kill()
+            if process.poll() is None:
+                process.kill()
         except Exception:
             pass
     try:
