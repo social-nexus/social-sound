@@ -82,3 +82,11 @@ def test_narration_react_page_has_visible_language_selector():
     assert 'url.searchParams.set("lang","en")' in app
     assert 'option value="pt-BR">Português' in app
     assert 'option value="en">English' in app
+
+
+def test_narration_queue_static_ui_localizes_to_english():
+    source = (Path(__file__).resolve().parents[1] / "server" / "narracoes" / "app.js").read_text(encoding="utf-8")
+    assert 'get("lang")==="en"' in source
+    assert "function applyStaticEnglish()" in source
+    assert '"Divisão Inteligente de Narrações":"Smart Narration Splitter"' in source
+    assert "applyStaticEnglish();" in source
