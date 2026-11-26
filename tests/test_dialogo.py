@@ -116,5 +116,7 @@ def test_dialogue_worker_updates_progress_and_finishes_job(tmp_path):
     })
     assert dialogo.JOBS[jid]["status"] == "pronto"
     assert dialogo.JOBS[jid]["audio"] == f"/saidas/{jid}.wav"
+    assert (outputs / f"{jid}.wav").is_file()
+    assert not list(outputs.glob(f".{jid}.*.tmp.wav"))
     assert "Carregando o modelo" not in dialogo.JOBS[jid]["msg"]
     dialogo.JOBS.pop(jid, None)
