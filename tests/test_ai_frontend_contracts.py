@@ -45,3 +45,9 @@ def test_cloud_provider_key_can_be_removed_from_script_and_prompt_workspaces():
     assert 'providersApi+"/key/"+encodeURIComponent(provider)' in app
     assert 'id="remove-key"' in scripts
     assert 'id="remove-key"' in prompts
+
+
+def test_model_delete_confirmation_matches_generation_conflict_behavior():
+    source = APP_JS.read_text(encoding="utf-8")
+    assert "a exclusão será bloqueada" in source
+    assert "você precisará tentar novamente quando terminar" in source
