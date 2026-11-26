@@ -43,7 +43,15 @@ const AI_EN={
 "Desinstalar e excluir ":"Uninstall and delete ","? Os pesos deste modelo serão removidos. Se ele estiver ativo, será desligado antes da exclusão. Se houver uma geração em andamento, a exclusão será bloqueada e você precisará tentar novamente quando terminar. O llama.cpp instalado, os outros modelos, seus roteiros e projetos serão preservados.":"? The model weights will be removed. If active, it will be stopped first. Deletion is blocked during generation. Installed llama.cpp, other models, scripts and projects will be preserved.",
 "Modelo ":"Model "," removido. Espaço liberado: ":" removed. Space freed: "," O llama.cpp instalado e os demais modelos foram preservados.":" Installed llama.cpp and other models were preserved.",
 "Não consegui consultar o gerenciador de IA: ":"Could not query the AI manager: ","A tarefa começou. Aguarde…":"Task started. Please wait…","A tarefa falhou.":"The task failed.",
-"Gerar com IA":"Generate with AI","Gerar diálogo":"Generate dialogue","Gerar roteiro":"Generate script"
+"Gerar com IA":"Generate with AI","Gerar diálogo":"Generate dialogue","Gerar roteiro":"Generate script",
+"Não foi possível iniciar a tarefa: ":"Could not start task: ","Runtime já instalado.":"Runtime already installed.",
+"Baixando runtime oficial llama.cpp…":"Downloading official llama.cpp runtime…",
+"Verificando SHA-256 do pacote ":"Verifying SHA-256 of package "," do runtime…":" of the runtime…",
+"Runtime instalado e verificado.":"Runtime installed and verified.",
+"Consultando hash e tamanho no Hugging Face…":"Checking hash and size on Hugging Face…",
+"Modelo já instalado e verificado.":"Model already installed and verified.",
+"Validando SHA-256 do modelo…":"Validating model SHA-256…",
+"Modelo baixado e verificado.":"Model downloaded and verified."
 };
 const T=value=>UI_LANG==="en"?(AI_EN[value]||value):value;
 function applyAIEnglish(){
@@ -106,7 +114,7 @@ const remove=document.createElement("button");remove.className="btn danger";remo
 item.appendChild(row);list.appendChild(item);
 }
 }
-async function runJob(id,kind){msg("local-msg",T("A tarefa começou. Aguarde…"),"warn");while(true){await new Promise(r=>setTimeout(r,1500));const job=await apiFetch(api+"/jobs/"+id);msg("local-msg",(job.progress||0)+"% · "+job.message,job.status==="error"?"error":job.status==="done"?"good":"warn");if(job.status==="done"){await loadLocal();return;}if(job.status==="error")throw new Error(job.message||T("A tarefa falhou."));}}
+async function runJob(id,kind){msg("local-msg",T("A tarefa começou. Aguarde…"),"warn");while(true){await new Promise(r=>setTimeout(r,1500));const job=await apiFetch(api+"/jobs/"+id);msg("local-msg",(job.progress||0)+"% · "+T(job.message),job.status==="error"?"error":job.status==="done"?"good":"warn");if(job.status==="done"){await loadLocal();return;}if(job.status==="error")throw new Error(job.message||T("A tarefa falhou."));}}
 async function uninstallRuntime(runtime){if(!confirm(T("Desinstalar runtime ")+runtime.label+T(" e excluir seus arquivos baixados?")+(aiStatus?.active_variant===runtime.id?T(" O runtime ativo será desligado antes da remoção."): "")))return;try{const result=await apiFetch(api+"/runtime/"+encodeURIComponent(runtime.id),{method:"DELETE"});await loadLocal();msg("local-msg",T("Runtime removido. Espaço liberado: ")+((result.removed_bytes||0)/1024**3).toFixed(2)+T(" GB."),"good");}catch(e){msg("local-msg",e.message,"error");}}
 async function installRuntime(){const variant=$("runtime").value;if(!variant){msg("local-msg","Selecione um runtime compatível.","warn");return;}try{const result=await apiFetch(api+"/runtime/install",json("POST",{variant}));if(result.job_id)await runJob(result.job_id,"runtime");else await loadLocal();}catch(e){msg("local-msg",e.message,"error");}}
 async function downloadModel(m){try{const accept=m.requires_license_acceptance?true:false;const result=await apiFetch(api+"/models/download",json("POST",{model_id:m.id,accept_license:accept}));if(result.job_id)await runJob(result.job_id,"model");else await loadLocal();}catch(e){msg("local-msg",e.message,"error");}}
