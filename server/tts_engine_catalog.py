@@ -22,6 +22,9 @@ ENGINES = [
     },
     {
         "id": "supertonic3",
+        "download_estimate": "Modelo: ~400 MB · dependências: ~150–400 MB",
+        "disk_estimate": "Espaço livre recomendado: ~1 GB",
+        "size_notes": "Estimativa para o modelo ONNX e dependências Python; pode variar conforme cache e versões.",
         "name": "Supertonic 3",
         "model": "Supertone/supertonic-3",
         "package": "supertonic==1.3.1",
@@ -39,6 +42,9 @@ ENGINES = [
     },
     {
         "id": "omnivoice",
+        "download_estimate": "Modelos: ~3 GB · dependências: ~2–4 GB",
+        "disk_estimate": "Espaço livre recomendado: ~6 GB",
+        "size_notes": "Estimativa baseada no repositório de modelos (aprox. 3 GB) e ambiente PyTorch CUDA separado. Pode variar por versões/cache.",
         "name": "OmniVoice",
         "model": "k2-fsa/OmniVoice",
         "code_license": "Apache-2.0",
@@ -55,6 +61,9 @@ ENGINES = [
     },
     {
         "id": "f5tts",
+        "download_estimate": "Checkpoint/vocoder: ~1.6 GB · dependências: ~3–4 GB",
+        "disk_estimate": "Espaço livre recomendado: ~6 GB",
+        "size_notes": "Checkpoint PT-BR de 1.35 GB mais vocoder/vocab e ambiente PyTorch CUDA isolado; tamanho total varia conforme versões/cache.",
         "name": "F5-TTS",
         "model": "Cataldir/F5-TTS-pt-br",
         "code_license": "MIT",
