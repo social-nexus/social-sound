@@ -9,12 +9,12 @@ def test_local_model_catalog_renders_download_actions_without_license_gate():
     # Models that do not require acceptance (e.g. Apache-2.0 Qwen) must still
     # receive the download button; license acceptance is only conditional UI.
     assert 'if(!m.installed){' in render
-    assert 'button.textContent="Baixar modelo"' in render
+    assert 'button.textContent=T("Baixar modelo")' in render
     assert 'button.onclick=()=>downloadModel(m)' in render
     assert 'if(m.requires_license_acceptance){' in render
     assert 'button.disabled=!!m.requires_license_acceptance' in render
     assert 'button.disabled=!check.checked' in render
-    assert 'activate.textContent=active?"Modelo ativo":"Ativar modelo"' in render and 'activate.onclick=()=>activateModel(m)' in render
+    assert 'activate.textContent=active?T("Modelo ativo"):T("Ativar modelo")' in render and 'activate.onclick=()=>activateModel(m)' in render
 
 
 def test_script_generation_instructions_follow_selected_duration():
@@ -28,7 +28,7 @@ def test_script_generation_instructions_follow_selected_duration():
 
 def test_local_model_removal_preserves_runtime_and_other_models():
     source = APP_JS.read_text(encoding="utf-8")
-    assert 'remove.textContent="Desinstalar e excluir"' in source
+    assert 'remove.textContent=T("Desinstalar e excluir")' in source
     assert 'Os pesos deste modelo serão removidos' in source
     assert 'O llama.cpp instalado, os outros modelos' in source
     assert 'm.size_bytes' in source
@@ -51,3 +51,14 @@ def test_model_delete_confirmation_matches_generation_conflict_behavior():
     source = APP_JS.read_text(encoding="utf-8")
     assert "a exclusão será bloqueada" in source
     assert "você precisará tentar novamente quando terminar" in source
+
+
+def test_ai_workspace_supports_english_static_and_dynamic_ui():
+    source = APP_JS.read_text(encoding="utf-8")
+    assert 'get("lang")==="en"' in source
+    assert '"AI — Scripts & Narration"' in source
+    assert 'applyAIEnglish();' in source
+    assert 'T("Baixar modelo")' in source
+    assert 'T("Desinstalar e excluir")' in source
+    assert 'T("Gerando…")' in source
+    assert 'T("Local AI (llama.cpp)")' in source or 'UI_LANG==="en"?"Local AI (llama.cpp)"' in source
