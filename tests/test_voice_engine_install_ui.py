@@ -90,3 +90,12 @@ def test_voxcpm2_weight_cleanup_is_available_in_both_voice_workspaces():
     assert 'Liberar pesos baixados' in narration
     assert 'O motor continuará integrado' in narration
     assert 'O motor continuará integrado' not in motor or 'Descarregar o VoxCPM2' in motor
+
+
+def test_voice_engine_catalog_supports_english_ui_and_dynamic_labels():
+    page = PAGE.read_text(encoding="utf-8")
+    assert 'get("lang")==="en"' in page
+    assert '"Voice Engines"' in page
+    assert 'T("Liberar pesos baixados")' in page
+    assert 'T("Desinstalar e excluir")' in page
+    assert 'T("Confirmo explicitamente que o uso será não comercial.")' in page
