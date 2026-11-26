@@ -182,21 +182,26 @@ class Mark:
         return self._validar(frase, pecas), {"tamanho_modelo": tamanho, "marcas": marcas[:8]}
 
     @staticmethod
-    def _validar(bloco: str, pecas) -> str:
-        """Accept only a diacritic added to the same ASCII letter; never allow substitutions."""
+    def _validar(bloco: str, pecas, language: str = "pt") -> str:
+        """Allow only same-letter diacritics; Portuguese keeps its original stricter accent set."""
         saida = []
         for c, o in zip(bloco, pecas):
             if ord(c) < 128 and o != c:
-                decomp = unicodedata.normalize("NFD", o)
-                if decomp and decomp[0] == c and all(unicodedata.category(ch) == "Mn" for ch in decomp[1:]):
-                    saida.append(o)
-                    continue
+                if language == "pt":
+                    if o in ACENTOS_PT.get(c, ""):
+                        saida.append(o)
+                        continue
+                else:
+                    decomp = unicodedata.normalize("NFD", o)
+                    if decomp and decomp[0] == c and all(unicodedata.category(ch) == "Mn" for ch in decomp[1:]):
+                        saida.append(o)
+                        continue
             saida.append(c)
         return "".join(saida)
 
     def _bloco(self, bloco: str, margem: float, language: str = "pt") -> str:
         prev, _ = self._previsoes(bloco, margem, language)
-        return self._validar(bloco, decodificar_lista(bloco, prev, self.tags))
+        return self._validar(bloco, decodificar_lista(bloco, prev, self.tags), language)
 
     def _restaurar(self, texto: str, margem: float, language: str = "pt") -> str:
         return "".join(self._bloco(b, margem, language) for b in dividir_bytes(texto))
