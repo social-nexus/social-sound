@@ -778,6 +778,7 @@ def rota_excluir_modelo():
             for filename in MARK_URLS:
                 (MARK_DIR / filename).unlink(missing_ok=True)
                 (MARK_DIR / (filename + ".part")).unlink(missing_ok=True)
+                (MARK_DIR / (filename + ".baixando")).unlink(missing_ok=True)
             if MARK_DIR.exists() and not any(MARK_DIR.iterdir()):
                 MARK_DIR.rmdir()
         DOWNLOAD.update(rodando=False, baixado=0, total=0, erro=None)
