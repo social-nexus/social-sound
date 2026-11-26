@@ -9,6 +9,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "server"))
+import narration_api
 from narration_api import create_narration_router
 
 
@@ -428,3 +429,63 @@ def test_installer_termination_falls_back_to_killing_parent(monkeypatch):
 
     assert process.killed
     assert process.waited
+
+
+
+def test_worker_process_returns_captured_output(monkeypatch):
+    class FakeProcess:
+        pid = 1234
+        returncode = 0
+        _social_sound_new_session = False
+
+        def __init__(self, *args, **kwargs):
+            self.kwargs = kwargs
+
+        def communicate(self, timeout=None):
+            assert timeout == 5
+            return "worker output", ""
+
+    monkeypatch.setattr(narration_api.subprocess, "Popen", FakeProcess)
+    result = narration_api._run_worker_process(["python", "worker.py"], timeout=5, env={})
+    assert result.returncode == 0
+    assert result.stdout == "worker output"
+    assert result.stderr == ""
+
+
+def test_worker_process_timeout_terminates_process_tree(monkeypatch):
+    class FakeProcess:
+        pid = 4321
+        returncode = None
+        _social_sound_new_session = False
+
+        def __init__(self, *args, **kwargs):
+            self.calls = 0
+
+        def communicate(self, timeout=None):
+            self.calls += 1
+            if self.calls == 1:
+                raise narration_api.subprocess.TimeoutExpired(["worker"], timeout, output="partial")
+            self.returncode = -9
+            return "partial", "terminated"
+
+        def poll(self):
+            return self.returncode
+
+        def wait(self, timeout=None):
+            return self.returncode
+
+        def kill(self):
+            self.returncode = -9
+
+    process = FakeProcess()
+    monkeypatch.setattr(narration_api.subprocess, "Popen", lambda *args, **kwargs: process)
+    terminated = []
+    monkeypatch.setattr(narration_api, "_terminate_process_tree", lambda proc: terminated.append(proc))
+    try:
+        narration_api._run_worker_process(["worker"], timeout=1, env={})
+        assert False, "Expected worker timeout"
+    except narration_api.subprocess.TimeoutExpired as exc:
+        assert exc.timeout == 1
+        assert "partial" in str(exc.output)
+    assert terminated == [process]
+    assert process.calls == 2
