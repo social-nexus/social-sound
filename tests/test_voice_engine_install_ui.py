@@ -73,7 +73,7 @@ def test_optional_voice_engines_have_safe_uninstall_controls():
 
 def test_narration_workspace_also_exposes_optional_engine_uninstall():
     source = (ROOT / "server" / "narracoes" / "app.js").read_text(encoding="utf-8")
-    assert 'data-uninstall-engine="'+esc(e.id)+'"' in source
+    assert "data-uninstall-engine=\"'+esc(e.id)+'\"" in source
     assert 'async function uninstallEngine(id)' in source
     assert 'API+"/engines/"+id' in source
     assert 'delete_shared_cache:deleteShared' in source
