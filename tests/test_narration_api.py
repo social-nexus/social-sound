@@ -332,7 +332,7 @@ def test_concurrent_regeneration_requests_only_create_one_pending_candidate(tmp_
         if completed["status"] in {"completed", "failed"}:
             break
         time.sleep(0.05)
-    assert completed["status"] == "completed", completed.get("error)
+    assert completed["status"] == "completed", completed.get("error")
 
     regenerating["value"] = True
     with ThreadPoolExecutor(max_workers=2) as pool:
