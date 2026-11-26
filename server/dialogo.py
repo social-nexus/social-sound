@@ -134,7 +134,7 @@ def _trabalho(ctx, jid, falas, narrador, personagens, opts):
                 raise ValueError("Não há texto para narrar.")
             return sr, np.concatenate(pecas), cues, info
 
-        job["msg"] = "Carregando o modelo de voz (na primeira vez demora alguns minutos)..."
+        _job_update(jid, msg="Carregando o modelo de voz (na primeira vez demora alguns minutos)...")
         with ctx["lock"]:
             sr, saida, cues, info = ctx["run"](work)
         caminho = ctx["saidas"] / f"{jid}.wav"
