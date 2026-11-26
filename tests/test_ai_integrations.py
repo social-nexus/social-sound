@@ -274,10 +274,11 @@ def test_cloud_generation_maps_provider_http_errors(monkeypatch, status, expecte
     error = httpx.HTTPStatusError("provider error", request=request, response=response)
     monkeypatch.setattr(ai_providers, "_get_key", lambda provider: "test-key")
     monkeypatch.setattr(ai_providers, "_request_completion", AsyncMock(side_effect=error))
-    with pytest.raises(RuntimeError, match=expected):
+    with pytest.raises(RuntimeError, match=expected) as raised:
         asyncio.run(ai_providers.generate_with_provider(
             "openai", "gpt-4.1-mini", "system", "prompt"
         ))
+    assert "provider error detail" not in str(raised.value)
 
 def test_f5tts_worker_resolves_custom_huggingface_uris_before_loading(monkeypatch, tmp_path):
     import importlib.util
