@@ -141,6 +141,9 @@
   }
 
   var $ = function (id) { return document.getElementById(id); };
+  var markLanguageSelect=$("mark-language");
+  try{var savedMarkLanguage=localStorage.getItem("socialsound:mark-language");if(savedMarkLanguage&&Array.from(markLanguageSelect.options).some(function(o){return o.value===savedMarkLanguage;}))markLanguageSelect.value=savedMarkLanguage;}catch(e){}
+  markLanguageSelect.addEventListener("change",function(){try{localStorage.setItem("socialsound:mark-language",markLanguageSelect.value);}catch(e){}});
   var itens = [], desfeitos = {};
 
   function textoFinal() {
