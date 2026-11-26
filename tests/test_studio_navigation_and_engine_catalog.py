@@ -13,7 +13,7 @@ def test_studio_has_separate_voice_engine_and_ai_configuration_tabs():
     assert 'id="p-motores"' in html
     assert 'url:"/motores/"' in html
     assert 'id="t-ia-config"' in html
-    assert 'url:"/ia-config/"' in html
+    assert 'url:"/ia-roteiros/"' in html
     assert "Inteligência Artificial" in html
     assert "Produção" in html
     assert "</nav>><div" not in html
