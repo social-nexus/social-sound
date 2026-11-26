@@ -843,3 +843,29 @@ def test_omnivoice_readiness_rejects_partial_huggingface_snapshots(tmp_path, mon
     assert engine_ready() is True
     (model_snapshot / "model.safetensors").unlink()
     assert engine_ready() is False
+
+
+def test_shutdown_terminates_tracked_external_worker_process(monkeypatch):
+    class FakeProcess:
+        pid = 321987
+        _social_sound_new_session = False
+        def __init__(self):
+            self.killed = False
+        def poll(self):
+            return None if not self.killed else -9
+        def kill(self):
+            self.killed = True
+        def wait(self, timeout=None):
+            return -9
+
+    process = FakeProcess()
+    with narration_api._ACTIVE_WORKER_PROCESSES_LOCK:
+        narration_api._ACTIVE_WORKER_PROCESSES.clear()
+        narration_api._WORKER_SHUTDOWN_REQUESTED = False
+        narration_api._ACTIVE_WORKER_PROCESSES[process.pid] = process
+    narration_api._terminate_active_worker_processes()
+    assert process.killed is True
+    assert narration_api._WORKER_SHUTDOWN_REQUESTED is True
+    with narration_api._ACTIVE_WORKER_PROCESSES_LOCK:
+        narration_api._ACTIVE_WORKER_PROCESSES.clear()
+        narration_api._WORKER_SHUTDOWN_REQUESTED = False
