@@ -503,7 +503,8 @@ def ai_catalog():
                  "compatible": v["system"] == system and v["machine"].lower() == machine}
                 for k, v in RUNTIME_CATALOG.items()]
     models = [{"id": k, **{x: v[x] for x in ("name", "family", "repo", "filename", "license",
-               "license_url", "model_url", "approx_size_gb", "description", "requires_license_acceptance")},
+               "license_url", "model_url", "approx_size_gb", "download_estimate", "disk_estimate",
+               "description", "requires_license_acceptance")},
                "installed": _model_file(k).is_file()} for k, v in MODEL_CATALOG.items()]
     return {"runtimes": runtimes, "models": models, "installed_models": _installed_models()}
 
