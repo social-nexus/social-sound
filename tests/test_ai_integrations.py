@@ -219,6 +219,25 @@ def test_cloud_generation_reports_missing_api_key(monkeypatch):
         ("openai", None, ""),
     ],
 )
+@pytest.mark.parametrize(
+    ("payload", "expected"),
+    [
+        ({"choices": [{"message": {"content": "  texto local  "}}]}, "texto local"),
+        ({"choices": [{"message": {"content": ""}}]}, None),
+        ({"choices": []}, None),
+        ({"choices": [{"message": None}]}, None),
+        ({"choices": [{"message": {"content": ["texto"]}}]}, None),
+        (None, None),
+    ],
+)
+def test_local_completion_parser_validates_payload(payload, expected):
+    if expected is None:
+        with pytest.raises(ValueError):
+            ia_local._extract_local_completion_text(payload)
+    else:
+        assert ia_local._extract_local_completion_text(payload) == expected
+
+
 def test_cloud_provider_response_parser_handles_valid_and_malformed_payloads(kind, payload, expected):
     assert ai_providers._extract_response_text(payload, kind) == expected
 
