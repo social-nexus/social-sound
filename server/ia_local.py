@@ -31,6 +31,7 @@ from security_config import LOCAL_HOSTS, LOCAL_ORIGINS
 router = APIRouter(prefix="/api/ai", tags=["ia-local"])
 LOCK = threading.RLock()
 RUNTIME_LIFECYCLE_LOCK = threading.RLock()
+ACTIVE_GENERATIONS = 0
 JOBS: dict[str, dict] = {}
 MODEL_DOWNLOAD_LOCKS: dict[str, threading.Lock] = {}
 RUNTIME_INSTALL_LOCKS: dict[str, threading.Lock] = {}
@@ -494,6 +495,8 @@ def _start_runtime(model_id: str, variant: str, gpu_layers: int = 0):
             Path(m["path"]) for m in _installed_models() if m["id"] == model_id)
         if not model_path.is_file() or model_path.suffix.lower() != ".gguf":
             raise ValueError("Arquivo GGUF inválido.")
+        if ACTIVE_GENERATIONS:
+            raise RuntimeError("Aguarde a geração de texto terminar antes de trocar o modelo local.")
         _stop_runtime()
         time.sleep(0.25)
         with socket.socket() as probe:
@@ -636,7 +639,10 @@ def activate_model(payload: dict, request: Request):
 @router.post("/runtime/stop")
 def stop_runtime(request: Request):
     _guard_local_request(request)
-    _stop_runtime()
+    with RUNTIME_LIFECYCLE_LOCK:
+        if ACTIVE_GENERATIONS:
+            raise HTTPException(409, "Aguarde a geração de texto terminar antes de parar o runtime.")
+        _stop_runtime()
     return {"ok": True}
 
 @router.get("/jobs/{jid}")
@@ -649,6 +655,8 @@ def ai_job(jid: str):
 def delete_model(model_id: str, request: Request):
     _guard_local_request(request)
     with RUNTIME_LIFECYCLE_LOCK:
+        if model_id == ACTIVE_MODEL and ACTIVE_GENERATIONS:
+            raise HTTPException(409, "Este modelo está gerando um roteiro agora. Aguarde a geração terminar antes de desinstalar.")
         if model_id == ACTIVE_MODEL:
             _stop_runtime()
         if model_id in MODEL_CATALOG:
@@ -706,8 +714,12 @@ async def generate_text(payload: dict, request: Request):
             return {"text": answer, "model": f"{provider}/{model}", "provider": provider}
         except (RuntimeError, ValueError) as exc:
             raise HTTPException(502, str(exc)[:350])
-    if not PROCESS or PROCESS.poll() is not None or not ACTIVE_MODEL:
-        raise HTTPException(503, "Ative um modelo local antes de gerar.")
+    global ACTIVE_GENERATIONS
+    with RUNTIME_LIFECYCLE_LOCK:
+        if not PROCESS or PROCESS.poll() is not None or not ACTIVE_MODEL:
+            raise HTTPException(503, "Ative um modelo local antes de gerar.")
+        generation_model = ACTIVE_MODEL
+        ACTIVE_GENERATIONS += 1
     body = {"model": "social-sound-local", "messages": [
         {"role": "system", "content": system}, {"role": "user", "content": prompt}],
         "temperature": 0.7, "top_p": 0.8, "max_tokens": max_tokens, "stream": False}
@@ -717,9 +729,12 @@ async def generate_text(payload: dict, request: Request):
             response.raise_for_status()
             data = response.json()
         answer = _extract_local_completion_text(data)
-        return {"text": answer, "model": ACTIVE_MODEL, "provider": "local"}
+        return {"text": answer, "model": generation_model, "provider": "local"}
     except (httpx.HTTPError, KeyError, IndexError, ValueError) as exc:
         raise HTTPException(502, f"Falha ao gerar com o modelo local: {str(exc)[:250]}")
+    finally:
+        with RUNTIME_LIFECYCLE_LOCK:
+            ACTIVE_GENERATIONS = max(0, ACTIVE_GENERATIONS - 1)
 
 
 atexit.register(_stop_runtime)
