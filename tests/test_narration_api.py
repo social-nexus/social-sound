@@ -605,3 +605,37 @@ def test_engine_installer_shutdown_handler_is_registered(tmp_path):
     assert any(callable(handler) for handler in router.on_shutdown)
     for handler in router.on_shutdown:
         handler()
+
+
+def test_supertonic_uninstall_preserves_custom_model_cache(tmp_path, monkeypatch):
+    import narration_api
+
+    server_dir = tmp_path / "server"
+    (server_dir / ".venvs" / "supertonic").mkdir(parents=True)
+    monkeypatch.setattr(narration_api, "__file__", str(server_dir / "narration_api.py"))
+    custom_cache = tmp_path / "user-models" / "Narradores" / "Supertonic3"
+    custom_cache.mkdir(parents=True)
+    marker = custom_cache / "weights.onnx"
+    marker.write_bytes(b"custom model")
+    monkeypatch.setenv("SUPERTONIC_CACHE_DIR", str(custom_cache))
+
+    app = FastAPI()
+    app.include_router(create_narration_router(
+        lock=threading.Lock(),
+        run=lambda fn: fn(SimpleNamespace(tts_model=SimpleNamespace(sample_rate=24000))),
+        synth=lambda *args, **kwargs: np.zeros(2400, dtype=np.float32),
+        ensure_preset=lambda *args: tmp_path / "preset.wav",
+        preset_by_id=lambda pid: {"id": pid},
+        find_mine=lambda name: None,
+        parse_text=lambda text: [("text", text)],
+        split_sentences=lambda text: [text],
+        tighten=lambda wav, sample_rate: wav,
+        data_dir=tmp_path / "data",
+        output_dir=tmp_path / "audio",
+    ))
+    response = TestClient(app).request("DELETE", "/api/narration/engines/supertonic3", json={})
+
+    assert response.status_code == 200, response.text
+    assert marker.read_bytes() == b"custom model"
+    assert any("personalizado" in item for item in response.json()["preserved"])
+    assert not (server_dir / ".venvs" / "supertonic").exists()
