@@ -35,3 +35,9 @@ def test_optional_engine_bat_scripts_support_noninteractive_ui_install():
     for name in ("instalar-omnivoice.bat", "instalar-f5tts.bat"):
         script = (ROOT / name).read_text(encoding="utf-8")
         assert "SOCIAL_SOUND_LICENSE_ACCEPTED" in script
+
+
+def test_engine_catalog_ui_shows_optional_tokenizer_license_link():
+    source = (ROOT / "server" / "motores" / "index.html").read_text(encoding="utf-8")
+    assert "e.tokenizer_url" in source
+    assert "Licença tokenizer" in source
