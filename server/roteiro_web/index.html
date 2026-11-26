@@ -177,7 +177,7 @@
       var d = await r.json();
       itens = d.itens; desfeitos = {};
       var c = d.contagem;
-      $("stats").textContent = c.acentos + " acentos • " + c.expansoes + " por extenso • " + c.virgulas + " vírgulas" + (d.motor ? " • motor: " + d.motor : "");
+      $("stats").textContent = UI_LANG==="en" ? c.acentos+" accents • "+c.expansoes+" spelled out • "+c.virgulas+" commas"+(d.motor?" • engine: "+d.motor:"") : c.acentos + " acentos • " + c.expansoes + " por extenso • " + c.virgulas + " vírgulas" + (d.motor ? " • motor: " + d.motor : "");
       $("avisos").innerHTML = "";
       d.avisos.forEach(function (a) { var x = document.createElement("div"); x.className = "aviso"; x.textContent = a; $("avisos").appendChild(x); });
       render();
