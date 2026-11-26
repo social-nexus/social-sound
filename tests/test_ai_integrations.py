@@ -642,6 +642,16 @@ def test_local_security_middleware_covers_voice_mutation_routes():
     assert server_source.index("if host not in AI_LOCAL_HOSTS") < server_source.index("if not protected_path or")
 
 
+def test_narration_queue_rechecks_engine_state_around_inference_lock():
+    source = (Path(__file__).resolve().parents[1] / "server" / "narration_api.py").read_text(encoding="utf-8")
+    worker = source.split("def worker_loop():", 1)[1].split("def start_worker():", 1)[0]
+    assert worker.count("check_job_engine_available(job)") >= 2
+    helper = source.split("def check_job_engine_available(job):", 1)[1].split("def worker_loop():", 1)[0]
+    for readiness in ("supertonic_ready()", "omnivoice_ready()", "f5tts_ready()"):
+        assert readiness in helper
+    assert source.index("engine_uninstalling = set()") < source.index("start_worker()")
+
+
 def test_tts_engines_share_inference_lock():
     server_source = (Path(__file__).resolve().parents[1] / "server" / "server.py").read_text(encoding="utf-8")
     narration_source = (Path(__file__).resolve().parents[1] / "server" / "narration_api.py").read_text(encoding="utf-8")
