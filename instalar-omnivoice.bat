@@ -15,17 +15,22 @@ echo Leia os termos antes de continuar:
 echo https://huggingface.co/k2-fsa/OmniVoice
 echo https://huggingface.co/bosonai/higgs-audio-v2-tokenizer
 echo.
-set "CONFIRM="
-set /p "CONFIRM=Voce leu e aceita as licencas e usara somente para fins nao comerciais? (S/N): "
-if /i not "%CONFIRM%"=="S" (
-  echo Instalacao cancelada. Nenhuma alteracao foi feita.
-  pause
-  exit /b 0
+if not "%SOCIAL_SOUND_INSTALL_FROM_UI%"=="1" (
+  set "CONFIRM="
+  set /p "CONFIRM=Voce leu e aceita as licencas e usara somente para fins nao comerciais? (S/N): "
+  if /i not "%CONFIRM%"=="S" (
+    echo Instalacao cancelada. Nenhuma alteracao foi feita.
+    if not "%SOCIAL_SOUND_INSTALL_FROM_UI%"=="1" if not "%SOCIAL_SOUND_INSTALL_FROM_UI%"=="1" pause
+    exit /b 0
+  )
+) else if not "%SOCIAL_SOUND_LICENSE_ACCEPTED%"=="1" (
+  echo ERRO: aceite da licenca nao foi confirmado pela interface.
+  exit /b 1
 )
 
 if defined SOCIAL_NEXUS_MODELS_DIR if not exist "%SOCIAL_NEXUS_MODELS_DIR%" (
   echo ERRO: a biblioteca compartilhada nao esta disponivel: %SOCIAL_NEXUS_MODELS_DIR%
-  pause
+  if not "%SOCIAL_SOUND_INSTALL_FROM_UI%"=="1" if not "%SOCIAL_SOUND_INSTALL_FROM_UI%"=="1" pause
   exit /b 1
 )
 cd /d "%~dp0server"
@@ -61,17 +66,17 @@ if errorlevel 1 goto falha
 echo.
 echo OmniVoice instalado. O ambiente VoxCPM2 nao foi alterado.
 echo Reinicie o Social Sound para atualizar o catalogo.
-pause
+if not "%SOCIAL_SOUND_INSTALL_FROM_UI%"=="1" pause
 exit /b 0
 
 :sem_python
 echo Python 3.11 nao encontrado. Instale Python 3.11 e tente novamente.
-pause
+if not "%SOCIAL_SOUND_INSTALL_FROM_UI%"=="1" pause
 exit /b 1
 
 :falha
 echo.
 echo A instalacao do OmniVoice falhou. O VoxCPM2 permanece intacto.
 echo Verifique a mensagem acima. Voce pode executar este arquivo novamente.
-pause
+if not "%SOCIAL_SOUND_INSTALL_FROM_UI%"=="1" pause
 exit /b 1
