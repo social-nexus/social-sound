@@ -174,6 +174,44 @@ def _validate_provider(provider: str) -> str:
     return provider
 
 
+def _extract_response_text(payload: Any, kind: str) -> str:
+    """Read text from provider payloads without assuming a successful response shape."""
+    if not isinstance(payload, dict):
+        return ""
+    if kind == "openai":
+        choices = payload.get("choices")
+        if not isinstance(choices, list) or not choices or not isinstance(choices[0], dict):
+            return ""
+        message = choices[0].get("message")
+        if not isinstance(message, dict):
+            return ""
+        body = message.get("content")
+        if isinstance(body, str):
+            return body
+        if isinstance(body, list):
+            return "".join(item.get("text", "") for item in body
+                           if isinstance(item, dict) and isinstance(item.get("text"), str))
+        return ""
+    if kind == "anthropic":
+        blocks = payload.get("content")
+        if not isinstance(blocks, list):
+            return ""
+        return "".join(block.get("text", "") for block in blocks
+                       if isinstance(block, dict) and block.get("type") == "text"
+                       and isinstance(block.get("text"), str))
+    if kind == "gemini":
+        candidates = payload.get("candidates")
+        if not isinstance(candidates, list) or not candidates or not isinstance(candidates[0], dict):
+            return ""
+        content = candidates[0].get("content")
+        parts = content.get("parts") if isinstance(content, dict) else None
+        if not isinstance(parts, list):
+            return ""
+        return "".join(part.get("text", "") for part in parts
+                       if isinstance(part, dict) and isinstance(part.get("text"), str))
+    return ""
+
+
 async def _request_completion(provider: str, model: str, api_key: str, system: str, user: str, max_tokens: int = 1800) -> str:
     meta = PROVIDERS[provider]
     timeout = httpx.Timeout(120.0, connect=15.0)
@@ -187,7 +225,7 @@ async def _request_completion(provider: str, model: str, api_key: str, system: s
                       {"role": "user", "content": user}], "temperature": 0.7, "max_tokens": max_tokens},
             )
             response.raise_for_status()
-            result = response.json()["choices"][0]["message"]["content"]
+            result = _extract_response_text(response.json(), "openai")
         elif meta["kind"] == "anthropic":
             response = await client.post(
                 "https://api.anthropic.com/v1/messages",
