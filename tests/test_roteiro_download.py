@@ -98,6 +98,7 @@ def test_mark_model_can_be_uninstalled_and_download_state_is_reset(tmp_path, mon
     response = TestClient(app).delete("/api/roteiro/modelo")
 
     assert response.status_code == 200, response.text
+    assert response.json()["removed_bytes"] > 0
     assert not roteiro.MARK_DIR.exists()
     assert roteiro.MARK.sess is None
     assert roteiro.MARK.tags is None
