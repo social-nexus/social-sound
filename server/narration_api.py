@@ -657,6 +657,92 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
         from tts_engine_catalog import public_catalog
         return {"engines": public_catalog(supertonic_installed=supertonic_ready(), omnivoice_installed=omnivoice_ready(), f5tts_installed=f5tts_ready())}
 
+    def _directory_size(path: Path) -> int:
+        if not path.exists() or not path.is_dir():
+            return 0
+        total = 0
+        for item in path.rglob("*"):
+            try:
+                if item.is_file() and not item.is_symlink():
+                    total += item.stat().st_size
+            except OSError:
+                continue
+        return total
+
+    def _safe_remove_directory(path: Path, allowed_parent: Path) -> int:
+        target = path.resolve()
+        parent = allowed_parent.resolve()
+        if target == parent or parent not in target.parents:
+            raise RuntimeError("O caminho de desinstalação não está dentro da pasta permitida.")
+        size = _directory_size(target)
+        if target.exists():
+            shutil.rmtree(target)
+        return size
+
+    @router.delete("/engines/{engine_id}")
+    def uninstall_engine(engine_id: str, payload: dict | None = None):
+        if engine_id not in {"supertonic3", "omnivoice", "f5tts"}:
+            raise HTTPException(status_code=400, detail="Este motor não pode ser removido por esta opção.")
+        payload = payload or {}
+        delete_shared_cache = payload.get("delete_shared_cache") is True
+        if not engine_install_lock.acquire(blocking=False):
+            raise HTTPException(status_code=409, detail="Aguarde a instalação de um motor terminar antes de desinstalar.")
+        inference_acquired = False
+        try:
+            active_jobs = [
+                job for job in db.list_jobs()
+                if job.get("engine") == engine_id and job.get("status") in {"queued", "processing"}
+            ]
+            if active_jobs:
+                raise HTTPException(status_code=409, detail="Este motor ainda possui narrações na fila ou em processamento. Aguarde ou remova essas tarefas antes de desinstalar.")
+            inference_acquired = inference_guard.acquire(blocking=False)
+            if not inference_acquired:
+                raise HTTPException(status_code=409, detail="O motor está sendo utilizado em uma geração de áudio. Tente novamente quando terminar.")
+
+            server_dir = Path(__file__).resolve().parent
+            venv_root = server_dir / ".venvs"
+            # Only remove the environment created by this application's installer.
+            runtime_root = venv_root / engine_id.replace("3", "") if engine_id == "supertonic3" else venv_root / engine_id
+            # Supertonic's installer uses the folder name 'supertonic'.
+            if engine_id == "supertonic3":
+                runtime_root = venv_root / "supertonic"
+            removed_bytes = _safe_remove_directory(runtime_root, venv_root) if runtime_root.exists() else 0
+            preserved = []
+            if engine_id == "supertonic3":
+                cache = supertonic_cache()
+                expected_suffix = Path("Narradores") / "Supertonic3"
+                if cache.exists() and cache.resolve().parts[-2:] == expected_suffix.parts:
+                    models_root = cache.resolve().parents[1]
+                    removed_bytes += _safe_remove_directory(cache, models_root)
+                elif cache.exists():
+                    preserved.append("cache Supertonic configurado fora da pasta gerenciada; preservado por segurança")
+            else:
+                hf_cache = Path(os.environ.get(
+                    "HF_HUB_CACHE",
+                    Path(os.environ.get("HF_HOME", Path.home() / ".cache" / "huggingface")) / "hub",
+                )).expanduser()
+                repo_names = {
+                    "omnivoice": ["models--k2-fsa--OmniVoice", "models--bosonai--higgs-audio-v2-tokenizer"],
+                    "f5tts": ["models--Cataldir--F5-TTS-pt-br", "models--charactr--vocos-mel-24khz"],
+                }[engine_id]
+                if delete_shared_cache:
+                    for name in repo_names:
+                        target = hf_cache / name
+                        if target.exists():
+                            removed_bytes += _safe_remove_directory(target, hf_cache)
+                elif any((hf_cache / name).exists() for name in repo_names):
+                    preserved.append("pesos no cache Hugging Face compartilhado; preservados para não afetar outros aplicativos")
+            return {"ok": True, "engine": engine_id, "removed_bytes": removed_bytes,
+                    "shared_cache_deleted": delete_shared_cache, "preserved": preserved}
+        except HTTPException:
+            raise
+        except Exception as exc:
+            raise HTTPException(status_code=500, detail=f"Não foi possível concluir a desinstalação: {str(exc)[:300]}") from exc
+        finally:
+            if inference_acquired:
+                inference_guard.release()
+            engine_install_lock.release()
+
     @router.post("/split")
     def split_text(payload: EnqueueRequest):
         return {"parts": split_for_duration(payload.text, payload.target_seconds, payload.chars_per_minute),
