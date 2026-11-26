@@ -533,10 +533,10 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
     def install_engine(engine_id: str, payload: dict):
         if engine_id not in {"supertonic3", "omnivoice", "f5tts"}:
             raise HTTPException(status_code=400, detail="Motor não permitido para instalação opcional.")
-        accepted = bool(payload.get("license_accepted", False))
+        accepted = payload.get("license_accepted") is True
         if not accepted:
             raise HTTPException(status_code=400, detail="Confirme a leitura e aceitação dos avisos/licenças antes de instalar.")
-        if engine_id in {"omnivoice", "f5tts"} and not bool(payload.get("non_commercial_ack", False)):
+        if engine_id in {"omnivoice", "f5tts"} and payload.get("non_commercial_ack") is not True:
             raise HTTPException(status_code=400, detail="Este motor é restrito a uso não comercial. Confirme essa condição para continuar.")
         if not engine_install_lock.acquire(blocking=False):
             raise HTTPException(status_code=409, detail="Outra instalação de motor está em andamento. Aguarde.")
