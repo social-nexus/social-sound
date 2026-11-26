@@ -54,7 +54,7 @@ ENGINES = [
         "category": "non_commercial",
         "installed": False,
         "voice_cloning": True,
-        "notes": "O código é Apache-2.0, mas os pesos oficiais são CC-BY-NC por restrições dos dados de treinamento. Não usar para conteúdo monetizado ou outras finalidades comerciais sem autorização/licença diferente.",
+        "notes": "O código é Apache-2.0, mas os pesos oficiais são CC-BY-NC por restrições dos dados de treinamento. O tokenizer Higgs Audio V2 possui licença comunitária separada (https://huggingface.co/bosonai/higgs-audio-v2-tokenizer). Leia também esses termos. Não usar para conteúdo monetizado ou outras finalidades comerciais sem autorização/licença diferente.",
         "model_url": "https://huggingface.co/k2-fsa/OmniVoice",
         "code_url": "https://github.com/k2-fsa/OmniVoice",
         "license_url": "https://huggingface.co/k2-fsa/OmniVoice",
