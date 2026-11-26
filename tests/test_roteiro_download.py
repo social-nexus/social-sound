@@ -125,7 +125,7 @@ def test_mark_model_uninstall_refuses_while_download_lock_is_held(tmp_path, monk
 
 def test_mark_validation_accepts_language_specific_diacritics_only():
     assert roteiro.MARK._validar("a", ["à"]) == "à"
-    assert roteiro.MARK._validar("e", ["é"]) == "é"
+    assert roteiro.MARK._validar("e", ["é"]) == "é"\n    assert roteiro.MARK._validar("e", ["è"]) == "e"\n    assert roteiro.MARK._validar("e", ["è"], "fr") == "è"
     assert roteiro.MARK._validar("a", ["b"]) == "a"
     assert roteiro.MARK._validar("a", ["áx"]) == "a"
     assert roteiro.MARK._validar("a", ["a"]) == "a"
