@@ -758,3 +758,40 @@ def test_local_model_uninstall_refuses_symlink_outside_model_directory(monkeypat
 
     assert exc.value.status_code == 400
     assert protected.read_bytes() == b"keep"
+
+
+def test_local_runtime_cannot_be_stopped_during_generation(monkeypatch):
+    from fastapi import HTTPException
+
+    stopped = []
+    monkeypatch.setattr(ia_local, "ACTIVE_GENERATIONS", 1)
+    monkeypatch.setattr(ia_local, "_stop_runtime", lambda: stopped.append(True))
+
+    with pytest.raises(HTTPException) as exc:
+        ia_local.stop_runtime(local_request(method="POST"))
+
+    assert exc.value.status_code == 409
+    assert "geração de texto" in exc.value.detail
+    assert stopped == []
+
+
+def test_local_runtime_cannot_switch_models_during_generation(monkeypatch, tmp_path):
+    model_file = tmp_path / "model.gguf"
+    model_file.write_bytes(b"gguf")
+    monkeypatch.setitem(ia_local.RUNTIME_CATALOG, "test-cpu", {
+        "label": "Test CPU", "system": platform.system(),
+        "machine": platform.machine(), "backend": "cpu",
+        "url": "https://example.invalid/runtime.zip", "sha256": "0" * 64,
+        "size": 1, "archive": "zip", "binary": "llama-server",
+    })
+    monkeypatch.setattr(ia_local, "_runtime_binary", lambda variant: tmp_path / "llama-server")
+    monkeypatch.setattr(ia_local, "_installed_models", lambda: [{"id": "test-model", "path": str(model_file)}])
+    monkeypatch.setattr(ia_local, "_model_file", lambda model_id: model_file)
+    monkeypatch.setattr(ia_local, "ACTIVE_GENERATIONS", 1)
+    stopped = []
+    monkeypatch.setattr(ia_local, "_stop_runtime", lambda: stopped.append(True))
+
+    with pytest.raises(RuntimeError, match="geração de texto"):
+        ia_local._start_runtime("test-model", "test-cpu", 0)
+
+    assert stopped == []
