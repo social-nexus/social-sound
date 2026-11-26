@@ -591,3 +591,17 @@ def test_failed_repair_does_not_leave_corrupted_model_reported_as_installed(monk
     assert ia_local.JOBS[jid]["status"] == "error"
     assert not target.exists()
     assert not (target_dir / "model.json").exists()
+
+
+def test_local_ai_job_history_is_bounded_and_keeps_active_jobs(monkeypatch):
+    now = time.time()
+    history = {f"done-{index}": {"id": f"done-{index}", "status": "done", "created_at": now - index}
+               for index in range(120)}
+    history["running-1"] = {"id": "running-1", "status": "running", "created_at": now - 5000}
+    history["running-2"] = {"id": "running-2", "status": "downloading", "created_at": now - 5000}
+    monkeypatch.setattr(ia_local, "JOBS", history)
+    jid = ia_local._job("model")
+    finished = [job for job in ia_local.JOBS.values() if job["status"] in ("done", "error")]
+    active = [job for job in ia_local.JOBS.values() if job["status"] not in ("done", "error")]
+    assert len(finished) == 100
+    assert {job["id"] for job in active} >= {"running-1", "running-2", jid}
