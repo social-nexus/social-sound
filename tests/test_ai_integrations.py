@@ -745,7 +745,10 @@ def test_local_model_uninstall_refuses_symlink_outside_model_directory(monkeypat
     outside.mkdir()
     protected = outside / "keep.gguf"
     protected.write_bytes(b"keep")
-    (models_root / "qwen3-4b-q4km").symlink_to(outside, target_is_directory=True)
+    try:
+        (models_root / "qwen3-4b-q4km").symlink_to(outside, target_is_directory=True)
+    except OSError:
+        pytest.skip("O sistema de testes não permite criar links simbólicos.")
     monkeypatch.setattr(ia_local, "MODELS_DIR", models_root)
     monkeypatch.setattr(ia_local, "ACTIVE_MODEL", None)
     monkeypatch.setattr(ia_local, "ACTIVE_GENERATIONS", 0)
