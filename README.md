@@ -75,7 +75,7 @@ No Linux/macOS, configure `SOCIAL_NEXUS_MODELS_DIR` no ambiente antes de instala
 
 - **Ligar:** duplo clique em `iniciar.bat`. Abre uma janela própria (Edge, sem barra de endereço) com a navegação lateral. Uma janela preta fica minimizada (servidor local): **não feche**.
 - **Desligar:** duplo clique em `parar.bat`. Fechar só a janela do programa **não** desliga os servidores nem libera a placa de vídeo.
-- **Atalhos:** `Ctrl+1` Roteiro · `Ctrl+2` Narração · `Ctrl+3` Diálogo · `Ctrl+4` Legendas · `Ctrl+5` IA Roteiros · `Ctrl+6` IA Prompts · `Ctrl+7` Fila de Narrações.
+- **Atalhos:** `Ctrl+1` Roteiro · `Ctrl+2` Narração · `Ctrl+3` Diálogo · `Ctrl+4` Legendas · `Ctrl+5` IA Roteiros · `Ctrl+6` IA Prompts · `Ctrl+7` Fila de Narrações · `Ctrl+8` Motores de Voz · `Ctrl+9` Configurações de IA.
 - Feche o ComfyUI (ou outro programa que use a placa) antes de ligar.
 
 ## IA, provedores e modelos locais
