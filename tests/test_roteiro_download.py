@@ -164,6 +164,8 @@ def test_mark_unknown_language_falls_back_to_portuguese(monkeypatch):
 def test_humanization_ui_exposes_multilingual_mark_language_selector():
     page = (Path(__file__).resolve().parents[1] / "server" / "roteiro_web" / "index.html").read_text(encoding="utf-8")
     assert 'id="mark-language"' in page
+    assert 'id="mark-language-help"' in page
+    assert "Portuguese-focused" in page
     assert 'idioma_mark: $("mark-language").value' in page
     for code in ("pt", "en", "es", "fr", "vi", "ar", "he", "yo"):
         assert f'<option value="{code}">' in page
