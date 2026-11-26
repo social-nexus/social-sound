@@ -137,7 +137,6 @@ def test_voxcpm_queue_generates_parts_and_requires_candidate_approval(tmp_path, 
     # Simulate an older pending sibling from a concurrent/previous regen request.
     from narration_queue import NarrationQueue
     queue_db = NarrationQueue(tmp_path / "data" / "narration_queue.sqlite3")
-    sibling_audio = Path(candidate["audio_url"].split("/")[-1])
     sibling_path = Path(tmp_path / "audio" / job_id / "stale_sibling.wav")
     sibling_path.write_bytes(Path(tmp_path / "audio" / job_id / candidate["audio_url"].split("/")[-1]).read_bytes())
     sibling_id = queue_db.stage_candidate(job_id, 0, str(sibling_path))
