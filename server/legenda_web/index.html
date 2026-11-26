@@ -184,7 +184,7 @@
     $("blocoPalavras").style.display = f === "palavras" ? "flex" : "none";
     $("blocoMaxc").style.display = f === "frases" ? "flex" : "none";
     $("dicaFormato").style.display = DICAS_FORMATO[f] ? "block" : "none";
-    $("dicaFormato").textContent = DICAS_FORMATO[f] || "";
+    $("dicaFormato").textContent = UI_LANG==="en" ? (f==="palavras"?"Ideal for Shorts and Reels. Precise mode (Whisper) better aligns each word.":f==="timestamps"?"One line per sentence, with the minute and second when it starts. Example: [00:04] Great, today we practice waiting.":"") : (DICAS_FORMATO[f] || "");
     $("gerar").textContent = f === "timestamps" ? (UI_LANG==="en"?"Generate timestamps":"Gerar timestamps") : (UI_LANG==="en"?"Generate subtitles":"Gerar legenda");
   };
   $("modo").onchange = function () {
