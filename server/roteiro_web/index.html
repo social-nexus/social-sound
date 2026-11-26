@@ -136,7 +136,8 @@
     var walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
     var node;while((node=walker.nextNode())){var key=node.nodeValue.trim();if(UI_EN[key])node.nodeValue=node.nodeValue.replace(key,UI_EN[key]);}
     document.querySelectorAll("[placeholder]").forEach(function(el){if(UI_EN[el.placeholder])el.placeholder=UI_EN[el.placeholder];});
-    document.querySelectorAll("option").forEach(function(el){if(UI_EN[el.textContent.trim()])el.textContent=UI_EN[el.textContent.trim()];});\n    document.querySelectorAll("[title]").forEach(function(el){if(UI_EN[el.title])el.title=UI_EN[el.title];});
+    document.querySelectorAll("option").forEach(function(el){if(UI_EN[el.textContent.trim()])el.textContent=UI_EN[el.textContent.trim()];});
+    document.querySelectorAll("[title]").forEach(function(el){if(UI_EN[el.title])el.title=UI_EN[el.title];});
   }
 
   var $ = function (id) { return document.getElementById(id); };
