@@ -459,43 +459,68 @@ def create_narration_router(*, lock, run, synth, ensure_preset, preset_by_id,
     def run_engine_installer(engine_id: str, job_id: str, license_accepted: bool):
         scripts = {"supertonic3": "instalar-supertonic.bat", "omnivoice": "instalar-omnivoice.bat", "f5tts": "instalar-f5tts.bat"}
         script_path = Path(__file__).resolve().parent.parent / scripts[engine_id]
+        output_tail = []
+        process = None
         try:
             if os.name != "nt":
                 raise RuntimeError("Instalação automatizada pela interface está disponível no Windows. No Linux, use o instalador correspondente.")
+            if not script_path.is_file():
+                raise RuntimeError(f"Instalador não encontrado: {script_path.name}")
             env = os.environ.copy()
             env["SOCIAL_SOUND_INSTALL_FROM_UI"] = "1"
             env["SOCIAL_SOUND_LICENSE_ACCEPTED"] = "1" if license_accepted else "0"
             with engine_install_state_guard:
-                engine_install_state.update(status="running", message="Preparando instalador…")
+                engine_install_state.update(status="running", message="Preparando instalador…", log_tail="")
             process = subprocess.Popen(["cmd.exe", "/d", "/c", 'call "' + str(script_path) + '"'], cwd=str(script_path.parent),
                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8",
                 errors="replace", env=env, bufsize=1)
-            output_tail = []
+            # Monitorar timeout sem bloquear em readline quando o instalador não emite logs.
+            output_queue = queue.Queue()
+            def read_output():
+                try:
+                    for line in process.stdout or ():
+                        output_queue.put(line)
+                finally:
+                    output_queue.put(None)
+            reader = threading.Thread(target=read_output, name=f"engine-installer-output-{engine_id}", daemon=True)
+            reader.start()
             deadline = time.monotonic() + 14400
-            while True:
-                line = process.stdout.readline() if process.stdout else ""
-                if line:
-                    clean = line.strip()
-                    if clean:
-                        output_tail.append(clean)
-                        output_tail = output_tail[-40:]
-                        with engine_install_state_guard:
-                            engine_install_state.update(message=clean[:500], log_tail="\n".join(output_tail))
-                if process.poll() is not None:
-                    break
+            reader_finished = False
+            while process.poll() is None or not output_queue.empty() or not reader_finished:
                 if time.monotonic() > deadline:
                     process.kill()
+                    process.wait(timeout=10)
                     raise RuntimeError("Instalação excedeu o limite de 4 horas e foi interrompida.")
+                try:
+                    line = output_queue.get(timeout=0.2)
+                except queue.Empty:
+                    continue
+                if line is None:
+                    reader_finished = True
+                    continue
+                clean = line.strip()
+                if clean:
+                    output_tail.append(clean)
+                    output_tail = output_tail[-40:]
+                    with engine_install_state_guard:
+                        engine_install_state.update(message=clean[:500], log_tail="\\n".join(output_tail))
+            reader.join(timeout=2)
             code = process.wait()
             if code != 0:
-                detail = "\n".join(output_tail[-12:]) or f"Instalador terminou com código {code}"
+                detail = "\\n".join(output_tail[-12:]) or f"Instalador terminou com código {code}"
                 raise RuntimeError(detail)
             with engine_install_state_guard:
-                engine_install_state.update(status="completed", message="Instalação concluída e verificada.", log_tail="\n".join(output_tail), finished_at=time.time())
+                engine_install_state.update(status="completed", message="Instalação concluída e verificada.", log_tail="\\n".join(output_tail), finished_at=time.time())
         except Exception as exc:
             with engine_install_state_guard:
-                engine_install_state.update(status="error", message=str(exc)[:1500], finished_at=time.time())
+                engine_install_state.update(status="error", message=str(exc)[:1500], log_tail="\\n".join(output_tail[-40:]), finished_at=time.time())
         finally:
+            if process is not None and process.poll() is None:
+                try:
+                    process.kill()
+                    process.wait(timeout=10)
+                except Exception:
+                    pass
             engine_install_lock.release()
 
     @router.post("/engines/{engine_id}/install")
