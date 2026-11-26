@@ -728,3 +728,59 @@ def test_voxcpm2_cleanup_preserves_shared_weights_when_not_confirmed(tmp_path, m
     assert response.status_code == 200, response.text
     assert model_cache.exists()
     assert any("preservados" in item for item in response.json()["preserved"])
+
+
+def test_omnivoice_readiness_rejects_partial_huggingface_snapshots(tmp_path, monkeypatch):
+    import os
+
+    hf_cache = tmp_path / "hf-cache"
+    model_snapshots = hf_cache / "models--k2-fsa--OmniVoice" / "snapshots"
+    tokenizer_snapshots = hf_cache / "models--bosonai--higgs-audio-v2-tokenizer" / "snapshots"
+    model_snapshot = model_snapshots / "model-revision"
+    tokenizer_snapshot = tokenizer_snapshots / "tokenizer-revision"
+    model_snapshot.mkdir(parents=True)
+    tokenizer_snapshot.mkdir(parents=True)
+    monkeypatch.setenv("HF_HUB_CACHE", str(hf_cache))
+
+    venv = tmp_path / "omnivoice-venv"
+    python = venv / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
+    python.parent.mkdir(parents=True)
+    python.write_bytes(b"python")
+    runtime_root = python.parent.parent
+    package = runtime_root / ("Lib/site-packages/omnivoice" if os.name == "nt"
+                             else "lib/python3.11/site-packages/omnivoice")
+    package.mkdir(parents=True)
+    monkeypatch.setenv("SOCIAL_SOUND_OMNIVOICE_PYTHON", str(python))
+
+    app = FastAPI()
+    app.include_router(create_narration_router(
+        lock=threading.Lock(),
+        run=lambda fn: fn(SimpleNamespace(tts_model=SimpleNamespace(sample_rate=24000))),
+        synth=lambda *args, **kwargs: np.zeros(2400, dtype=np.float32),
+        ensure_preset=lambda *args: tmp_path / "preset.wav",
+        preset_by_id=lambda pid: {"id": pid},
+        find_mine=lambda name: None,
+        parse_text=lambda text: [("text", text)],
+        split_sentences=lambda text: [text],
+        tighten=lambda wav, sample_rate: wav,
+        data_dir=tmp_path / "data",
+        output_dir=tmp_path / "audio",
+    ))
+    client = TestClient(app)
+
+    def engine_ready():
+        engines = client.get("/api/narration/engines").json()["engines"]
+        return next(item for item in engines if item["id"] == "omnivoice")["installed"]
+
+    assert engine_ready() is False
+    # Some files present is not sufficient; require inference-critical artifacts.
+    for filename in ("config.json", "model.safetensors"):
+        (model_snapshot / filename).write_bytes(b"fake")
+    (tokenizer_snapshot / "config.json").write_bytes(b"fake")
+    assert engine_ready() is False
+    for filename in ("tokenizer.json", "tokenizer_config.json"):
+        (model_snapshot / filename).write_bytes(b"fake")
+    (tokenizer_snapshot / "model.safetensors").write_bytes(b"fake")
+    assert engine_ready() is True
+    (model_snapshot / "model.safetensors").unlink()
+    assert engine_ready() is False
