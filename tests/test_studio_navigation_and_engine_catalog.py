@@ -63,7 +63,9 @@ def test_narration_queue_has_english_dynamic_translation():
     assert '"Queued"' in js
     assert '"Approve and replace"' in js
     assert '"Elapsed time: "' in js
-    assert 'Object.keys(UI_STR.en).reduce' in js
+    assert 'labels=UI_LANG==="en"?' in js
+    assert 'Regenerate this part' in js
+    assert 'esc(part.text)' in js
     assert 'T("Nenhuma narração na fila ainda.")' in js
 
 
