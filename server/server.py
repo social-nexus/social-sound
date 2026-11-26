@@ -525,6 +525,9 @@ if ESTUDIO.is_dir():
 AI_ASSETS = BASE / "ai_web"
 if AI_ASSETS.is_dir():
     app.mount("/ai-assets", StaticFiles(directory=str(AI_ASSETS)), name="ai-assets")
+MOTORES_WEB = BASE / "motores"
+if MOTORES_WEB.is_dir():
+    app.mount("/motores", StaticFiles(directory=str(MOTORES_WEB), html=True), name="motores")
 for route_name in ("ia-roteiros", "ia-prompts"):
     workspace = BASE / route_name
     if workspace.is_dir():
