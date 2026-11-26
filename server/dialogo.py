@@ -138,6 +138,8 @@ def _trabalho(ctx, jid, falas, narrador, personagens, opts):
         _job_update(jid, msg="Carregando o modelo de voz (na primeira vez demora alguns minutos)...")
         with ctx["lock"]:
             sr, saida, cues, info = ctx["run"](work)
+        duracao = len(saida) / sr
+        srt = montar_srt([{"texto": c["text"]} for c in cues], [c["start"] for c in cues], [c["end"] for c in cues], duracao)
         caminho = ctx["saidas"] / f"{jid}.wav"
         temp_audio = caminho.with_name(f".{jid}.{uuid.uuid4().hex}.tmp.wav")
         try:
@@ -148,8 +150,6 @@ def _trabalho(ctx, jid, falas, narrador, personagens, opts):
             os.replace(temp_audio, caminho)
         finally:
             temp_audio.unlink(missing_ok=True)
-        duracao = len(saida) / sr
-        srt = montar_srt([{"texto": c["text"]} for c in cues], [c["start"] for c in cues], [c["end"] for c in cues], duracao)
         _job_update(jid, status="pronto", atual=n, msg="Pronto.", audio=f"/saidas/{jid}.wav", srt=srt, falas=info, duracao=round(duracao, 1))
     except HTTPException as e:
         _job_update(jid, status="erro", msg=str(e.detail)[:400])
