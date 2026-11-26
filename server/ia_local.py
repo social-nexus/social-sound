@@ -661,6 +661,23 @@ def delete_model(model_id: str, request: Request):
         return {"ok": True}
 
 @router.post("/generate")
+def _extract_local_completion_text(data: Any) -> str:
+    """Safely extract text from the local OpenAI-compatible completion payload."""
+    if not isinstance(data, dict):
+        raise ValueError("Resposta do modelo local em formato inesperado.")
+    choices = data.get("choices")
+    if not isinstance(choices, list) or not choices or not isinstance(choices[0], dict):
+        raise ValueError("Resposta do modelo local sem escolhas de texto.")
+    message = choices[0].get("message")
+    content = message.get("content") if isinstance(message, dict) else None
+    if not isinstance(content, str):
+        raise ValueError("Resposta do modelo local sem conteúdo textual.")
+    answer = content.strip()
+    if not answer:
+        raise ValueError("O modelo local retornou uma resposta vazia.")
+    return answer
+
+
 async def generate_text(payload: dict, request: Request):
     _guard_local_request(request)
     provider = str(payload.get("provider", "local")).strip().lower()
