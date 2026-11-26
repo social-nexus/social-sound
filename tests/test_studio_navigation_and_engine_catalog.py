@@ -76,3 +76,11 @@ def test_dialogue_page_supports_english_interface():
     assert 'applyDialogueEnglish();' in html
     assert 'UI_LANG==="en"?"Generating...":"Gerando..."' in html
     assert 'if(UI_LANG==="en")TONS.forEach' in html
+
+def test_narration_queue_translation_does_not_mutate_user_script_text():
+    app = ROOT / "server" / "narracoes" / "app.js"
+    js = app.read_text(encoding="utf-8")
+    assert "Regenerate this part" in js
+    assert "Approve and replace" in js
+    assert "esc(part.text)" in js
+    assert 'Object.keys(UI_STR.en).reduce((html,pt)' not in js
