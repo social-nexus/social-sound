@@ -504,3 +504,23 @@ def test_process_tree_termination_does_not_signal_exited_parent(monkeypatch):
                         lambda *args, **kwargs: calls.append((args, kwargs)))
     narration_api._terminate_process_tree(ExitedProcess())
     assert calls == []
+
+def test_engine_installer_shutdown_handler_is_registered(tmp_path):
+    app = FastAPI()
+    router = create_narration_router(
+        lock=threading.Lock(),
+        run=lambda fn: fn(SimpleNamespace(tts_model=SimpleNamespace(sample_rate=24000))),
+        synth=lambda *args, **kwargs: np.zeros(2400, dtype=np.float32),
+        ensure_preset=lambda *args: tmp_path / "preset.wav",
+        preset_by_id=lambda pid: {"id": pid},
+        find_mine=lambda name: None,
+        parse_text=lambda text: [("text", text)],
+        split_sentences=lambda text: [text],
+        tighten=lambda wav, sample_rate: wav,
+        data_dir=tmp_path / "data",
+        output_dir=tmp_path / "audio",
+    )
+    # FastAPI invokes router shutdown handlers when the hosting application exits.
+    assert any(callable(handler) for handler in router.on_shutdown)
+    for handler in router.on_shutdown:
+        handler()
