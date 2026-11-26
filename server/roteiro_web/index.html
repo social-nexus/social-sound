@@ -106,6 +106,35 @@
 </div>
 
 <script>
+
+  var UI_LANG = new URLSearchParams(location.search).get("lang") === "en" ? "en" : "pt-BR";
+  var UI_EN = {
+    "Preparar roteiro":"Prepare script",
+    "Coloca os acentos que faltam, escreve números por extenso e põe vírgulas nas frases longas, para a narração sair mais natural. Você revisa tudo antes de enviar.":"Adds missing accents, spells out numbers and inserts commas in long sentences to make narration sound more natural. Review everything before sending.",
+    "Seu roteiro":"Your script","Cole aqui o roteiro...":"Paste your script here...",
+    "Acentos":"Accents","Motor":"Engine","Automático":"Automatic","Modelo Mark":"Mark model","Dicionário":"Dictionary",
+    "Cuidado":"Correction level","Corrigir tudo":"Correct all","Equilibrado":"Balanced","Só os mais certos":"Only high-confidence corrections",
+    "Verificando o modelo de acentos...":"Checking accent model...",
+    "Números e abreviações por extenso":"Spell out numbers and abbreviations",
+    "(7 → sete, Sr. → Senhor, R$ 10 → dez reais)":"(7 → seven, Mr. → Mister, R$ 10 → ten reais)",
+    "Vírgulas em frases longas":"Commas in long sentences","acima de":"above","palavras":"words",
+    "Humanizar":"Humanize","Limpar":"Clear","Resultado":"Result",
+    "O resultado aparece aqui. Clique numa parte colorida para desfazer a mudança.":"The result appears here. Click a colored section to undo the change.",
+    "acento":"accent","número ou abreviação":"number or abbreviation","vírgula":"comma",
+    "Copiar texto":"Copy text","Enviar para a Narração":"Send to Narration",
+    "Trabalhando...":"Processing...","Não consegui processar:":"Could not process:",
+    "Excluir modelo Mark":"Delete Mark model","Excluindo...":"Deleting...",
+    "Excluir os arquivos do modelo Mark? O dicionário, os números por extenso, seus roteiros e os demais recursos serão preservados.":"Delete Mark model files? The dictionary, number spelling, scripts and other resources will be preserved."
+  };
+  function applyScriptEnglish(){
+    if(UI_LANG!=="en")return;
+    document.documentElement.lang="en";
+    var walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
+    var node;while((node=walker.nextNode())){var key=node.nodeValue.trim();if(UI_EN[key])node.nodeValue=node.nodeValue.replace(key,UI_EN[key]);}
+    document.querySelectorAll("[placeholder]").forEach(function(el){if(UI_EN[el.placeholder])el.placeholder=UI_EN[el.placeholder];});
+    document.querySelectorAll("option").forEach(function(el){if(UI_EN[el.textContent.trim()])el.textContent=UI_EN[el.textContent.trim()];});
+  }
+
   var $ = function (id) { return document.getElementById(id); };
   var itens = [], desfeitos = {};
 
@@ -139,7 +168,7 @@
   async function humanizar() {
     var texto = $("entrada").value;
     if (!texto.trim()) { $("entrada").focus(); return; }
-    $("go").disabled = true; $("go").textContent = "Trabalhando...";
+    $("go").disabled = true; $("go").textContent = UI_LANG==="en"?"Processing...":"Trabalhando...";
     try {
       var r = await fetch("/api/roteiro/humanizar", { method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ texto: texto, acentos: $("oAcentos").checked, motor: $("motor").value, margem: parseFloat($("margem").value),
@@ -153,9 +182,9 @@
       d.avisos.forEach(function (a) { var x = document.createElement("div"); x.className = "aviso"; x.textContent = a; $("avisos").appendChild(x); });
       render();
     } catch (e) {
-      $("saida").classList.add("vazio"); $("saida").textContent = "Não consegui processar: " + e.message + " (o servidor do Social Sound está ligado?)";
+      $("saida").classList.add("vazio"); $("saida").textContent = (UI_LANG==="en"?"Could not process: ":"Não consegui processar: ") + e.message + (UI_LANG==="en"?" (is the Social Sound server running?)":" (o servidor do Social Sound está ligado?)");
     }
-    $("go").disabled = false; $("go").textContent = "Humanizar";
+    $("go").disabled = false; $("go").textContent = UI_LANG==="en"?"Humanize":"Humanizar";
   }
 
   async function status() {
@@ -209,6 +238,7 @@
     if (window.parent !== window) window.parent.postMessage({ tipo: "ir-para-narracao" }, location.origin);
     else location.href = "/";
   };
+  applyScriptEnglish();
   status();
 </script>
 </body>
