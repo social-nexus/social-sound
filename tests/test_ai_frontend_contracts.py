@@ -62,6 +62,9 @@ def test_ai_workspace_supports_english_static_and_dynamic_ui():
     assert 'T("Baixar modelo")' in source
     assert 'T("Desinstalar e excluir")' in source
     assert 'T("Gerando…")' in source
+    assert 'T("Geração concluída usando ")' in source
+    assert 'T("Texto copiado para a área de transferência.")' in source
+    assert 'T("Roteiro enviado para a área de Narração. Abra a aba Narração no menu lateral.")' in source
     assert 'T("Local AI (llama.cpp)")' in source or 'UI_LANG==="en"?"Local AI (llama.cpp)"' in source
 
 
