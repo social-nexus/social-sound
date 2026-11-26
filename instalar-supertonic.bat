@@ -9,12 +9,12 @@ echo ==================================================
 if defined SOCIAL_NEXUS_MODELS_DIR if not exist "%SOCIAL_NEXUS_MODELS_DIR%" (
   echo ERRO: a biblioteca compartilhada nao esta disponivel:
   echo %SOCIAL_NEXUS_MODELS_DIR%
-  if not "%SOCIAL_SOUND_INSTALL_FROM_UI%"=="1" if not "%SOCIAL_SOUND_INSTALL_FROM_UI%"=="1" pause
+  if not "%SOCIAL_SOUND_INSTALL_FROM_UI%"=="1" pause
   exit /b 1
 )
 if not defined SUPERTONIC_CACHE_DIR (
   echo ERRO: a pasta de modelos Supertonic nao foi configurada.
-  if not "%SOCIAL_SOUND_INSTALL_FROM_UI%"=="1" if not "%SOCIAL_SOUND_INSTALL_FROM_UI%"=="1" pause
+  if not "%SOCIAL_SOUND_INSTALL_FROM_UI%"=="1" pause
   exit /b 1
 )
 if not exist "%SUPERTONIC_CACHE_DIR%" mkdir "%SUPERTONIC_CACHE_DIR%"
