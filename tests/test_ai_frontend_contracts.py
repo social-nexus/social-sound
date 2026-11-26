@@ -61,6 +61,8 @@ def test_ai_workspace_supports_english_static_and_dynamic_ui():
     assert 'applyAIEnglish();' in source
     assert 'T("Baixar modelo")' in source
     assert 'T("Desinstalar e excluir")' in source
+    assert "esc(T(e.notes))" in source
+    assert "non-commercial" in source
     assert 'T("Gerando…")' in source
     assert 'T("Geração concluída usando ")' in source
     assert 'T("Texto copiado para a área de transferência.")' in source
