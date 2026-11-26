@@ -9,12 +9,12 @@ echo ==================================================
 if defined SOCIAL_NEXUS_MODELS_DIR if not exist "%SOCIAL_NEXUS_MODELS_DIR%" (
   echo ERRO: a biblioteca compartilhada nao esta disponivel:
   echo %SOCIAL_NEXUS_MODELS_DIR%
-  pause
+  if not "%SOCIAL_SOUND_INSTALL_FROM_UI%"=="1" if not "%SOCIAL_SOUND_INSTALL_FROM_UI%"=="1" pause
   exit /b 1
 )
 if not defined SUPERTONIC_CACHE_DIR (
   echo ERRO: a pasta de modelos Supertonic nao foi configurada.
-  pause
+  if not "%SOCIAL_SOUND_INSTALL_FROM_UI%"=="1" if not "%SOCIAL_SOUND_INSTALL_FROM_UI%"=="1" pause
   exit /b 1
 )
 if not exist "%SUPERTONIC_CACHE_DIR%" mkdir "%SUPERTONIC_CACHE_DIR%"
@@ -47,18 +47,18 @@ if errorlevel 1 goto falha
 echo.
 echo Supertonic 3 instalado. O VoxCPM2 e seu ambiente nao foram alterados.
 echo Reinicie o Social Sound para atualizar a lista de motores.
-pause
+if not "%SOCIAL_SOUND_INSTALL_FROM_UI%"=="1" pause
 exit /b 0
 
 :sem_python
 echo.
 echo Python 3.11 nao encontrado. Instale Python 3.11 e tente novamente.
-pause
+if not "%SOCIAL_SOUND_INSTALL_FROM_UI%"=="1" pause
 exit /b 1
 
 :falha
 echo.
 echo A instalacao do Supertonic 3 falhou. O VoxCPM2 permanece intacto.
 echo Verifique a mensagem acima e tente executar este arquivo novamente.
-pause
+if not "%SOCIAL_SOUND_INSTALL_FROM_UI%"=="1" pause
 exit /b 1
