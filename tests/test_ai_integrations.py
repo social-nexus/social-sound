@@ -846,3 +846,17 @@ def test_local_runtime_stop_falls_back_to_kill_when_terminate_races(monkeypatch)
     assert ia_local.PROCESS is None
     assert ia_local.ACTIVE_MODEL is None
     assert ia_local.ACTIVE_VARIANT is None
+
+
+def test_local_ai_job_status_endpoint_checks_local_host(monkeypatch):
+    from fastapi import HTTPException
+
+    job_id = "host-check-job"
+    monkeypatch.setitem(ia_local.JOBS, job_id, {
+        "id": job_id, "kind": "model", "status": "downloading",
+        "progress": 20, "message": "download in progress",
+    })
+    assert ia_local.ai_job(job_id, local_request(method="GET"))["id"] == job_id
+    with pytest.raises(HTTPException) as exc:
+        ia_local.ai_job(job_id, local_request(method="GET", host="evil.example"))
+    assert exc.value.status_code == 403
