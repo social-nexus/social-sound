@@ -32,3 +32,14 @@ def test_local_model_removal_preserves_runtime_and_other_models():
     assert 'Os pesos deste modelo serão removidos' in source
     assert 'O runtime llama.cpp, os outros modelos' in source
     assert 'm.size_bytes' in source
+
+
+def test_cloud_provider_key_can_be_removed_from_script_and_prompt_workspaces():
+    app = APP_JS.read_text(encoding="utf-8")
+    scripts = (APP_JS.parents[1] / "ia-roteiros" / "index.html").read_text(encoding="utf-8")
+    prompts = (APP_JS.parents[1] / "ia-prompts" / "index.html").read_text(encoding="utf-8")
+    assert 'async function removeProviderKey()' in app
+    assert '$("remove-key").onclick=removeProviderKey' in app
+    assert 'providersApi+"/key/"+encodeURIComponent(provider)' in app
+    assert 'id="remove-key"' in scripts
+    assert 'id="remove-key"' in prompts
