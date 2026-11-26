@@ -54,3 +54,18 @@ def test_narration_queue_catalog_shows_optional_tokenizer_license_link():
     source = (ROOT / "server" / "narracoes" / "app.js").read_text(encoding="utf-8")
     assert "e.tokenizer_url" in source
     assert "Licença tokenizer" in source
+
+
+def test_optional_voice_engines_have_safe_uninstall_controls():
+    api = API.read_text(encoding="utf-8")
+    page = PAGE.read_text(encoding="utf-8")
+    assert 'router.delete("/engines/{engine_id}")' in api
+    assert 'engine_install_lock.acquire(blocking=False)' in api
+    assert 'inference_guard.acquire(blocking=False)' in api
+    assert 'job.get("status") in {"queued", "processing"}' in api
+    assert 'delete_shared_cache' in api
+    assert 'models--k2-fsa--OmniVoice' in api
+    assert 'models--Cataldir--F5-TTS-pt-br' in api
+    assert 'data-engine="'+esc(e.id)+'">Desinstalar e excluir' in page
+    assert 'startUninstall' in page
+    assert 'Pode afetar outros aplicativos' in page or 'outros aplicativos' in page
