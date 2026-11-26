@@ -77,7 +77,7 @@
             Cuidado
             <select id="margem"><option value="0">Corrigir tudo</option><option value="0.5">Equilibrado</option><option value="1.5">Só os mais certos</option></select>
           </div>
-          <div class="estado" id="estadoMark">Verificando o modelo de acentos...</div>
+          <div class="estado" id="estadoMark">Verificando o modelo de acentos...</div><div class="estado" id="estadoMarkActions"></div>
         </div>
         <label class="l"><input type="checkbox" id="oNumeros" checked> <b>Números e abreviações por extenso</b> <span style="color:#94a3b8">(7 → sete, Sr. → Senhor, R$ 10 → dez reais)</span></label>
         <div class="l">
@@ -160,21 +160,19 @@
 
   async function status() {
     try {
-      var s = await (await fetch("/api/roteiro/status")).json(), el = $("estadoMark");
-      if (s.mark_pronto) { el.textContent = "Modelo Mark pronto ✔ (roda no seu computador, na CPU)"; }
-      else if (!s.mark_baixado && !s.onnxruntime) { el.textContent = "Para usar o modelo Mark, rode o instalar.bat de novo (uma vez). Enquanto isso o dicionário simples é usado."; }
+      var s = await (await fetch("/api/roteiro/status")).json(), el = $("estadoMark"), actions = $("estadoMarkActions");
+      actions.innerHTML = "";
       if (s.mark_baixado) {
         var remove = document.createElement("button"); remove.className = "link"; remove.textContent = "Excluir modelo Mark";
         remove.onclick = async function () {
           if (!confirm("Excluir os arquivos do modelo Mark? O dicionário, os números por extenso, seus roteiros e os demais recursos serão preservados.")) return;
           remove.disabled = true; remove.textContent = "Excluindo...";
           try { var response = await fetch("/api/roteiro/modelo", { method: "DELETE" }); if (!response.ok) { var detail = await response.json().catch(function(){return {};}); throw new Error(detail.detail || "Falha ao excluir o modelo."); } await status(); }
-          catch (error) { el.appendChild(document.createTextNode(" Não foi possível excluir: " + error.message)); remove.disabled = false; remove.textContent = "Tentar excluir novamente"; }
+          catch (error) { actions.appendChild(document.createTextNode(" Não foi possível excluir: " + error.message)); remove.disabled = false; remove.textContent = "Tentar excluir novamente"; }
         };
-        el.appendChild(document.createTextNode(" "));
-        el.appendChild(remove);
+        actions.appendChild(remove);
       }
-      if (s.mark_pronto) return;
+      if (s.mark_pronto) { el.textContent = "Modelo Mark pronto ✔ (roda no seu computador, na CPU)"; return; }
       if (!s.onnxruntime) { el.innerHTML = "Para usar o modelo Mark, rode o <b>instalar.bat</b> de novo (uma vez). Enquanto isso o dicionário simples é usado."; return; }
       if (s.download.rodando) {
         var mb = function (n) { return (n / 1048576).toFixed(0); };
