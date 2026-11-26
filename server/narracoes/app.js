@@ -25,7 +25,50 @@ const UI_STR={"en":{
 "Erro ":"Error ","Não foi possível carregar a fila: ":"Could not load queue: "
 }};
 const T=value=>UI_LANG==="en"?(UI_STR.en[value]||value):value;
+const STATIC_EN={
+"Divisão Inteligente de Narrações":"Smart Narration Splitter","Fila automática, persistente e sequencial — escolha entre os motores instalados ao adicionar uma narração.":"Automatic, persistent, sequential queue — choose an installed engine when adding a narration.",
+"Adicionar narração à fila":"Add narration to queue","Texto da narração":"Narration text",
+"Cole aqui uma narração curta ou longa. Textos longos serão divididos automaticamente, respeitando frases e palavras.":"Paste a short or long narration here. Long texts are automatically split at sentence and word boundaries.",
+"Abrir arquivo TXT":"Open TXT file","Você também pode colar o texto diretamente.":"You can also paste the text directly.",
+"Motor de voz":"Voice engine","Voz":"Voice","Duração-alvo por parte":"Target duration per part","30 segundos":"30 seconds","45 segundos":"45 seconds","60 segundos":"60 seconds","90 segundos":"90 seconds","120 segundos":"120 seconds",
+"Estilo / direção de voz (opcional)":"Voice style / direction (optional)","Ex.: voz calma, ritmo de documentário, tom acolhedor":"e.g. calm voice, documentary pace, warm tone",
+"O VoxCPM2 aceita vozes salvas e vozes predefinidas.":"VoxCPM2 supports saved and preset voices.",
+"Áudio de referência (WAV, FLAC ou OGG, até 25 MB)":"Reference audio (WAV, FLAC or OGG, up to 25 MB)",
+"Transcrição exata do áudio de referência":"Exact reference audio transcript","Digite exatamente o que é falado no áudio enviado.":"Type exactly what is spoken in the uploaded audio.",
+"Analisar divisão":"Analyze split","Adicionar à fila":"Add to queue","A duração é uma estimativa. O tamanho real de cada áudio varia conforme a voz, o ritmo e as pausas. A fila continua automaticamente e é recuperada quando o Social Sound é aberto novamente.":"Duration is an estimate. Actual audio length varies with voice, pace and pauses. The queue continues automatically and is restored when Social Sound is reopened.",
+"Motores de voz e licenças":"Voice engines and licenses","Consultando catálogo de motores...":"Loading engine catalog...",
+"O VoxCPM2 é o motor padrão. Supertonic 3 e OmniVoice são opcionais e usam ambientes separados. OmniVoice é somente para uso não comercial: os pesos CC-BY-NC e a licença comunitária do tokenizer devem ser respeitados.":"VoxCPM2 is the default engine. Supertonic 3 and OmniVoice are optional and use separate environments. OmniVoice is non-commercial only: respect the CC-BY-NC weights and community tokenizer license.",
+"Fila e histórico":"Queue and history","Fila ativa":"Queue active","Pausar após a atual":"Pause after current","Atualizar":"Refresh","Carregando fila...":"Loading queue...",
+"Você também pode colar o texto diretamente.":"You can also paste text directly.","Idioma":"Language",
+"Produção":"Production","Código:":"Code:","Pesos:":"Weights:","Clonagem:":"Voice cloning:",
+"Instalado":"Installed","Integrado":"Integrated","Opcional":"Optional","Sim":"Yes","Não":"No",
+"Opcional · instalar pela aba Motores de Voz":"Optional · install from Voice Engines tab","Opcional · não instalado":"Optional · not installed",
+"Modelo e licença oficial":"Official model and license","Código":"Code","Licença tokenizer":"Tokenizer license",
+"Liberar pesos baixados":"Release downloaded weights","Desinstalar e excluir":"Uninstall and delete",
+"Consultar catálogo de motores":"Load voice engine catalog","Não foi possível carregar o catálogo de motores.":"Could not load engine catalog.",
+"Não foi possível carregar as vozes: ":"Could not load voices: ","Não foi possível carregar a fila: ":"Could not load queue: ",
+"Erro ":"Error ","Não foi possível carregar a fila: ":"Could not load queue: ",
+"Cole ou carregue o texto primeiro.":"Paste or load the text first.","Selecione o áudio de referência.":"Select reference audio.",
+"Remover esta narração que ainda não começou?":"Remove this narration that has not started yet?",
+"Remover esta narração que ainda não começou?":"Remove this queued narration?",
+"Descarregar o VoxCPM2 da memória e liberar seus pesos baixados? O motor continuará integrado e poderá baixar os pesos novamente quando for usado.":"Unload VoxCPM2 from memory and free its downloaded weights? The engine remains integrated and can download the weights again when used.",
+"Desinstalar ":"Uninstall ","? O ambiente exclusivo será removido. Narrações e projetos serão preservados.":"? Its dedicated environment will be removed. Narrations and projects will be preserved.",
+"Excluir também os pesos VoxCPM2 do cache Hugging Face compartilhado? Outros aplicativos que usem os mesmos arquivos poderão precisar baixá-los novamente.\n\nEscolha Cancelar para preservar os arquivos e apenas descarregar da memória.":"Also delete VoxCPM2 weights from the shared Hugging Face cache? Other apps using these files may need to download them again.\n\nCancel to preserve files and only unload from memory.",
+"Excluir também os pesos deste motor do cache Hugging Face compartilhado? Isso pode afetar outros aplicativos que usem os mesmos arquivos.\n\nEscolha Cancelar para preservar o cache.":"Also delete this engine's weights from the shared Hugging Face cache? This may affect other apps using the same files.\n\nCancel to preserve the cache.",
+"Pesos VoxCPM2 liberados da memória/cache.":"VoxCPM2 weights released from memory/cache.","Motor removido.":"Engine removed."," Espaço liberado: ":" Space freed: ","Não foi possível desinstalar: ":"Could not uninstall: "
+};
+function applyStaticEnglish(){
+if(UI_LANG!=="en")return;
+document.documentElement.lang="en";
+const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
+let node;while((node=walker.nextNode())){const key=node.nodeValue.trim();if(STATIC_EN[key])node.nodeValue=node.nodeValue.replace(key,STATIC_EN[key]);}
+document.querySelectorAll("[placeholder]").forEach(el=>{const key=el.placeholder.trim();if(STATIC_EN[key])el.placeholder=STATIC_EN[key];});
+document.querySelectorAll("option").forEach(el=>{const key=el.textContent.trim();if(STATIC_EN[key])el.textContent=STATIC_EN[key];});
+document.querySelectorAll("[title]").forEach(el=>{const key=el.title.trim();if(STATIC_EN[key])el.title=STATIC_EN[key];});
+}
+
 const $=id=>document.getElementById(id);
+applyStaticEnglish();
 let jobs=[];let queuePaused=false;let voicesData=null;const jobElapsed=new Map();function elapsedLabel(ms){const total=Math.max(0,Math.floor(ms/1000));return String(Math.floor(total/60)).padStart(2,"0")+":"+String(total%60).padStart(2,"0");}
 const esc=value=>String(value??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
 const statusLabel=s=>T(({queued:"Na fila",processing:"Em andamento",completed:"Concluída",failed:"Falhou",interrupted:"Interrompida"}[s]||s));
