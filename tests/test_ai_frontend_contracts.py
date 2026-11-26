@@ -14,4 +14,4 @@ def test_local_model_catalog_renders_download_actions_without_license_gate():
     assert 'if(m.requires_license_acceptance){' in render
     assert 'button.disabled=!!m.requires_license_acceptance' in render
     assert 'button.disabled=!check.checked' in render
-    assert 'else{' in render and 'button.textContent="Ativar modelo"' in render
+    assert 'activate.textContent="Ativar modelo"' in render and 'activate.onclick=()=>activateModel(m)' in render
