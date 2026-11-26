@@ -116,6 +116,30 @@
 </div>
 
 <script>
+  var UI_LANG=new URLSearchParams(location.search).get("lang")==="en"?"en":"pt-BR";
+  var CAP_EN={
+"Legendas e timestamps":"Subtitles & timestamps","Suba o áudio pronto e cole o roteiro: gere a legenda normal, a legenda palavra por palavra ou a lista de timestamps, sem refazer a narração.":"Upload finished audio and paste the script: generate standard subtitles, word-by-word subtitles, or timestamps without regenerating narration.",
+"Áudio pronto":"Finished audio","Escolher áudio":"Choose audio","WAV, MP3, M4A...":"WAV, MP3, M4A...",
+"Texto do roteiro (o mesmo que foi narrado)":"Script text (the same text that was narrated)","Usar o último roteiro enviado pela aba Roteiro":"Use the latest script sent from the Script tab",
+"Formato":"Format","Legenda normal (.srt, frases)":"Standard subtitles (.srt, sentences)","Legenda palavra por palavra (.srt)":"Word-by-word subtitles (.srt)","Timestamps [00:00] Frase (.txt)":"Timestamps [00:00] Sentence (.txt)",
+"Palavras por vez":"Words at a time","1 palavra":"1 word","2 palavras":"2 words","3 palavras":"3 words","Nunca junta palavras de frases diferentes.":"Words from different sentences are never combined.",
+"Modo":"Mode","Rápido: usa as pausas do áudio (nada para baixar)":"Fast: uses audio pauses (nothing to download)","Preciso: Whisper ouve o áudio (mais lento)":"Precise: Whisper listens to the audio (slower)",
+"Modelo":"Model","base (cerca de 150 MB)":"base (about 150 MB)","small (cerca de 480 MB, mais exato)":"small (about 480 MB, more accurate)",
+"Máx. de caracteres por legenda":"Max characters per subtitle","Rápido: costuma acertar bem quando a voz tem velocidade regular e pausas entre as frases. Se a legenda sair fora de lugar em algum trecho, use o modo Preciso.":"Fast mode usually works well with steady speech and pauses between sentences. If any subtitle is out of sync, use Precise mode.",
+"Gerar legenda":"Generate subtitles","Gerar timestamps":"Generate timestamps","Resultado":"Result","Baixar .srt":"Download .srt","Copiar":"Copy",
+"Cole aqui o roteiro...":"Paste the script here...","O resultado aparece aqui.":"The result appears here.",
+"Trabalhando...":"Working...","Preparando o áudio...":"Preparing audio...","Escolha o áudio pronto.":"Choose the finished audio.","Cole o roteiro.":"Paste the script.",
+"Whisper instalado ✔":"Whisper installed ✔","Whisper não instalado: rode o instalar.bat de novo":"Whisper not installed: run instalar.bat again","Copiado ✔":"Copied ✔"
+  };
+  function applyCaptionEnglish(){
+    if(UI_LANG!=="en")return;
+    document.documentElement.lang="en";
+    var walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
+    var node;while((node=walker.nextNode())){var original=node.nodeValue.trim();if(CAP_EN[original])node.nodeValue=node.nodeValue.replace(original,CAP_EN[original]);}
+    document.querySelectorAll("option").forEach(function(o){var v=o.textContent.trim();if(CAP_EN[v])o.textContent=CAP_EN[v];});
+    document.querySelectorAll("[placeholder]").forEach(function(el){var v=el.placeholder.trim();if(CAP_EN[v])el.placeholder=CAP_EN[v];});
+  }
+
   var $ = function (id) { return document.getElementById(id); };
   var arquivo = null, nomeBase = "legenda", whisperOk = false, inicio = 0, timer = null, extensao = "srt";
 
@@ -143,7 +167,7 @@
   }
 
   function mostrarErro(msg) { $("erros").innerHTML = ""; var e = document.createElement("div"); e.className = "erro"; e.textContent = msg; $("erros").appendChild(e); }
-  function parar() { clearInterval(timer); $("prog").style.display = "none"; $("gerar").disabled = false; $("gerar").textContent = $("formato").value === "timestamps" ? "Gerar timestamps" : "Gerar legenda"; }
+  function parar() { clearInterval(timer); $("prog").style.display = "none"; $("gerar").disabled = false; $("gerar").textContent = $("formato").value === "timestamps" ? (UI_LANG==="en"?"Generate timestamps":"Gerar timestamps") : (UI_LANG==="en"?"Generate subtitles":"Gerar legenda"); }
   function mmss(s) { return String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0"); }
 
   $("escolher").onclick = function () { $("arq").click(); };
@@ -161,7 +185,7 @@
     $("blocoMaxc").style.display = f === "frases" ? "flex" : "none";
     $("dicaFormato").style.display = DICAS_FORMATO[f] ? "block" : "none";
     $("dicaFormato").textContent = DICAS_FORMATO[f] || "";
-    $("gerar").textContent = f === "timestamps" ? "Gerar timestamps" : "Gerar legenda";
+    $("gerar").textContent = f === "timestamps" ? (UI_LANG==="en"?"Generate timestamps":"Gerar timestamps") : (UI_LANG==="en"?"Generate subtitles":"Gerar legenda");
   };
   $("modo").onchange = function () {
     var w = $("modo").value === "whisper";
@@ -176,8 +200,8 @@
     if (!arquivo) { mostrarErro("Escolha o arquivo de áudio."); return; }
     if (!$("roteiro").value.trim()) { mostrarErro("Cole o texto do roteiro."); return; }
     if ($("modo").value === "whisper" && !whisperOk) { mostrarErro("O Whisper ainda não está instalado. Rode o instalar.bat de novo (ele instala o Whisper) e abra o programa outra vez."); return; }
-    $("gerar").disabled = true; $("gerar").textContent = "Trabalhando..."; $("prog").style.display = "block"; $("prog").textContent = "Preparando o áudio...";
-    inicio = Date.now(); timer = setInterval(function () { $("prog").dataset.t = mmss(Math.floor((Date.now() - inicio) / 1000)); $("prog").textContent = ($("prog").dataset.m || "Trabalhando...") + "  " + $("prog").dataset.t; }, 1000);
+    $("gerar").disabled = true; $("gerar").textContent = UI_LANG==="en"?"Working...":"Trabalhando..."; $("prog").style.display = "block"; $("prog").textContent = UI_LANG==="en"?"Preparing audio...":"Preparando o áudio...";
+    inicio = Date.now(); timer = setInterval(function () { $("prog").dataset.t = mmss(Math.floor((Date.now() - inicio) / 1000)); $("prog").textContent = ($("prog").dataset.m || (UI_LANG==="en"?"Working...":"Trabalhando...")) + "  " + $("prog").dataset.t; }, 1000);
     try {
       var wav = await paraWav16k(arquivo);
       var fd = new FormData();
@@ -202,7 +226,7 @@
     $("srt").value = s.srt;
     var i = s.info;
     extensao = s.ext || "srt";
-    $("baixar").textContent = "Baixar ." + extensao;
+    $("baixar").textContent = (UI_LANG==="en"?"Download .":"Baixar .") + extensao;
     var rotulo = i.formato === "timestamps" ? " frases" : i.formato === "palavras" ? " legendas palavra por palavra" : " legendas";
     $("info").textContent = i.legendas + rotulo + " • áudio de " + mmss(Math.round(i.duracao)) + " • modo " + (i.modo === "whisper" ? "preciso" : "rápido") +
       " • " + (i.modo === "whisper" ? Math.round(i.confianca * 100) + "% das palavras casaram" : "qualidade do encaixe " + Math.round(i.confianca * 100) + "%");
@@ -219,13 +243,14 @@
   $("copiar").onclick = async function () {
     try { await navigator.clipboard.writeText($("srt").value); }
     catch (e) { $("srt").select(); document.execCommand("copy"); }
-    $("copiar").textContent = "Copiado ✔"; setTimeout(function () { $("copiar").textContent = "Copiar"; }, 1500);
+    $("copiar").textContent = UI_LANG==="en"?"Copied ✔":"Copiado ✔"; setTimeout(function () { $("copiar").textContent = UI_LANG==="en"?"Copy":"Copiar"; }, 1500);
   };
 
   try {
     if (localStorage.getItem("socialsound:ultimo-roteiro")) $("ultimo").style.display = "block";
     $("usarUltimo").onclick = function () { $("roteiro").value = localStorage.getItem("socialsound:ultimo-roteiro") || ""; };
   } catch (e) {}
+  applyCaptionEnglish();
   fetch("/api/legenda/status").then(function (r) { return r.json(); }).then(function (s) {
     whisperOk = !!s.whisper;
     $("estadoWhisper").textContent = whisperOk ? "Whisper instalado ✔" : "Whisper não instalado: rode o instalar.bat de novo";
