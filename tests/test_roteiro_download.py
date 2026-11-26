@@ -75,3 +75,48 @@ def test_mark_download_removes_partial_file_after_repeated_failures(tmp_path, mo
     assert not (tmp_path / "mark.bin.baixando").exists()
     assert roteiro.DOWNLOAD["erro"] is not None
     assert roteiro.DOWNLOAD["rodando"] is False
+
+
+
+def test_mark_model_can_be_uninstalled_and_download_state_is_reset(tmp_path, monkeypatch):
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+
+    monkeypatch.setattr(roteiro, "MARK_DIR", tmp_path / "mark")
+    monkeypatch.setattr(roteiro, "MARK_URLS", {"tags.json": "unused", "mark_int8.onnx": "unused"})
+    monkeypatch.setattr(roteiro, "DOWNLOAD_LOCK", __import__("threading").Lock())
+    roteiro.MARK_DIR.mkdir()
+    (roteiro.MARK_DIR / "tags.json").write_text("{}", encoding="utf-8")
+    (roteiro.MARK_DIR / "mark_int8.onnx").write_bytes(b"onnx")
+    (roteiro.MARK_DIR / "mark_int8.onnx.baixando").write_bytes(b"partial")
+    roteiro.DOWNLOAD.update(rodando=False, baixado=12, total=34, erro="previous error")
+    roteiro.MARK.sess = object()
+    roteiro.MARK.tags = {"loaded": True}
+
+    app = FastAPI()
+    app.include_router(roteiro.router)
+    response = TestClient(app).delete("/api/roteiro/modelo")
+
+    assert response.status_code == 200, response.text
+    assert not roteiro.MARK_DIR.exists()
+    assert roteiro.MARK.sess is None
+    assert roteiro.MARK.tags is None
+    assert roteiro.DOWNLOAD == {"rodando": False, "baixado": 0, "total": 0, "erro": None}
+
+
+def test_mark_model_uninstall_refuses_while_download_lock_is_held(tmp_path, monkeypatch):
+    import threading
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+
+    lock = threading.Lock()
+    lock.acquire()
+    monkeypatch.setattr(roteiro, "MARK_DIR", tmp_path / "mark")
+    monkeypatch.setattr(roteiro, "DOWNLOAD_LOCK", lock)
+    app = FastAPI()
+    app.include_router(roteiro.router)
+    try:
+        response = TestClient(app).delete("/api/roteiro/modelo")
+        assert response.status_code == 409
+    finally:
+        lock.release()
