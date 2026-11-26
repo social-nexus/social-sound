@@ -84,5 +84,5 @@ def test_dialogue_frontend_enforces_script_size_and_line_limits():
     ui = SERVER / "dialogo_web" / "index.html"
     source = ui.read_text(encoding="utf-8")
     assert 'maxlength="200000"' in source
-    assert "split(/\\\\r?\\\\n/)" in source
+    assert "split(/\\r?\\n/)" in source
     assert "2.000 linhas" in source
