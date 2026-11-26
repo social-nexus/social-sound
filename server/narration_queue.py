@@ -351,6 +351,14 @@ class NarrationQueue:
             db.execute(
                 "UPDATE narration_candidates SET status='approved' WHERE id=?", (candidate_id,)
             )
+            # A part can have only one current approved regeneration. Prevent a
+            # previously generated sibling candidate from being approved later
+            # and silently replacing this newer user-approved audio.
+            db.execute(
+                "UPDATE narration_candidates SET status='discarded' "
+                "WHERE job_id=? AND part_index=? AND status='awaiting_approval'",
+                (row["job_id"], row["part_index"])
+            )
             db.commit()
         return self.get(row["job_id"])
 
