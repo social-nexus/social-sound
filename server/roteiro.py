@@ -718,7 +718,7 @@ def _baixar_arquivo(url: str, tmp: Path, base_progresso: int, tentativas: int = 
                 status = getattr(r, "status", getattr(r, "code", 200))
                 content_range = r.headers.get("Content-Range", "")
                 if atual and status == 206:
-                    match = re.match(r"bytes (\\d+)-(\\d+)/(\\d+|\\*)$", content_range.strip())
+                    match = re.match(r"bytes (\d+)-(\d+)/(\d+|\*)$", content_range.strip())
                     if not match or int(match.group(1)) != atual:
                         tmp.unlink(missing_ok=True)
                         raise IOError("servidor retornou um intervalo inválido para retomar o download")
