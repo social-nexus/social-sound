@@ -16,8 +16,8 @@ def test_mark_download_retries_connection_reset_and_completes_atomically(tmp_pat
     calls = []
     payload = b"model-data"
 
-    def fake_urlopen(url, timeout):
-        calls.append((url, timeout))
+    def fake_urlopen(request, timeout):
+        calls.append((request, timeout))
         if len(calls) == 1:
             raise ConnectionResetError("connection reset by remote host")
         return FakeResponse(payload)
@@ -72,7 +72,7 @@ def test_mark_download_removes_partial_file_after_repeated_failures(tmp_path, mo
 
     assert len(calls) == 4
     assert not (tmp_path / "mark.bin").exists()
-    assert not (tmp_path / "mark.bin.baixando").exists()
+    assert (tmp_path / "mark.bin.baixando").read_bytes() == b"partial"
     assert roteiro.DOWNLOAD["erro"] is not None
     assert roteiro.DOWNLOAD["rodando"] is False
 
@@ -188,3 +188,46 @@ def test_mark_language_dropdown_matches_model_supported_languages():
     assert len(options) == len(roteiro.MARK_LANGS)
     assert options[0] == "pt"
     assert "en" not in options
+
+
+def test_mark_download_resumes_partial_file_with_http_range(tmp_path, monkeypatch):
+    calls = []
+    payload = b"0123456789"
+
+    class PartialResponse:
+        status = 200
+        headers = {"Content-Length": "10"}
+        def __enter__(self): return self
+        def __exit__(self, *_args): return False
+        def read(self, _size):
+            if not hasattr(self, "done"):
+                self.done = True
+                return b"01234"
+            raise ConnectionResetError("connection reset")
+
+    class RangedResponse(io.BytesIO):
+        status = 206
+        def __init__(self, data):
+            super().__init__(data)
+            self.headers = {"Content-Range": "bytes 5-9/10", "Content-Length": "5"}
+
+    def fake_urlopen(request, timeout):
+        headers = request.headers if hasattr(request, "headers") else {}
+        calls.append(dict(headers))
+        if len(calls) == 1:
+            return PartialResponse()
+        assert headers.get("Range") == "bytes=5-"
+        return RangedResponse(payload[5:])
+
+    monkeypatch.setattr(roteiro, "MARK_DIR", tmp_path)
+    monkeypatch.setattr(roteiro, "MARK_URLS", {"mark.bin": "https://example.invalid/mark.bin"})
+    monkeypatch.setattr(roteiro.urllib.request, "urlopen", fake_urlopen)
+    monkeypatch.setattr(roteiro.time, "sleep", lambda _seconds: None)
+    monkeypatch.setattr(roteiro.MARK, "resetar", lambda: None)
+
+    roteiro._baixar()
+
+    assert len(calls) == 2
+    assert (tmp_path / "mark.bin").read_bytes() == payload
+    assert not (tmp_path / "mark.bin.baixando").exists()
+    assert roteiro.DOWNLOAD["erro"] is None
