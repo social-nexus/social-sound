@@ -471,65 +471,6 @@ def _trabalho(jid, caminho, roteiro, modo, max_chars, modelo, formato="frases", 
             pass
 
 
-def _trabalho_transcricao_referencia(jid: str, caminho: str, modelo: str):
-    job = JOBS[jid]
-    try:
-        if not whisper_instalado():
-            raise ValueError("O Whisper ainda não foi instalado. Rode o instalar.bat de novo.")
-        from faster_whisper import WhisperModel
-        with _whisper_lock:
-            if modelo not in _whisper:
-                _whisper[modelo] = WhisperModel(modelo, device="cpu", compute_type="int8")
-            engine = _whisper[modelo]
-        job["msg"] = "Transcrevendo áudio com Whisper…"
-        segmentos, info = engine.transcribe(
-            caminho, beam_size=1, condition_on_previous_text=False, vad_filter=True
-        )
-        texto = " ".join(segmento.text.strip() for segmento in segmentos if segmento.text.strip()).strip()
-        if not texto:
-            raise ValueError("Não foi possível identificar fala no áudio.")
-        job.update(status="pronto", msg="Transcrição concluída.", texto=texto,
-                   idioma=getattr(info, "language", None))
-    except Exception as exc:  # noqa: BLE001
-        job.update(status="erro", msg=f"{type(exc).__name__}: {exc}"[:400])
-    finally:
-        try:
-            Path(caminho).unlink()
-        except OSError:
-            pass
-
-
-@router.post("/api/legenda/transcrever")
-async def rota_transcrever_referencia(audio: UploadFile = File(...), modelo: str = Form("base")):
-    if modelo not in ("base", "small"):
-        raise HTTPException(400, "Modelo Whisper inválido.")
-    if not whisper_instalado():
-        raise HTTPException(503, "O Whisper não está instalado. Rode instalar.bat novamente.")
-    conteudo = await audio.read(50 * 1024 * 1024 + 1)
-    if not conteudo or len(conteudo) > 50 * 1024 * 1024:
-        raise HTTPException(400 if not conteudo else 413, "Áudio vazio ou maior que 50 MB.")
-    TMP.mkdir(exist_ok=True)
-    caminho = TMP / f"{uuid.uuid4().hex}.wav"
-    caminho.write_bytes(conteudo)
-    jid = uuid.uuid4().hex[:8]
-    JOBS[jid] = {"status": "rodando", "msg": "Preparando a transcrição…", "t": time.time()}
-    try:
-        threading.Thread(target=_trabalho_transcricao_referencia, args=(jid, str(caminho), modelo),
-                         daemon=True).start()
-    except Exception:
-        caminho.unlink(missing_ok=True)
-        JOBS.pop(jid, None)
-        raise HTTPException(500, "Não foi possível iniciar a transcrição.")
-    return {"job": jid}
-
-
-@router.get("/api/legenda/transcrever/{jid}")
-def rota_status_transcricao_referencia(jid: str):
-    if jid not in JOBS:
-        raise HTTPException(404, "Transcrição não encontrada.")
-    return JOBS[jid]
-
-
 @router.get("/api/legenda/status")
 def rota_status():
     return {"whisper": whisper_instalado()}
