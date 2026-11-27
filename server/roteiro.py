@@ -703,39 +703,55 @@ def rota_status():
     }
 
 
-def _baixar_arquivo(url: str, tmp: Path, base_progresso: int, tentativas: int = 4):
-    """Baixa para arquivo temporário, valida tamanho e repete falhas transitórias."""
+def _baixar_arquivo(url: str, tmp: Path, base_progresso: int, tentativas: int = 6):
+    """Baixa com retomada HTTP Range, valida tamanho e repete falhas transitórias."""
     ultimo_erro = None
     total_contabilizado = False
     for tentativa in range(1, tentativas + 1):
-        tmp.unlink(missing_ok=True)
-        atual = 0
+        atual = tmp.stat().st_size if tmp.exists() else 0
         try:
-            with urllib.request.urlopen(url, timeout=60) as r, open(tmp, "wb") as f:
-                esperado = int(r.headers.get("Content-Length") or 0)
-                if esperado and not total_contabilizado:
-                    DOWNLOAD["total"] += esperado
+            headers = {"User-Agent": "SocialSound/1.0"}
+            if atual:
+                headers["Range"] = f"bytes={atual}-"
+            request = urllib.request.Request(url, headers=headers)
+            with urllib.request.urlopen(request, timeout=90) as r:
+                status = getattr(r, "status", getattr(r, "code", 200))
+                content_range = r.headers.get("Content-Range", "")
+                if atual and status == 206:
+                    match = re.match(r"bytes (\\d+)-(\\d+)/(\\d+|\\*)$", content_range.strip())
+                    if not match or int(match.group(1)) != atual:
+                        tmp.unlink(missing_ok=True)
+                        raise IOError("servidor retornou um intervalo inválido para retomar o download")
+                    modo = "ab"
+                    esperado_total = int(match.group(3)) if match.group(3).isdigit() else 0
+                else:
+                    atual = 0
+                    modo = "wb"
+                    esperado_total = int(r.headers.get("Content-Length") or 0)
+                if esperado_total and not total_contabilizado:
+                    DOWNLOAD["total"] += esperado_total
                     total_contabilizado = True
-                while True:
-                    bloco = r.read(1 << 20)
-                    if not bloco:
-                        break
-                    f.write(bloco)
-                    atual += len(bloco)
-                    DOWNLOAD["baixado"] = base_progresso + atual
-            if esperado and atual != esperado:
-                raise IOError(f"download incompleto: {atual} de {esperado} bytes")
-            if atual == 0:
-                raise IOError("download vazio")
-            return atual
+                recebido = atual
+                with open(tmp, modo) as f:
+                    while True:
+                        bloco = r.read(1 << 20)
+                        if not bloco:
+                            break
+                        f.write(bloco)
+                        recebido += len(bloco)
+                        DOWNLOAD["baixado"] = base_progresso + recebido
+                if esperado_total and recebido != esperado_total:
+                    raise IOError(f"download incompleto: {recebido} de {esperado_total} bytes")
+                if recebido == 0:
+                    raise IOError("download vazio")
+                return recebido
         except Exception as e:  # noqa: BLE001
             ultimo_erro = e
-            tmp.unlink(missing_ok=True)
-            DOWNLOAD["baixado"] = base_progresso
+            if tmp.exists():
+                DOWNLOAD["baixado"] = base_progresso + tmp.stat().st_size
             if tentativa < tentativas:
-                time.sleep(min(2 ** tentativa, 8))
+                time.sleep(min(2 ** tentativa, 30))
     raise ultimo_erro
-
 
 def _baixar(refazer: bool = False):
     DOWNLOAD.update(rodando=True, baixado=0, total=0, erro=None)
