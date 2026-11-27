@@ -129,3 +129,16 @@ def test_subtitle_workspace_supports_english_ui():
     assert 'UI_LANG==="en" ? (f==="palavras"' in html
     assert 'Whisper installed ✔' in html
     assert 'Whisper not installed: run instalar.bat again' in html
+
+
+def test_voice_studio_automatic_transcription_uses_whisper_job_api():
+    page = ROOT / "server" / "estudio_voz" / "index.html"
+    source = page.read_text(encoding="utf-8")
+    api = (ROOT / "server" / "legenda.py").read_text(encoding="utf-8")
+    assert 'fetch("/api/legenda/transcrever"' in source
+    assert 'fetch("/api/legenda/transcrever/"+encodeURIComponent(data.job))' in source
+    assert 'if(job.status==="pronto")' in source
+    assert 'if(job.status==="erro")' in source
+    assert '@router.post("/api/legenda/transcrever")' in api
+    assert '@router.get("/api/legenda/transcrever/{jid}")' in api
+    assert 'def _trabalho_transcricao_referencia' in api
